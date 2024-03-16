@@ -1,10 +1,21 @@
 package main
 
+import (
+	"fmt"
+	"os"
+	"os/exec"
+)
+
 func main() {
 	// コマンドラインオプションのパース
 
 	// Requirements のチェック
 	// 1. docker
+	isExistsDocker := isExistsCommand("docker")
+	if !isExistsDocker {
+		fmt.Fprintf(os.Stderr, "docker not found.")
+		os.Exit(1)
+	}
 
 	// devcontainer.vim 用のディレクトリ作成
 	// 1. ユーザーコンフィグ用ディレクトリ
@@ -30,4 +41,12 @@ func main() {
 	// コンテナ停止
 	// `docker stop <dockerrun 時に標準出力に表示される CONTAINER ID>`
 
+}
+
+func isExistsCommand(command string) bool {
+	_, err := exec.LookPath(command)
+	if err != nil {
+		return false
+	}
+	return true
 }
