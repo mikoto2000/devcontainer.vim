@@ -6,9 +6,9 @@
 
 ```sh
 # 以下 docker コマンド相当の環境でコンテナを立ち上げる場合
-# docker run -it --rm -v "$(pwd):/work" --workdir /work --name golang golang:1.22.1-bookworm
+# docker run -it --rm -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim" --name golang golang:1.22.1-bookworm
 # ※ 現段階では devcontainer.json 対応をしていないので、諸々を明示的に指定する必要がある
-dcvim -v "$(pwd):/work" --workdir /work --name golang golang:1.22.1-bookworm
+devcontainer.vim -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim" --name golang golang:1.22.1-bookworm
 ```
 
 
@@ -21,7 +21,15 @@ dcvim -v "$(pwd):/work" --workdir /work --name golang golang:1.22.1-bookworm
 
 # Install:
 
+## binary download
+
 TODO
+
+## go install
+
+```sh
+go install github.com/mikoto2000/devcontainer.vim@latest
+```
 
 
 # TODO:
