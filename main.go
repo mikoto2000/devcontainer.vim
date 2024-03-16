@@ -14,7 +14,7 @@ import (
 
 const CONTAINER_COMMAND = "docker"
 var DOCKER_RUN_ARGS_PREFIX = []string{"run", "-d", "--rm"}
-var DOCKER_RUN_ARGS_SUFFIX = []string{"sh", "-c", "sleep infinity"}
+var DOCKER_RUN_ARGS_SUFFIX = []string{"sh", "-c", "trap \"exit 0\" TERM; sleep infinity & wait"}
 
 const APP_NAME = "devcontainer.vim"
 const VIM_TAG_NAME = "v9.1.0181"
