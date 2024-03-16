@@ -4,7 +4,12 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 )
+
+const APP_NAME = "devcontainer.vim"
+
+type GetDirFunc func() (string, error)
 
 func main() {
 	// コマンドラインオプションのパース
@@ -22,6 +27,8 @@ func main() {
 	//    `os.UserConfigDir` + `devcontainer.vim`
 	// 2. ユーザーキャッシュ用ディレクトリ
 	//    `os.UserCacheDir` + `devcontainer.vim`
+	createDirectory(os.UserConfigDir, APP_NAME)
+	createDirectory(os.UserCacheDir, APP_NAME)
 
 	// vim-appimage のダウンロード
 	// 1. ユーザーキャッシュディレクトリ取得
@@ -49,4 +56,15 @@ func isExistsCommand(command string) bool {
 		return false
 	}
 	return true
+}
+
+func createDirectory(pathFunc GetDirFunc, dirName string) {
+	var baseDir, err = pathFunc()
+	if err != nil {
+		panic(err)
+	}
+	var appCacheDir = path.Join(baseDir, dirName)
+	if err := os.MkdirAll(appCacheDir, 0766); err != nil {
+		panic(err)
+	}
 }
