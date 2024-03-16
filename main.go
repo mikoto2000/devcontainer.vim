@@ -13,6 +13,8 @@ import (
 )
 
 const CONTAINER_COMMAND = "docker"
+var DOCKER_RUN_ARGS_PREFIX = []string{"run", "-d", "--rm"}
+var DOCKER_RUN_ARGS_SUFFIX = []string{"sh", "-c", "sleep infinity"}
 
 const APP_NAME = "devcontainer.vim"
 const VIM_TAG_NAME = "v9.1.0181"
@@ -61,12 +63,10 @@ func main() {
 
 	// バックグラウンドでコンテナを起動
 	// `docker run -d --rm os.Args[1:] sh -c "sleep infinity"`
-	dockerArgsPrefix := []string{"run", "-d", "--rm"}
-	dockerArgsSuffix := []string{"sh", "-c", "sleep infinity"}
-	dockerArgs := append(dockerArgsPrefix, os.Args[1:]...)
-	dockerArgs = append(dockerArgs, dockerArgsSuffix...)
-	fmt.Printf("run container %s, %s\n", CONTAINER_COMMAND, strings.Join(dockerArgs, ", "))
-	dockerRunCommand := exec.Command(CONTAINER_COMMAND, dockerArgs...)
+	dockerRunArgs := append(DOCKER_RUN_ARGS_PREFIX, os.Args[1:]...)
+	dockerRunArgs = append(dockerRunArgs, DOCKER_RUN_ARGS_SUFFIX...)
+	fmt.Printf("run container: `%s \"%s\"`\n", CONTAINER_COMMAND, strings.Join(dockerRunArgs, "\" \""))
+	dockerRunCommand := exec.Command(CONTAINER_COMMAND, dockerRunArgs...)
 	containerIdRaw, err := dockerRunCommand.CombinedOutput()
 	containerId := string(containerIdRaw)
 	if err != nil {
@@ -80,8 +80,9 @@ func main() {
 
 	// コンテナへ appimage を転送して実行権限を追加
 	// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
-	fmt.Printf("Copy AppImage %s to %s ...", vimFilePath, containerId+":/")
-	copyResult, err := exec.Command(CONTAINER_COMMAND, "cp", vimFilePath, containerId+":/").CombinedOutput()
+	dockerCpArgs := []string{"cp", vimFilePath, containerId+":/"}
+	fmt.Printf("Copy AppImage: `%s \"%s\"` ...", CONTAINER_COMMAND, strings.Join(dockerCpArgs, "\" \""))
+	copyResult, err := exec.Command(CONTAINER_COMMAND, dockerCpArgs...).CombinedOutput()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "AppImage copy error.")
 		fmt.Fprintln(os.Stderr, string(copyResult))
@@ -90,8 +91,9 @@ func main() {
 	fmt.Printf(" done.\n")
 
 	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> chmod +x /Vim-AppImage`
-	fmt.Printf("Chown AppImage ...")
-	chmodResult, err := exec.Command(CONTAINER_COMMAND, "exec", containerId, "sh", "-c", "chmod +x /"+vimFileName).CombinedOutput()
+	dockerChownArgs := []string{"exec", containerId, "sh", "-c", "chmod +x /"+vimFileName}
+	fmt.Printf("Chown AppImage: `%s \"%s\"` ...", CONTAINER_COMMAND, strings.Join(dockerChownArgs, "\" \""))
+	chmodResult, err := exec.Command(CONTAINER_COMMAND, dockerChownArgs...).CombinedOutput()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "chmod error.")
 		fmt.Fprintln(os.Stderr, string(chmodResult))
@@ -105,7 +107,9 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	dockerExec := exec.CommandContext(ctx, CONTAINER_COMMAND, "exec", "-it", containerId, "/"+vimFileName, "--appimage-extract-and-run")
+	dockerVimArgs := []string{"exec", "-it", containerId, "/"+vimFileName, "--appimage-extract-and-run"}
+	fmt.Printf("Start vim: `%s \"%s\"`", CONTAINER_COMMAND, strings.Join(dockerVimArgs, "\" \""))
+	dockerExec := exec.CommandContext(ctx, CONTAINER_COMMAND, dockerVimArgs...)
 	dockerExec.Stdin = os.Stdin
 	dockerExec.Stdout = os.Stdout
 	dockerExec.Stderr = os.Stderr
