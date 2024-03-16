@@ -1,13 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path"
+	"strings"
 )
+
+const CONTAINER_COMMAND = "docker"
 
 const APP_NAME = "devcontainer.vim"
 const VIM_TAG_NAME = "v9.1.0181"
@@ -56,17 +61,71 @@ func main() {
 
 	// バックグラウンドでコンテナを起動
 	// `docker run -d --rm os.Args[1:] sh -c "sleep infinity"`
+	dockerArgsPrefix := []string{"run", "-d", "--rm"}
+	dockerArgsSuffix := []string{"sh", "-c", "sleep infinity"}
+	dockerArgs := append(dockerArgsPrefix, os.Args[1:]...)
+	dockerArgs = append(dockerArgs, dockerArgsSuffix...)
+	fmt.Printf("run container %s, %s\n", CONTAINER_COMMAND, strings.Join(dockerArgs, ", "))
+	dockerRunCommand := exec.Command(CONTAINER_COMMAND, dockerArgs...)
+	containerIdRaw, err := dockerRunCommand.CombinedOutput()
+	containerId := string(containerIdRaw)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Container start error.")
+		fmt.Fprintln(os.Stderr, string(containerId))
+		panic(err)
+	}
+	containerId = strings.ReplaceAll(containerId, "\n", "")
+	containerId = strings.ReplaceAll(containerId, "\r", "")
+	fmt.Printf("Container started. id: %s\n", containerId)
 
 	// コンテナへ appimage を転送して実行権限を追加
 	// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
+	fmt.Printf("Copy AppImage %s to %s ...", vimFilePath, containerId+":/")
+	copyResult, err := exec.Command(CONTAINER_COMMAND, "cp", vimFilePath, containerId+":/").CombinedOutput()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "AppImage copy error.")
+		fmt.Fprintln(os.Stderr, string(copyResult))
+		panic(err)
+	}
+	fmt.Printf(" done.\n")
+
 	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> chmod +x /Vim-AppImage`
+	fmt.Printf("Chown AppImage ...")
+	chmodResult, err := exec.Command(CONTAINER_COMMAND, "exec", containerId, "sh", "-c", "chmod +x /"+vimFileName).CombinedOutput()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "chmod error.")
+		fmt.Fprintln(os.Stderr, string(chmodResult))
+		panic(err)
+	}
+	fmt.Printf(" done.\n")
 
 	// コンテナへ接続
 	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> /Vim-AppImage`
 
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+
+	dockerExec := exec.CommandContext(ctx, CONTAINER_COMMAND, "exec", "-it", containerId, "/"+vimFileName, "--appimage-extract-and-run")
+	dockerExec.Stdin = os.Stdin
+	dockerExec.Stdout = os.Stdout
+	dockerExec.Stderr = os.Stderr
+	dockerExec.Cancel = func() error {
+		fmt.Fprintf(os.Stderr, "Receive SIGINT.\n")
+		return dockerExec.Process.Signal(os.Interrupt)
+	}
+
+	err = dockerExec.Run()
+	if err != nil {
+		panic(err)
+	}
+
 	// コンテナ停止
 	// `docker stop <dockerrun 時に標準出力に表示される CONTAINER ID>`
-
+	fmt.Printf("Stop container(Async) %s.\n", containerId)
+	err = exec.Command(CONTAINER_COMMAND, "stop", containerId).Start()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func isExistsCommand(command string) bool {
