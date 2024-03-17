@@ -32,6 +32,33 @@ go install github.com/mikoto2000/devcontainer.vim@latest
 ```
 
 
+# Uninstall:
+
+## Windows
+
+Delete executable file, config directory(`~/AppData/Roaming/devcontainer.vim`), and cache directory(`~/AppData/Local/devcontainer.vim`).
+
+```sh
+Remove-Item PATH_TO/devcontainer.vim.exe
+Remove-Item -Recurse ~/AppData/Roaming/devcontainer.vim
+Remove-Item -Recurse ~/AppData/Local/devcontainer.vim
+```
+
+## Linux
+
+Delete executable file, config directory(`~/.config/devcontainer.vim`), and cache directory(`~/.cache/devcontainer.vim`).
+
+```sh
+rm PATH_TO/devcontainer.vim
+rm -rf ~/.config/devcontainer.vim
+rm -rf ~/.cache/devcontainer.vim
+```
+
+## MacOS
+
+TODO:
+
+
 # TODO:
 
 - [ ] : v0.1.0
