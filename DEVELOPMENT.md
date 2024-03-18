@@ -20,3 +20,9 @@ go mod init github.com/mikoto2000/devcontainer.vim
 go fmt ./...
 ```
 
+## Build
+
+```sh
+make build-all
+```
+
