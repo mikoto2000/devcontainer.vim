@@ -61,14 +61,20 @@ TODO:
 
 # TODO:
 
-- [ ] : v0.1.0
-    - [ ] : docker run 対応
-        - [ ] : コンテナの起動
-        - [ ] : AppImage 版 Vim のダウンロードとコンテナへの転送
+- [x] : v0.1.0
+    - [x] : docker run 対応
+        - [x] : コンテナの起動
+        - [x] : AppImage 版 Vim のダウンロードとコンテナへの転送
 - [ ] : v0.2.0
-    - [ ] : `devcontainer.json` 対応
+    - [ ] : `devcontainer.json` の `nonComposeBase` 対応
         - どこまで対応するかは未検討...
-        - [ ] : docker compose 対応はしたい
+- [ ] : v0.3.0
+    - [ ] : `devcontainer.json` の `composeContainer` 対応
+        - どこまで対応するかは未検討...
+- [ ] : v0.4.0
+    - [ ] : キャッシュクリアコマンド
+    - [ ] : アンインストールコマンド
+    - [ ] : Vim アップデートコマンド
 
 
 # License:
