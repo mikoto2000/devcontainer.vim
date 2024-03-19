@@ -1,10 +1,12 @@
 APP_NAME := devcontainer.vim
+GOARCH := amd64
+WINDOWS_BINARY_NAME := ${APP_NAME}-windows-${GOARCH}.exe
+LINUX_BINARY_NAME := ${APP_NAME}-linux-${GOARCH}
+DARWIN_BINARY_NAME := ${APP_NAME}-darwin-${GOARCH}
 
 GO_BIN := ${GOPATH}/bin
-LD_VLAGS := "-s -w"
+LD_FLAGS := "-s -w"
 VERSION := 0.0.1
-OS := linux,windows,darwin
-ARCH := amd64
 
 DEST := ./build
 
@@ -14,29 +16,21 @@ DEST := ./build
 all: build
 build: build/devcontainer.vim
 build/devcontainer.vim:
-	go build -ldflags="-s -w" -trimpath -o ./build/${APP_NAME}
+	go build -ldflags=${LD_FLAGS} -trimpath -o ./build/${APP_NAME}
 
 build-all: build-windows build-linux build-darwin
 
-build-windows: build/windows/devcontainer.vim.exe
-build/windows/devcontainer.vim.exe:
-	GOOS=windows GOARCH=amd64 go build -o build/windows/devcontainer.vim.exe ./main.go
+build-windows: build/${WINDOWS_BINARY_NAME}
+build/${WINDOWS_BINARY_NAME}:
+	GOOS=windows GOARCH=${GOARCH} go build -ldflags=${LD_FLAGS} -trimpath -o build/${WINDOWS_BINARY_NAME} ./main.go
 
-build-linux: build/linux/devcontainer.vim
-build/linux/devcontainer.vim:
-	GOOS=linux GOARCH=amd64 go build -o build/linux/devcontainer.vim ./main.go
+build-linux: build/${LINUX_BINARY_NAME}
+build/${LINUX_BINARY_NAME}:
+	GOOS=linux GOARCH=${GOARCH} go build -ldflags=${LD_FLAGS} -trimpath -o build/${LINUX_BINARY_NAME} ./main.go
 
-build-darwin: build/darwin/devcontainer.vim
-build/darwin/devcontainer.vim:
-	GOOS=darwin GOARCH=amd64 go build -o build/darwin/devcontainer.vim ./main.go
-
-### リリース関連
-# goxz を用いてリリース用のアーカイブを作成する
-release-build: $(GO_BIN) main.go
-	goxz -n ${APP_NAME} -o ${APP_NAME} -pv ${VERSION} -os=${OS} -arch=${ARCH} -d ${DEST}
-
-${GO_BIN}/goxz:
-	go install github.com/Songmu/goxz/cmd/goxz@latest
+build-darwin: build/${DARWIN_BINARY_NAME}
+build/${DARWIN_BINARY_NAME}:
+	GOOS=darwin GOARCH=${GOARCH} go build -ldflags=${LD_FLAGS} -trimpath -o build/${DARWIN_BINARY_NAME} ./main.go
 
 .PHONY: clean
 clean:
