@@ -21,15 +21,15 @@ build/devcontainer.vim:
 build-all: build-windows build-linux build-darwin
 
 build-windows: build/${WINDOWS_BINARY_NAME}
-build/${WINDOWS_BINARY_NAME}:
+build/${WINDOWS_BINARY_NAME}: main.go
 	GOOS=windows GOARCH=${GOARCH} go build -ldflags=${LD_FLAGS} -trimpath -o build/${WINDOWS_BINARY_NAME} ./main.go
 
 build-linux: build/${LINUX_BINARY_NAME}
-build/${LINUX_BINARY_NAME}:
+build/${LINUX_BINARY_NAME}: main.go
 	GOOS=linux GOARCH=${GOARCH} go build -ldflags=${LD_FLAGS} -trimpath -o build/${LINUX_BINARY_NAME} ./main.go
 
 build-darwin: build/${DARWIN_BINARY_NAME}
-build/${DARWIN_BINARY_NAME}:
+build/${DARWIN_BINARY_NAME}: main.go
 	GOOS=darwin GOARCH=${GOARCH} go build -ldflags=${LD_FLAGS} -trimpath -o build/${DARWIN_BINARY_NAME} ./main.go
 
 .PHONY: clean
