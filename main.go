@@ -11,7 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"path"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -143,7 +143,7 @@ func main() {
 
 	// Vim 関連の文字列組み立て
 	vimFileName := fmt.Sprintf(VIM_FILE_NAME, VIM_TAG_NAME)
-	vimFilePath := path.Join(appCacheDir, vimFileName)
+	vimFilePath := filepath.Join(appCacheDir, vimFileName)
 
 	// 必要なファイルのダウンロード
 	downloadFiles(appCacheDir, vimFilePath, vimFileName)
@@ -255,7 +255,7 @@ func createDirectory(pathFunc GetDirFunc, dirName string) string {
 	if err != nil {
 		panic(err)
 	}
-	var appCacheDir = path.Join(baseDir, dirName)
+	var appCacheDir = filepath.Join(baseDir, dirName)
 	if err := os.MkdirAll(appCacheDir, 0766); err != nil {
 		panic(err)
 	}
@@ -268,7 +268,7 @@ func isExistsVimAppImage(vimFilePath string) bool {
 }
 
 func downloadVimAppImage(vimDownloadUrl string, appCacheDir string, vimFileName string) error {
-	vimFilePath := path.Join(appCacheDir, vimFileName)
+	vimFilePath := filepath.Join(appCacheDir, vimFileName)
 
 	// HTTP GETリクエストを送信
 	resp, err := http.Get(vimDownloadUrl)
