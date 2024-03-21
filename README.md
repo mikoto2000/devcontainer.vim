@@ -2,7 +2,7 @@
 
 コンテナ上で Vim を使った開発をするためのツール。
 
-# Usage:
+## Usage:
 
 ```sh
 # 以下 docker コマンド相当の環境でコンテナを立ち上げる場合
@@ -12,29 +12,29 @@ devcontainer.vim -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim" --
 ```
 
 
-# Requirements:
+## Requirements:
 
 以下コマンドがインストール済みで、PATH が通っていること。
 
 - docker
 
 
-# Install:
+## Install:
 
-## binary download
+### binary download
 
 TODO
 
-## go install
+### go install
 
 ```sh
 go install github.com/mikoto2000/devcontainer.vim@latest
 ```
 
 
-# Uninstall:
+## Uninstall:
 
-## Windows
+### Windows
 
 Delete executable file, config directory(`~/AppData/Roaming/devcontainer.vim`), and cache directory(`~/AppData/Local/devcontainer.vim`).
 
@@ -44,7 +44,7 @@ Remove-Item -Recurse ~/AppData/Roaming/devcontainer.vim
 Remove-Item -Recurse ~/AppData/Local/devcontainer.vim
 ```
 
-## Linux
+### Linux
 
 Delete executable file, config directory(`~/.config/devcontainer.vim`), and cache directory(`~/.cache/devcontainer.vim`).
 
@@ -54,12 +54,12 @@ rm -rf ~/.config/devcontainer.vim
 rm -rf ~/.cache/devcontainer.vim
 ```
 
-## MacOS
+### MacOS
 
 TODO:
 
 
-# TODO:
+## TODO:
 
 - [x] : v0.1.0
     - [x] : docker run 対応
@@ -88,7 +88,7 @@ TODO:
     - [ ] : Vim アップデートコマンド
 
 
-# License:
+## License:
 
 Copyright (C) 2024 mikoto2000
 
@@ -97,7 +97,7 @@ This software is released under the MIT License, see LICENSE
 このソフトウェアは MIT ライセンスの下で公開されています。 LICENSE を参照してください。
 
 
-# Author:
+## Author:
 
 mikoto2000 <mikoto2000@gmail.com>
 
