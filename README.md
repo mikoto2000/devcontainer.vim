@@ -19,6 +19,13 @@ devcontainer.vim -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim" --
 - docker
 
 
+## Features:
+
+- [x] : docker run 対応
+    - [x] : コンテナの起動
+    - [x] : AppImage 版 Vim のダウンロードと起動したコンテナへの転送
+
+
 ## Install:
 
 ### binary download
@@ -65,7 +72,7 @@ TODO:
     - [x] : docker run 対応
         - [x] : コンテナの起動
         - [x] : AppImage 版 Vim のダウンロードとコンテナへの転送
-    - [ ] : `devcontainer.vim` への引数と `docker` への引数を指定できるようにする
+    - [x] : `devcontainer.vim` への引数と `docker` への引数を指定できるようにする
         - `--` より前を `devcontainer.vim` への引数とする
     - [ ] : リリーススクリプト・リリースワークフローを作る
 - [ ] : v0.2.0
