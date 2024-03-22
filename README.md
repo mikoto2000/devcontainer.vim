@@ -4,11 +4,30 @@
 
 ## Usage:
 
+### `devcontainer.json` が存在しないプロジェクトで、ワンショットで環境を立ち上げる
+
 ```sh
-# 以下 docker コマンド相当の環境でコンテナを立ち上げる場合
-# docker run -it --rm -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim" --name golang golang:1.22.1-bookworm
-# ※ 現段階では devcontainer.json 対応をしていないので、諸々を明示的に指定する必要がある
-devcontainer.vim -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim" --name golang golang:1.22.1-bookworm
+devcontainer.vim run [DOCKER_OPTIONS] [DOCKER_ARGS]
+```
+
+`docker run -it --rm -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim" --name golang golang:1.22.1-bookworm` コマンド相当の環境でコンテナを立ち上げる場合の例:
+
+```sh
+devcontainer.vim run -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim" --name golang golang:1.22.1-bookworm
+```
+
+### `devcontainer.json` が存在する場合
+
+`devcontainer.json` を読み込み環境を立ち上げる
+
+```sh
+devcontainer.vim up [DOCKER_COMPOSE_OPTIONS] [DOCKER_COMPOSE_ARGS]
+```
+
+コンテナへ Vim を転送し、起動する。
+
+```sh
+devcontainer.vim vim
 ```
 
 
@@ -21,9 +40,7 @@ devcontainer.vim -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim" --
 
 ## Features:
 
-- [x] : docker run 対応
-    - [x] : コンテナの起動
-    - [x] : AppImage 版 Vim のダウンロードと起動したコンテナへの転送
+TODO
 
 
 ## Install:
@@ -74,6 +91,7 @@ TODO:
         - [x] : AppImage 版 Vim のダウンロードとコンテナへの転送
     - [x] : `devcontainer.vim` への引数と `docker` への引数を指定できるようにする
         - `--` より前を `devcontainer.vim` への引数とする
+    - [ ] : `run` コマンドとして実現
     - [ ] : リリーススクリプト・リリースワークフローを作る
 - [ ] : v0.2.0
     - [ ] : クリップボード転送機能追加
