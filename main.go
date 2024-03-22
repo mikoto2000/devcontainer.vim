@@ -12,7 +12,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/urfave/cli/v2"
@@ -45,26 +44,28 @@ type GetDirFunc func() (string, error)
 func main() {
 	// コマンドラインオプションのパース
 
-	// devcontainer.vim 向けの引数を解釈するための処理
-	cli.HelpPrinter = func(w io.Writer, templ string, data interface{}) {
-		cli.HelpPrinterCustom(w, templ, data, nil)
-		os.Exit(0)
-	}
-	versionPrinterOrig := cli.VersionPrinter
-	cli.VersionPrinter = func(cCtx *cli.Context) {
-		versionPrinterOrig(cCtx)
-		os.Exit(0)
-	}
+	// devcontainer.vim 用のディレクトリ作成
+	// 1. ユーザーコンフィグ用ディレクトリ
+	//    `os.UserConfigDir` + `devcontainer.vim`
+	// 2. ユーザーキャッシュ用ディレクトリ
+	//    `os.UserCacheDir` + `devcontainer.vim`
+	createDirectory(os.UserConfigDir, APP_NAME)
+	appCacheDir := createDirectory(os.UserCacheDir, APP_NAME)
+
+	// Vim 関連の文字列組み立て
+	vimFileName := fmt.Sprintf(VIM_FILE_NAME, VIM_TAG_NAME)
+	vimFilePath := filepath.Join(appCacheDir, vimFileName)
+
 	devcontainerVimArgProcess := (&cli.App{
 		Name:                   "devcontainer.vim",
 		Usage:                  "devcontainer for vim.",
-		UsageText:              "devcontainer.vim [global options] [-- [DOCKER_ARGS...]]",
 		Version:                "0.0.1",
 		UseShortOptionHandling: true,
 		HideHelpCommand:        true,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:               FLAG_NAME_LICENSE,
+				Aliases:            []string{"l"},
 				Value:              false,
 				DisableDefaultText: true,
 				Usage:              "show licensesa.",
@@ -82,74 +83,38 @@ func main() {
 			// TODO: フラグをパースして後続に渡すための変数へ格納していく
 			return nil
 		},
+		Commands: []*cli.Command{
+			&cli.Command{
+				Name:            "run",
+				Usage:           "Run container use `docker run`",
+				UsageText:       "devcontainer.vim run [DOCKER_OPTIONS...] [DOCKER_ARGS...]",
+				SkipFlagParsing: true,
+				Action: func(cCtx *cli.Context) error {
+					// 必要なファイルのダウンロード
+					downloadFiles(appCacheDir, vimFilePath, vimFileName)
+
+					// Requirements のチェック
+					// 1. docker
+					isExistsDocker := isExistsCommand("docker")
+					if !isExistsDocker {
+						fmt.Fprintf(os.Stderr, "docker not found.")
+						os.Exit(1)
+					}
+
+					// コンテナ起動
+					startDevContainer(cCtx.Args().Slice(), vimFilePath, vimFileName)
+
+					return nil
+				},
+			},
+		},
 	})
 
-	// 引数に license, help が含まれている場合は、それを表示して終了
-	helpFlag := slices.Index(os.Args, "--"+FLAG_NAME_HELP_LONG) != -1 || slices.Index(os.Args, "-"+FLAG_NAME_HELP_SHORT) != -1
-	if helpFlag {
-		devcontainerVimArgProcess.Run([]string{APP_NAME, "--" + FLAG_NAME_HELP_LONG})
-	}
-	licenseFlag := slices.Index(os.Args, "--"+FLAG_NAME_LICENSE) != -1
-	if licenseFlag {
-		devcontainerVimArgProcess.Run([]string{APP_NAME, "--" + FLAG_NAME_LICENSE})
-	}
-	versionFlag := slices.Index(os.Args, "--"+FLAG_NAME_VERSION_LONG) != -1
-	if versionFlag {
-		devcontainerVimArgProcess.Run([]string{APP_NAME, "--"+FLAG_NAME_VERSION_LONG})
-	}
-
-	// devcontainer.vim への引数と docker への引数を分離
-	splitArgMarkIndex := slices.Index(os.Args, SPLIT_ARG_MARK)
-
-	// devcontainer.vim 向け引数
-	var argsForDevcontainerVim []string
-
-	// docker 向け引数
-	var argsForDocker []string
-
-	if splitArgMarkIndex != -1 {
-		argsForDevcontainerVim = append([]string{APP_NAME}, os.Args[1:splitArgMarkIndex]...)
-		argsForDocker = os.Args[splitArgMarkIndex+1:]
-	} else {
-		argsForDevcontainerVim = []string{APP_NAME}
-		argsForDocker = os.Args[1:]
-	}
-
-	// fmt.Printf("argsForDevcontainerVim: %s\n", argsForDevcontainerVim)
-	// fmt.Printf("argsForDocker: %s\n", argsForDocker)
-
-	err := devcontainerVimArgProcess.Run(argsForDevcontainerVim)
+	// アプリ実行
+	err := devcontainerVimArgProcess.Run(os.Args)
 	if err != nil {
 		os.Exit(1)
 	}
-
-	// 主処理開始
-
-	// Requirements のチェック
-	// 1. docker
-	isExistsDocker := isExistsCommand("docker")
-	if !isExistsDocker {
-		fmt.Fprintf(os.Stderr, "docker not found.")
-		os.Exit(1)
-	}
-
-	// devcontainer.vim 用のディレクトリ作成
-	// 1. ユーザーコンフィグ用ディレクトリ
-	//    `os.UserConfigDir` + `devcontainer.vim`
-	// 2. ユーザーキャッシュ用ディレクトリ
-	//    `os.UserCacheDir` + `devcontainer.vim`
-	createDirectory(os.UserConfigDir, APP_NAME)
-	appCacheDir := createDirectory(os.UserCacheDir, APP_NAME)
-
-	// Vim 関連の文字列組み立て
-	vimFileName := fmt.Sprintf(VIM_FILE_NAME, VIM_TAG_NAME)
-	vimFilePath := filepath.Join(appCacheDir, vimFileName)
-
-	// 必要なファイルのダウンロード
-	downloadFiles(appCacheDir, vimFilePath, vimFileName)
-
-	// コンテナ起動
-	startDevContainer(argsForDocker, vimFilePath, vimFileName)
 }
 
 func downloadFiles(appCacheDir string, vimFilePath string, vimFileName string) {
