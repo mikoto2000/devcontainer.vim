@@ -1,11 +1,11 @@
-package main
+package util
 
 import (
 	"testing"
 )
 
 func TestIsExistsCommandOk(t *testing.T) {
-	got := isExistsCommand("ls")
+	got := IsExistsCommand("ls")
 	want := true
 	if got != want {
 		t.Fatalf("want %v, but %v:", want, got)
@@ -13,9 +13,10 @@ func TestIsExistsCommandOk(t *testing.T) {
 }
 
 func TestIsExistsCommandNg(t *testing.T) {
-	got := isExistsCommand("noExistsCommand")
+	got := IsExistsCommand("noExistsCommand")
 	want := false
 	if got != want {
 		t.Fatalf("want %v, but %v:", want, got)
 	}
 }
+

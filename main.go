@@ -15,6 +15,8 @@ import (
 	"strings"
 
 	"github.com/urfave/cli/v2"
+
+	"github.com/mikoto2000/devcontainer.vim/util"
 )
 
 const FLAG_NAME_LICENSE = "license"
@@ -39,8 +41,6 @@ const VIM_TAG_NAME = "v9.1.0181"
 const VIM_DOWNLOAD_URL = "https://github.com/vim/vim-appimage/releases/download/%s/"
 const VIM_FILE_NAME = "Vim-%s.glibc2.29-x86_64.AppImage"
 
-type GetDirFunc func() (string, error)
-
 func main() {
 	// コマンドラインオプションのパース
 
@@ -49,8 +49,8 @@ func main() {
 	//    `os.UserConfigDir` + `devcontainer.vim`
 	// 2. ユーザーキャッシュ用ディレクトリ
 	//    `os.UserCacheDir` + `devcontainer.vim`
-	createDirectory(os.UserConfigDir, APP_NAME)
-	appCacheDir := createDirectory(os.UserCacheDir, APP_NAME)
+	util.CreateDirectory(os.UserConfigDir, APP_NAME)
+	appCacheDir := util.CreateDirectory(os.UserCacheDir, APP_NAME)
 
 	// Vim 関連の文字列組み立て
 	vimFileName := fmt.Sprintf(VIM_FILE_NAME, VIM_TAG_NAME)
@@ -95,7 +95,7 @@ func main() {
 
 					// Requirements のチェック
 					// 1. docker
-					isExistsDocker := isExistsCommand("docker")
+					isExistsDocker := util.IsExistsCommand("docker")
 					if !isExistsDocker {
 						fmt.Fprintf(os.Stderr, "docker not found.")
 						os.Exit(1)
@@ -122,7 +122,7 @@ func downloadFiles(appCacheDir string, vimFilePath string, vimFileName string) {
 	// 1. ユーザーキャッシュディレクトリ取得
 	// 2. appimage がダウンロード済みかをチェックし、
 	//    必要であればダウンロード
-	if isExistsVimAppImage(vimFilePath) {
+	if util.IsExists(vimFilePath) {
 		fmt.Printf("Vim AppImage aleady exist, use %s.\n", vimFilePath)
 	} else {
 		vimDownloadUrl := fmt.Sprintf(VIM_DOWNLOAD_URL+vimFileName, VIM_TAG_NAME)
@@ -205,31 +205,6 @@ func startDevContainer(args []string, vimFilePath string, vimFileName string) {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func isExistsCommand(command string) bool {
-	_, err := exec.LookPath(command)
-	if err != nil {
-		return false
-	}
-	return true
-}
-
-func createDirectory(pathFunc GetDirFunc, dirName string) string {
-	var baseDir, err = pathFunc()
-	if err != nil {
-		panic(err)
-	}
-	var appCacheDir = filepath.Join(baseDir, dirName)
-	if err := os.MkdirAll(appCacheDir, 0766); err != nil {
-		panic(err)
-	}
-	return appCacheDir
-}
-
-func isExistsVimAppImage(vimFilePath string) bool {
-	_, err := os.Stat(vimFilePath)
-	return err == nil
 }
 
 func downloadVimAppImage(vimDownloadUrl string, appCacheDir string, vimFileName string) error {
