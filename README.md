@@ -18,16 +18,10 @@ devcontainer.vim run -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim
 
 ### `devcontainer.json` が存在する場合
 
-`devcontainer.json` を読み込み環境を立ち上げる
+`devcontainer.json` を読み込み環境を立ち上げ、Vim を転送し、起動する。
 
 ```sh
-devcontainer.vim up [DOCKER_COMPOSE_OPTIONS] [DOCKER_COMPOSE_ARGS]
-```
-
-コンテナへ Vim を転送し、起動する。
-
-```sh
-devcontainer.vim vim
+devcontainer.vim
 ```
 
 
@@ -90,14 +84,23 @@ TODO:
         - [x] : コンテナの起動
         - [x] : AppImage 版 Vim のダウンロードとコンテナへの転送
     - [x] : `devcontainer.vim` への引数と `docker` への引数を指定できるようにする
-        - `--` より前を `devcontainer.vim` への引数とする
-    - [x] : `run` コマンドとして実現
+        - [x] : `run` コマンドとして実現
+- [ ] : v0.2.0
+    - [ ] : `devcontainer.json` の `composeContainer` 対応
+        - [ ] : dockerComposeFile
+        - [ ] : service
+        - [ ] : workspaceFolder
+        - [ ] : remoteUser
+- [ ] : v0.4.0
+    - [ ] : `devcontainer.json` の `nonComposeBase` 対応
+        - どこまで対応するかは未検討...
+- [ ] : v0.4.0
     - [ ] : 暗黙の docker option を追加できるようにする
         - [ ] : 設定ファイルに暗黙のオプション設定を追加し、 `run` サブコマンド実行時にそれを読み込む
         - [ ] : 設定ファイルを開くサブコマンドを追加
             - [ ] : 関連付けられているファイルで開けるなら開く、そうでなければパスを表示
     - [ ] : リリーススクリプト・リリースワークフローを作る
-- [ ] : v0.2.0
+- [ ] : v0.5.0
     - [ ] : クリップボード転送機能追加
         1. TCP でテキストを待ち受け、受信したテキストをクリップボードへ反映するプログラムを作る
         2. TCP ソケット通信する関数、ヤンク処理時にテキスト送信をするマッピングを実装したスクリプトを作る
@@ -105,13 +108,7 @@ TODO:
         3. `devcontainer.vim` 起動時に「1.」のプログラムを実行
             - 多重起動防止のために既にプログラムが実行済みかどうかを確認する必要がある
             - 終了時にも、「他の `devcontainer.vim` が存在するか」を確認して終了させるか判定
-- [ ] : v0.3.0
-    - [ ] : `devcontainer.json` の `nonComposeBase` 対応
-        - どこまで対応するかは未検討...
-- [ ] : v0.4.0
-    - [ ] : `devcontainer.json` の `composeContainer` 対応
-        - どこまで対応するかは未検討...
-- [ ] : v0.5.0
+- [ ] : v0.6.0
     - [ ] : キャッシュクリアコマンド
     - [ ] : アンインストールコマンド
     - [ ] : Vim アップデートコマンド
