@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strings"
 )
 
@@ -14,7 +15,9 @@ const CONTAINER_COMMAND = "docker"
 var DOCKER_RUN_ARGS_PREFIX = []string{"run", "-d", "--rm"}
 var DOCKER_RUN_ARGS_SUFFIX = []string{"sh", "-c", "trap \"exit 0\" TERM; sleep infinity & wait"}
 
-func ExecuteDockerRun(args []string, vimFilePath string, vimFileName string) {
+func ExecuteDockerRun(args []string, vimFilePath string) {
+	vimFileName := filepath.Base(vimFilePath)
+
 	// バックグラウンドでコンテナを起動
 	// `docker run -d --rm os.Args[1:] sh -c "sleep infinity"`
 	dockerRunArgs := append(DOCKER_RUN_ARGS_PREFIX, args...)
@@ -85,4 +88,3 @@ func ExecuteDockerRun(args []string, vimFilePath string, vimFileName string) {
 		panic(err)
 	}
 }
-
