@@ -63,18 +63,39 @@ func main() {
 				os.Exit(0)
 			}
 
-			// TODO: フラグをパースして後続に渡すための変数へ格納していく
+			// devcontainer でコンテナを立てる
+
+			// 必要なファイルのダウンロード
+			vim, err := tools.VIM.Install(appCacheDir)
+			if err != nil {
+				panic(err)
+			}
+
+			devcontainer, err := tools.DEVCONTAINER.Install(appCacheDir)
+			if err != nil {
+				panic(err)
+			}
+
+			// TODO: devcontainer を用いた処理を実装
+			// `devcontainer up` でコンテナ起動
+			// vim をコンテナへコピー
+			// `devcontainer exec` でコンテナの vim を起動
+			fmt.Println(vim)
+			fmt.Println(devcontainer)
+
 			return nil
 		},
 		Commands: []*cli.Command{
-			&cli.Command{
+			{
 				Name:            "run",
 				Usage:           "Run container use `docker run`",
 				UsageText:       "devcontainer.vim run [DOCKER_OPTIONS...] [DOCKER_ARGS...]",
 				SkipFlagParsing: true,
 				Action: func(cCtx *cli.Context) error {
+					// `docker run` でコンテナを立てる
+
 					// 必要なファイルのダウンロード
-					availableTools, err := tools.InstallTools(appCacheDir)
+					vim, err := tools.VIM.Install(appCacheDir)
 					if err != nil {
 						panic(err)
 					}
@@ -88,7 +109,7 @@ func main() {
 					}
 
 					// コンテナ起動
-					dockerRun.ExecuteDockerRun(cCtx.Args().Slice(), availableTools.Vim)
+					dockerRun.ExecuteDockerRun(cCtx.Args().Slice(), vim)
 
 					return nil
 				},

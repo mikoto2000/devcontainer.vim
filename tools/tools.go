@@ -19,17 +19,6 @@ type Tool struct {
 	Install func(installDir string) (string, error)
 }
 
-func InstallTools(installDir string) (Tools, error) {
-	vim, err := VIM.Install(installDir)
-	if err != nil {
-		panic(err)
-	}
-
-	return Tools{
-		Vim: vim,
-	}, nil
-}
-
 const APP_NAME = "devcontainer.vim"
 
 const VIM_TAG_NAME = "v9.1.0181"
@@ -45,44 +34,59 @@ var VIM Tool = Tool{
 		vimFilePath := filepath.Join(installDir, vimFileName)
 
 		// vim-appimage のダウンロード
-		// 1. ユーザーキャッシュディレクトリ取得
-		// 2. appimage がダウンロード済みかをチェックし、
-		//    必要であればダウンロード
-		if util.IsExists(vimFilePath) {
-			fmt.Printf("Vim AppImage aleady exist, use %s.\n", vimFilePath)
-		} else {
-			vimDownloadUrl := fmt.Sprintf(VIM_DOWNLOAD_URL+vimFileName, VIM_TAG_NAME)
-			fmt.Printf("Download Vim AppImage from %s ...", vimDownloadUrl)
-			err := download(vimDownloadUrl, vimFilePath)
-			if err != nil {
-				return vimFilePath, err
-			}
-			fmt.Printf(" done.\n")
+		vimDownloadUrl := fmt.Sprintf(VIM_DOWNLOAD_URL+vimFileName, VIM_TAG_NAME)
+		err := download(vimDownloadUrl, vimFilePath)
+		if err != nil {
+			return vimFilePath, err
 		}
 		return vimFilePath, nil
 	},
 }
 
+var DEVCONTAINER Tool = Tool{
+	Name: "devcontainer",
+	Install: func(installDir string) (string, error) {
+		devcontainerFileName := filepath.Base(DOWNLOAD_URL_DEVCONTAINERS_CLI)
+		devcontainerFilePath := filepath.Join(installDir, devcontainerFileName)
+
+		// devcontainers-cli のダウンロード
+		err := download(DOWNLOAD_URL_DEVCONTAINERS_CLI, devcontainerFilePath)
+		if err != nil {
+			panic(err)
+		}
+
+		return devcontainerFilePath, nil
+	},
+}
+
 func download(downloadUrl string, destPath string) error {
+	if util.IsExists(destPath) {
+		fmt.Printf("%s aleady exist, use this.\n", filepath.Base(destPath))
+	} else {
+		fmt.Printf("Download %s from %s ...", filepath.Base(downloadUrl), downloadUrl)
 
-	// HTTP GETリクエストを送信
-	resp, err := http.Get(downloadUrl)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
+		// HTTP GETリクエストを送信
+		resp, err := http.Get(downloadUrl)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
 
-	// ファイルを作成
-	out, err := os.Create(destPath)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
+		// ファイルを作成
+		out, err := os.Create(destPath)
+		if err != nil {
+			return err
+		}
+		defer out.Close()
 
-	// レスポンスの内容をファイルに書き込み
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		return err
+		// レスポンスの内容をファイルに書き込み
+		_, err = io.Copy(out, resp.Body)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf(" done.\n")
 	}
+
 	return nil
 }
