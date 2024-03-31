@@ -12,15 +12,21 @@ import (
 )
 
 const CONTAINER_COMMAND = "docker"
+
 var DEVCONTAINRE_ARGS_PREFIX = []string{"up"}
-var DEVCONTAINRE_ARGS_SUFFIX = []string{"--workspace-folder", "./"}
 
 func ExecuteDevcontainer(args []string, devcontainerFilePath string, vimFilePath string) {
 	vimFileName := filepath.Base(vimFilePath)
 
 	// `devcontainer up` でコンテナを起動
-	devcontainerArgs := append(DEVCONTAINRE_ARGS_PREFIX, args...)
-	devcontainerArgs = append(devcontainerArgs, DEVCONTAINRE_ARGS_SUFFIX...)
+
+	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
+	workspaceFolder := args[len(args)-1]
+
+	// 末尾以外のものはそのまま `devcontainer up` への引数として渡す
+	userArgs := args[0 : len(args)-1]
+	userArgs = append(userArgs, "--workspace-folder", workspaceFolder)
+	devcontainerArgs := append(DEVCONTAINRE_ARGS_PREFIX, userArgs...)
 	fmt.Printf("run container: `%s \"%s\"`\n", devcontainerFilePath, strings.Join(devcontainerArgs, "\" \""))
 	dockerRunCommand := exec.Command(devcontainerFilePath, devcontainerArgs...)
 

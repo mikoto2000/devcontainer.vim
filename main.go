@@ -45,7 +45,6 @@ func main() {
 		Usage:                  "devcontainer for vim.",
 		Version:                "0.0.1",
 		UseShortOptionHandling: true,
-		HideHelpCommand:        true,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:               FLAG_NAME_LICENSE,
@@ -64,25 +63,6 @@ func main() {
 				os.Exit(0)
 			}
 
-			// devcontainer でコンテナを立てる
-
-			// 必要なファイルのダウンロード
-			vim, err := tools.VIM.Install(appCacheDir)
-			if err != nil {
-				panic(err)
-			}
-
-			devcontainer, err := tools.DEVCONTAINER.Install(appCacheDir)
-			if err != nil {
-				panic(err)
-			}
-
-			// TODO: devcontainer を用いた処理を実装
-			// `devcontainer up` でコンテナ起動
-			// vim をコンテナへコピー
-			// `devcontainer exec` でコンテナの vim を起動
-			devcontainreUpAndExec.ExecuteDevcontainer([]string{}, devcontainer, vim)
-
 			return nil
 		},
 		Commands: []*cli.Command{
@@ -90,6 +70,7 @@ func main() {
 				Name:            "run",
 				Usage:           "Run container use `docker run`",
 				UsageText:       "devcontainer.vim run [DOCKER_OPTIONS...] [DOCKER_ARGS...]",
+				HideHelp:        true,
 				SkipFlagParsing: true,
 				Action: func(cCtx *cli.Context) error {
 					// `docker run` でコンテナを立てる
@@ -110,6 +91,32 @@ func main() {
 
 					// コンテナ起動
 					dockerRun.ExecuteDockerRun(cCtx.Args().Slice(), vim)
+
+					return nil
+				},
+			},
+			{
+				Name:            "start",
+				Usage:           "Run `devcontainer up` and `devcontainer exec`",
+				UsageText:       "devcontainer.vim start [DEVCONTAINER_OPTIONS...] WORKSPACE_FOLDER",
+				HideHelp:        true,
+				SkipFlagParsing: true,
+				Action: func(cCtx *cli.Context) error {
+					// devcontainer でコンテナを立てる
+
+					// 必要なファイルのダウンロード
+					vim, err := tools.VIM.Install(appCacheDir)
+					if err != nil {
+						panic(err)
+					}
+
+					devcontainer, err := tools.DEVCONTAINER.Install(appCacheDir)
+					if err != nil {
+						panic(err)
+					}
+
+					// devcontainer を用いたコンテナ立ち上げ
+					devcontainreUpAndExec.ExecuteDevcontainer(cCtx.Args().Slice(), devcontainer, vim)
 
 					return nil
 				},

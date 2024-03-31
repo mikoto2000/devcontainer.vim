@@ -18,10 +18,10 @@ devcontainer.vim run -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim
 
 ### `devcontainer.json` が存在する場合
 
-`devcontainer.json` を読み込み環境を立ち上げ、Vim を転送し、起動する。
+カレントディレクトリから `devcontainer.json` を検索し、読み込み、環境を立ち上げ、Vim を転送し、起動する。
 
 ```sh
-devcontainer.vim
+devcontainer.vim start .
 ```
 
 
