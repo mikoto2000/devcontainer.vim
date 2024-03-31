@@ -81,8 +81,6 @@ func main() {
 			// `devcontainer up` でコンテナ起動
 			// vim をコンテナへコピー
 			// `devcontainer exec` でコンテナの vim を起動
-			fmt.Println(vim)
-			fmt.Println(devcontainer)
 			devcontainreUpAndExec.ExecuteDevcontainer([]string{}, devcontainer, vim)
 
 			return nil
