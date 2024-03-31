@@ -35,6 +35,13 @@ func simpleInstall(downloadUrl string, installDir string, fileName string) (stri
 	if err != nil {
 		return filePath, err
 	}
+
+	// 実行権限の付与
+	err = util.AddExecutePermission(filePath)
+	if err != nil {
+		return filePath, err
+	}
+
 	return filePath, nil
 }
 
@@ -52,7 +59,7 @@ var VIM Tool = Tool{
 
 // devcontainer/cli のツール情報
 var DEVCONTAINER Tool = Tool{
-	FileName:    "devcontainer",
+	FileName:    DEVCONTAINER_FILE_NAME,
 	DownloadUrl: DOWNLOAD_URL_DEVCONTAINERS_CLI,
 	installFunc: func(downloadUrl string, installDir string, fileName string) (string, error) {
 		return simpleInstall(downloadUrl, installDir, fileName)

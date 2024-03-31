@@ -9,6 +9,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
+	"github.com/mikoto2000/devcontainer.vim/devcontainreUpAndExec"
 	"github.com/mikoto2000/devcontainer.vim/dockerRun"
 	"github.com/mikoto2000/devcontainer.vim/tools"
 	"github.com/mikoto2000/devcontainer.vim/util"
@@ -82,6 +83,7 @@ func main() {
 			// `devcontainer exec` でコンテナの vim を起動
 			fmt.Println(vim)
 			fmt.Println(devcontainer)
+			devcontainreUpAndExec.ExecuteDevcontainer([]string{}, devcontainer, vim)
 
 			return nil
 		},

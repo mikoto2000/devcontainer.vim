@@ -32,3 +32,17 @@ func IsExists(filePath string) bool {
 	_, err := os.Stat(filePath)
 	return err == nil
 }
+
+func AddExecutePermission(filePath string) error {
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		return err
+	}
+	fileMode := fileInfo.Mode()
+	err = os.Chmod(filePath, fileMode|0111)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
