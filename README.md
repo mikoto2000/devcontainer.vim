@@ -94,9 +94,9 @@ TODO:
         - [x] : `run` コマンドとして実現
 - [ ] : v0.2.0
     - [ ] : `devcontainer.json` の `composeContainer` 対応
-        - [ ] : dockerComposeFile
-        - [ ] : service
-        - [ ] : workspaceFolder
+        - [x] : dockerComposeFile
+        - [x] : service
+        - [x] : workspaceFolder
         - [ ] : remoteUser
 - [ ] : v0.4.0
     - [ ] : `devcontainer.json` の `nonComposeBase` 対応
