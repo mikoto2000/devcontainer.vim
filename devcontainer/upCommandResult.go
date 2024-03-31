@@ -1,4 +1,4 @@
-package devcontainreUpAndExec
+package devcontainer
 
 import (
 	"encoding/json"

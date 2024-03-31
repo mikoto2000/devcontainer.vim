@@ -9,7 +9,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/mikoto2000/devcontainer.vim/devcontainreUpAndExec"
+	"github.com/mikoto2000/devcontainer.vim/devcontainer"
 	"github.com/mikoto2000/devcontainer.vim/dockerRun"
 	"github.com/mikoto2000/devcontainer.vim/tools"
 	"github.com/mikoto2000/devcontainer.vim/util"
@@ -76,7 +76,7 @@ func main() {
 					// `docker run` でコンテナを立てる
 
 					// 必要なファイルのダウンロード
-					vim, err := tools.VIM.Install(appCacheDir)
+					vimPath, err := tools.VIM.Install(appCacheDir)
 					if err != nil {
 						panic(err)
 					}
@@ -90,7 +90,7 @@ func main() {
 					}
 
 					// コンテナ起動
-					dockerRun.ExecuteDockerRun(cCtx.Args().Slice(), vim)
+					dockerRun.ExecuteDockerRun(cCtx.Args().Slice(), vimPath)
 
 					return nil
 				},
@@ -105,18 +105,18 @@ func main() {
 					// devcontainer でコンテナを立てる
 
 					// 必要なファイルのダウンロード
-					vim, err := tools.VIM.Install(appCacheDir)
+					vimPath, err := tools.VIM.Install(appCacheDir)
 					if err != nil {
 						panic(err)
 					}
 
-					devcontainer, err := tools.DEVCONTAINER.Install(appCacheDir)
+					devcontainerPath, err := tools.DEVCONTAINER.Install(appCacheDir)
 					if err != nil {
 						panic(err)
 					}
 
 					// devcontainer を用いたコンテナ立ち上げ
-					devcontainreUpAndExec.ExecuteDevcontainer(cCtx.Args().Slice(), devcontainer, vim)
+					devcontainer.ExecuteDevcontainer(cCtx.Args().Slice(), devcontainerPath, vimPath)
 
 					return nil
 				},

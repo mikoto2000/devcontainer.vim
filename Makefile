@@ -11,7 +11,7 @@ VERSION := 0.0.1
 DEST := ./build
 
 WATCH_SRC := ./main.go \
-						 ./devcontainreUpAndExec/devcontainerUpAndExec.go \
+						 ./devcontainer/devcontainer.go \
 						 ./dockerRun/dockerRun.go \
 						 ./tools/tools.go \
 						 ./tools/tools_windows.go \
