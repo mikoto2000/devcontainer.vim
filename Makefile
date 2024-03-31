@@ -10,29 +10,34 @@ VERSION := 0.0.1
 
 DEST := ./build
 
-SRC := ./main.go
+WATCH_SRC := ./main.go \
+						 ./dockerRun/dockerRun.go \
+						 ./tools/tools.go \
+						 ./tools/tools_windows.go \
+						 ./tools/tools_nowindows.go \
+						 ./util/util.go
 
 ### 開発関連
 # 開発環境の都合で、個別にビルドできるようにしている
 # (Linux コンテナ上でコーディングを行い、 Windows 上で実行することがあるため)
 all: build
 build: build/devcontainer.vim
-build/devcontainer.vim: ${SRC}
+build/devcontainer.vim: ${WATCH_SRC}
 	go build -ldflags=${LD_FLAGS} -trimpath -o ./build/${APP_NAME} ${SRC}
 
 build-all: build-windows build-linux build-darwin
 
 build-windows: build/${WINDOWS_BINARY_NAME}
-build/${WINDOWS_BINARY_NAME}: ./${SRC}
-	GOOS=windows GOARCH=${GOARCH} go build -ldflags=${LD_FLAGS} -trimpath -o build/${WINDOWS_BINARY_NAME} ${SRC}
+build/${WINDOWS_BINARY_NAME}: ${WATCH_SRC}
+	GOOS=windows GOARCH=${GOARCH} go build -ldflags=${LD_FLAGS} -trimpath -o build/${WINDOWS_BINARY_NAME}
 
 build-linux: build/${LINUX_BINARY_NAME}
-build/${LINUX_BINARY_NAME}: main.go
-	GOOS=linux GOARCH=${GOARCH} go build -ldflags=${LD_FLAGS} -trimpath -o build/${LINUX_BINARY_NAME} ${SRC}
+build/${LINUX_BINARY_NAME}: ${WATCH_SRC}
+	GOOS=linux GOARCH=${GOARCH} go build -ldflags=${LD_FLAGS} -trimpath -o build/${LINUX_BINARY_NAME}
 
 build-darwin: build/${DARWIN_BINARY_NAME}
-build/${DARWIN_BINARY_NAME}: main.go
-	GOOS=darwin GOARCH=${GOARCH} go build -ldflags=${LD_FLAGS} -trimpath -o build/${DARWIN_BINARY_NAME} ${SRC}
+build/${DARWIN_BINARY_NAME}: ${WATCH_SRC}
+	GOOS=darwin GOARCH=${GOARCH} go build -ldflags=${LD_FLAGS} -trimpath -o build/${DARWIN_BINARY_NAME}
 
 .PHONY: clean
 clean:
