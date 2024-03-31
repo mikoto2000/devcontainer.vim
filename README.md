@@ -24,6 +24,13 @@ devcontainer.vim run -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim
 devcontainer.vim start .
 ```
 
+`devcontainer` への引数を(`--workspace-folder` 以外は) そのまま利用できるため、
+`.vim` をバインドしたい場合、以下のように指定する。
+
+```sh
+devcontainer.vim start --mount "type=bind,source=$HOME/.vim,target=/root/.vim" ./
+```
+
 
 ## Requirements:
 
