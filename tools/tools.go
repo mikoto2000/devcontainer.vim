@@ -10,60 +10,63 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/util"
 )
 
-type Tools struct {
-	Vim string
-}
-
+// ツール情報
 type Tool struct {
-	Name    string
-	Install func(installDir string) (string, error)
+	FileName    string
+	DownloadUrl string
+	installFunc func(downloadUrl string, installDir string, name string) (string, error)
 }
 
-const APP_NAME = "devcontainer.vim"
+// ツールのインストールを実行
+func (t Tool) Install(installDir string) (string, error) {
+	return t.installFunc(t.DownloadUrl, installDir, t.FileName)
+}
 
-const VIM_TAG_NAME = "v9.1.0181"
-const VIM_DOWNLOAD_URL = "https://github.com/vim/vim-appimage/releases/download/%s/"
-const VIM_FILE_NAME = "Vim-%s.glibc2.29-x86_64.AppImage"
+// 単純なファイル配置でインストールが完了するもののインストール処理。
+//
+// downloadUrl からファイルをダウンロードし、 installDir に fileName とう名前で配置する。
+func simpleInstall(downloadUrl string, installDir string, fileName string) (string, error) {
 
+	// ツールの配置先組み立て
+	filePath := filepath.Join(installDir, fileName)
+
+	// ツールのダウンロード
+	err := download(downloadUrl, filePath)
+	if err != nil {
+		return filePath, err
+	}
+	return filePath, nil
+}
+
+// Vim のダウンロード URL
+const VIM_DOWNLOAD_URL = "https://github.com/vim/vim-appimage/releases/download/v9.1.0181/Vim-v9.1.0181.glibc2.29-x86_64.AppImage"
+
+// Vim のツール情報
 var VIM Tool = Tool{
-	Name: "vim",
-	Install: func(installDir string) (string, error) {
-
-		// Vim 関連の文字列組み立て
-		vimFileName := fmt.Sprintf(VIM_FILE_NAME, VIM_TAG_NAME)
-		vimFilePath := filepath.Join(installDir, vimFileName)
-
-		// vim-appimage のダウンロード
-		vimDownloadUrl := fmt.Sprintf(VIM_DOWNLOAD_URL+vimFileName, VIM_TAG_NAME)
-		err := download(vimDownloadUrl, vimFilePath)
-		if err != nil {
-			return vimFilePath, err
-		}
-		return vimFilePath, nil
+	FileName:    "vim",
+	DownloadUrl: VIM_DOWNLOAD_URL,
+	installFunc: func(downloadUrl string, installDir string, fileName string) (string, error) {
+		return simpleInstall(downloadUrl, installDir, fileName)
 	},
 }
 
+// devcontainer/cli のツール情報
 var DEVCONTAINER Tool = Tool{
-	Name: "devcontainer",
-	Install: func(installDir string) (string, error) {
-		devcontainerFileName := filepath.Base(DOWNLOAD_URL_DEVCONTAINERS_CLI)
-		devcontainerFilePath := filepath.Join(installDir, devcontainerFileName)
-
-		// devcontainers-cli のダウンロード
-		err := download(DOWNLOAD_URL_DEVCONTAINERS_CLI, devcontainerFilePath)
-		if err != nil {
-			panic(err)
-		}
-
-		return devcontainerFilePath, nil
+	FileName:    "devcontainer",
+	DownloadUrl: DOWNLOAD_URL_DEVCONTAINERS_CLI,
+	installFunc: func(downloadUrl string, installDir string, fileName string) (string, error) {
+		return simpleInstall(downloadUrl, installDir, fileName)
 	},
 }
 
+// ファイルダウンロード処理。
+//
+// downloadUrl からファイルをダウンロードし、 destPath へ配置する。
 func download(downloadUrl string, destPath string) error {
 	if util.IsExists(destPath) {
 		fmt.Printf("%s aleady exist, use this.\n", filepath.Base(destPath))
 	} else {
-		fmt.Printf("Download %s from %s ...", filepath.Base(downloadUrl), downloadUrl)
+		fmt.Printf("Download %s from %s ...", filepath.Base(destPath), downloadUrl)
 
 		// HTTP GETリクエストを送信
 		resp, err := http.Get(downloadUrl)
