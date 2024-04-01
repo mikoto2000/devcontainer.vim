@@ -40,6 +40,10 @@ build-darwin: build/${DARWIN_BINARY_NAME}
 build/${DARWIN_BINARY_NAME}: ${WATCH_SRC}
 	GOOS=darwin GOARCH=${GOARCH} go build -ldflags=${LD_FLAGS} -trimpath -o build/${DARWIN_BINARY_NAME}
 
+.PHONY: fmt
+fmt:
+	go fmt ./...
+
 .PHONY: clean
 clean:
 	rm -rf build
