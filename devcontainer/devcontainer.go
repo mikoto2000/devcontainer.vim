@@ -40,15 +40,15 @@ func ExecuteDevcontainer(args []string, devcontainerFilePath string, vimFilePath
 		panic(err)
 	}
 
-	upCommandresult, err := UnmarshalUpCommandResult(stdout)
+	upCommandResult, err := UnmarshalUpCommandResult(stdout)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("finished devcontainer up: %s\n", upCommandresult)
+	fmt.Printf("finished devcontainer up: %s\n", upCommandResult)
 
 	// コンテナへ appimage を転送して実行権限を追加
 	// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
-	containerId := upCommandresult.ContainerId
+	containerId := upCommandResult.ContainerId
 	dockerCpArgs := []string{"cp", vimFilePath, containerId + ":/"}
 	fmt.Printf("Copy AppImage: `%s \"%s\"` ...", CONTAINER_COMMAND, strings.Join(dockerCpArgs, "\" \""))
 	copyResult, err := exec.Command(CONTAINER_COMMAND, dockerCpArgs...).CombinedOutput()
@@ -76,9 +76,9 @@ func ExecuteDevcontainer(args []string, devcontainerFilePath string, vimFilePath
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	dockerVimArgs := []string{"exec", "-it", containerId, "/" + vimFileName, "--appimage-extract-and-run"}
-	fmt.Printf("Start vim: `%s \"%s\"`\n", CONTAINER_COMMAND, strings.Join(dockerVimArgs, "\" \""))
-	dockerExec := exec.CommandContext(ctx, CONTAINER_COMMAND, dockerVimArgs...)
+	dockerVimArgs := []string{"exec", "--container-id", containerId, "--workspace-folder", workspaceFolder, "/" + vimFileName, "--appimage-extract-and-run"}
+	fmt.Printf("Start vim: `%s \"%s\"`\n", devcontainerFilePath, strings.Join(dockerVimArgs, "\" \""))
+	dockerExec := exec.CommandContext(ctx, devcontainerFilePath, dockerVimArgs...)
 	dockerExec.Stdin = os.Stdin
 	dockerExec.Stdout = os.Stdout
 	dockerExec.Stderr = os.Stderr
