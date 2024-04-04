@@ -31,16 +31,6 @@ devcontainer.vim start .
 devcontainer.vim start --mount "type=bind,source=$HOME/.vim,target=/root/.vim" ./
 ```
 
-### Limitation:
-
-v0.2.0 時点では docker compose をつかった環境以外は実行できません。
-
-`devcontainer.json` で `image` を設定していると、コンテナの起動に失敗します。
-
-`docker-compose.yml` を準備したうえで、 `devcontainer.json` では `dockerComposeFile` を定義してください。
-
-See: https://github.com/mikoto2000/devcontainers-cli/issues/1
-
 
 ## Requirements:
 
@@ -58,7 +48,8 @@ TODO
 
 ### binary download
 
-TODO
+[Latest version](https://github.com/mikoto2000/devcontainer.vim/releases/latest)
+
 
 ### go install
 
@@ -111,8 +102,6 @@ TODO:
 - [x] : v0.3.0
     - [x] : `devcontainer.json` の `nonComposeBase` 対応
 - [ ] : v0.4.0
-    - [ ] : インストール済みの `devcontainer` を利用するオプションを追加
-- [ ] : v0.5.0
     - [ ] : down コマンドの実装
         - [ ] : `composeContainer`
             - `docker compose ps --format json` して `Project` の値を取得し、 `docker compose -p ${PROJECT_NAME} down` する
