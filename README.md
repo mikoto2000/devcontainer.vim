@@ -114,6 +114,12 @@ TODO:
 - [ ] : v0.4.0
     - [ ] : インストール済みの `devcontainer` を利用するオプションを追加
 - [ ] : v0.5.0
+    - [ ] : down コマンドの実装
+        - [ ] : `composeContainer`
+            - `docker compose ps --format json` して `Project` の値を取得し、 `docker compose -p ${PROJECT_NAME} down` する
+        - [ ] : `nonComposeBase`
+            - `docker ps --format json` して `Labels` 内に `devcontainer.local_folder=xxx` が含まれており、 `xxx` が現在のディレクトリと一致するものを探し、そいつの ID で `docker rm -f ${CONTAINER_ID}` する
+- [ ] : v0.5.0
     - [ ] : 暗黙の docker option を追加できるようにする
         - [ ] : 設定ファイルに暗黙のオプション設定を追加し、 `run` サブコマンド実行時にそれを読み込む
         - [ ] : 設定ファイルを開くサブコマンドを追加
