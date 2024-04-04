@@ -108,9 +108,8 @@ TODO:
         - [x] : service
         - [x] : workspaceFolder
         - [x] : remoteUser
-- [ ] : v0.3.0
-    - [ ] : `devcontainer.json` の `nonComposeBase` 対応
-        - どこまで対応するかは未検討...
+- [x] : v0.3.0
+    - [x] : `devcontainer.json` の `nonComposeBase` 対応
 - [ ] : v0.4.0
     - [ ] : インストール済みの `devcontainer` を利用するオプションを追加
 - [ ] : v0.5.0
