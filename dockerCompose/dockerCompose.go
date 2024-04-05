@@ -31,7 +31,7 @@ func Ps(workspaceFolder string) (string, error) {
 
 	dockerComposePsCommand := exec.Command("docker", "compose", "ps", "--format", "json")
 	stdout, _ := dockerComposePsCommand.Output()
-	return string(stdout), nil
+	return string(stdout), err
 }
 
 // `docker compose -p ${projectName} down` を実行する。

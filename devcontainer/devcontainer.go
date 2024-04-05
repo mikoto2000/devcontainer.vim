@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/mikoto2000/devcontainer.vim/docker"
 	"github.com/mikoto2000/devcontainer.vim/dockerCompose"
 )
 
@@ -142,8 +143,18 @@ func Down(args []string, devcontainerFilePath string) {
 			panic(err)
 		}
 	} else {
-		fmt.Println("single container down not implements...")
-	}
+		// ワークスペースに対応するコンテナを探して ID を取得する
+		containerId, err := docker.GetContainerIdFromWorkspaceFolder(workspaceFolder)
+		if err != nil {
+			panic(err)
+		}
 
+		// 取得したコンテナに対して rm を行う
+		fmt.Printf("Run `docker rm -f %s down`(Async)\n", containerId)
+		err = docker.Rm(containerId)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
