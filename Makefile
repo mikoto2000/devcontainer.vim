@@ -12,7 +12,10 @@ DEST := ./build
 
 WATCH_SRC := ./main.go \
 						 ./devcontainer/devcontainer.go \
-						 ./dockerRun/dockerRun.go \
+						 ./devcontainer/upCommandResult.go \
+						 ./docker/docker.go \
+						 ./dockerCompose/dockerCompose.go \
+						 ./dockerCompose/dockerComposePsResult.go \
 						 ./tools/tools.go \
 						 ./tools/tools_windows.go \
 						 ./tools/tools_nowindows.go \

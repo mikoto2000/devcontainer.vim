@@ -1,4 +1,4 @@
-package dockerRun
+package docker
 
 import (
 	"context"
@@ -15,7 +15,7 @@ const CONTAINER_COMMAND = "docker"
 var DOCKER_RUN_ARGS_PREFIX = []string{"run", "-d", "--rm"}
 var DOCKER_RUN_ARGS_SUFFIX = []string{"sh", "-c", "trap \"exit 0\" TERM; sleep infinity & wait"}
 
-func ExecuteDockerRun(args []string, vimFilePath string) {
+func Run(args []string, vimFilePath string) {
 	vimFileName := filepath.Base(vimFilePath)
 
 	// バックグラウンドでコンテナを起動
@@ -87,4 +87,38 @@ func ExecuteDockerRun(args []string, vimFilePath string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// workspaceFolder で指定したディレクトリに対応するコンテナのコンテナ ID を返却する
+func GetContainerIdFromWorkspaceFolder(workspaceFolder string) (string, error) {
+
+	// `devcontainer.local_folder=${workspaceFolder}` が含まれている行を探す
+
+	workspaceFilderAbs, err := filepath.Abs(workspaceFolder)
+	if err != nil {
+		return "", err
+	}
+
+	psResult, err := Ps("label=devcontainer.local_folder=" + workspaceFilderAbs)
+
+	id, err := GetId(psResult)
+	if err != nil {
+		return "", err
+	}
+
+	return id, nil
+}
+
+// `docker ps --format json` コマンドを実行する。
+func Ps(filter string) (string, error) {
+	dockerPsCommand := exec.Command("docker", "ps", "--format", "json", "--filter", filter)
+	stdout, err := dockerPsCommand.Output()
+	return string(stdout), err
+}
+
+// `docker rm -f ${CONTAINER_ID}` コマンドを実行する。
+func Rm(containerId string) error {
+	dockerRmCommand := exec.Command("docker", "rm", "-f", containerId)
+	err := dockerRmCommand.Start()
+	return err
 }

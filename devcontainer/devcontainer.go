@@ -9,6 +9,9 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+
+	"github.com/mikoto2000/devcontainer.vim/docker"
+	"github.com/mikoto2000/devcontainer.vim/dockerCompose"
 )
 
 const CONTAINER_COMMAND = "docker"
@@ -93,4 +96,64 @@ func ExecuteDevcontainer(args []string, devcontainerFilePath string, vimFilePath
 	}
 
 	// コンテナ停止は別途 down コマンドで行う
+}
+
+func Down(args []string, devcontainerFilePath string) {
+
+	// `devcontainer read-configuration` で docker compose の利用判定
+
+	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
+	workspaceFolder := args[len(args)-1]
+	readConfigurationArgs := []string{"read-configuration", "--workspace-folder", workspaceFolder}
+	fmt.Printf("run devcontainer: `%s %s\n", devcontainerFilePath, strings.Join(readConfigurationArgs, " "))
+	devconteinerReadConfigurationCommand := exec.Command(devcontainerFilePath, readConfigurationArgs...)
+
+	stdout, _ := devconteinerReadConfigurationCommand.Output()
+	stdoutString := string(stdout)
+
+	if stdoutString == "" {
+		fmt.Printf("This directory is not a workspace for devcontainer: %s\n", workspaceFolder)
+		os.Exit(0)
+	}
+
+	// `dockerComposeFile` が含まれているかを確認する
+	// 含まれているなら docker compose によるコンテナ構築がされている
+	if strings.Contains(stdoutString, "dockerComposeFile") {
+
+		// docker compose ps コマンドで compose の情報取得
+		dockerComposePsResultString, err := dockerCompose.Ps(workspaceFolder)
+		if err != nil {
+			panic(err)
+		}
+		if dockerComposePsResultString == "" {
+			fmt.Println("devcontainer already downed.")
+			os.Exit(0)
+		}
+
+		// docker compose ps コマンドの結果からプロジェクト名を取得
+		projectName, err := dockerCompose.GetProjectName(dockerComposePsResultString)
+		if err != nil {
+			panic(err)
+		}
+
+		// プロジェクト名を使って docker compose down を実行
+		fmt.Printf("Run `docker compose -p %s down`(Async)\n", projectName)
+		err = dockerCompose.Down(projectName)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		// ワークスペースに対応するコンテナを探して ID を取得する
+		containerId, err := docker.GetContainerIdFromWorkspaceFolder(workspaceFolder)
+		if err != nil {
+			panic(err)
+		}
+
+		// 取得したコンテナに対して rm を行う
+		fmt.Printf("Run `docker rm -f %s down`(Async)\n", containerId)
+		err = docker.Rm(containerId)
+		if err != nil {
+			panic(err)
+		}
+	}
 }

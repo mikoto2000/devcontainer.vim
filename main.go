@@ -10,7 +10,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/mikoto2000/devcontainer.vim/devcontainer"
-	"github.com/mikoto2000/devcontainer.vim/dockerRun"
+	"github.com/mikoto2000/devcontainer.vim/docker"
 	"github.com/mikoto2000/devcontainer.vim/tools"
 	"github.com/mikoto2000/devcontainer.vim/util"
 )
@@ -90,7 +90,7 @@ func main() {
 					}
 
 					// コンテナ起動
-					dockerRun.ExecuteDockerRun(cCtx.Args().Slice(), vimPath)
+					docker.Run(cCtx.Args().Slice(), vimPath)
 
 					return nil
 				},
@@ -117,6 +117,27 @@ func main() {
 
 					// devcontainer を用いたコンテナ立ち上げ
 					devcontainer.ExecuteDevcontainer(cCtx.Args().Slice(), devcontainerPath, vimPath)
+
+					return nil
+				},
+			},
+			{
+				Name:            "down",
+				Usage:           "Stop and remove devcontainers.",
+				UsageText:       "devcontainer.vim down WORKSPACE_FOLDER",
+				HideHelp:        true,
+				SkipFlagParsing: true,
+				Action: func(cCtx *cli.Context) error {
+					// devcontainer でコンテナを立てる
+
+					// 必要なファイルのダウンロード
+					devcontainerPath, err := tools.DEVCONTAINER.Install(appCacheDir)
+					if err != nil {
+						panic(err)
+					}
+
+					// devcontainer を用いたコンテナ終了
+					devcontainer.Down(cCtx.Args().Slice(), devcontainerPath)
 
 					return nil
 				},

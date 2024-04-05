@@ -2,6 +2,8 @@
 
 コンテナ上で Vim を使った開発をするためのツール。
 
+VSCode Dev Container の Vim 版を目指しています。
+
 ## Usage:
 
 ### `devcontainer.json` が存在しないプロジェクトで、ワンショットで環境を立ち上げる
@@ -18,7 +20,11 @@ devcontainer.vim run -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim
 
 ### `devcontainer.json` が存在する場合
 
-カレントディレクトリから `devcontainer.json` を検索し、読み込み、環境を立ち上げ、Vim を転送し、起動する。
+#### 環境の起動
+
+`start` サブコマンドで、環境を立ち上げ、Vim を転送し、起動できる。
+
+たとえば、カレントディレクトリから `devcontainer.json` を検索し、読み込み、環境を立ち上げ、Vim を転送し、起動する場合は以下。
 
 ```sh
 devcontainer.vim start .
@@ -28,9 +34,22 @@ devcontainer.vim start .
 `.vim` をバインドしたい場合、以下のように指定する。
 
 ```sh
-devcontainer.vim start --mount "type=bind,source=$HOME/.vim,target=/root/.vim" ./
+devcontainer.vim start --mount "type=bind,source=$HOME/.vim,target=/root/.vim" .
 ```
 
+
+#### 環境の停止
+
+TODO:
+
+
+#### 環境の削除
+
+`down` サブコマンドで環境の削除ができる。
+
+```sh
+devcontainer.vim down .
+```
 
 ## Requirements:
 
@@ -101,11 +120,13 @@ TODO:
         - [x] : remoteUser
 - [x] : v0.3.0
     - [x] : `devcontainer.json` の `nonComposeBase` 対応
-- [ ] : v0.4.0
-    - [ ] : down コマンドの実装
-        - [ ] : `composeContainer`
+- [x] : v0.4.0
+    - [x] : down コマンドの実装
+        - [x] : `composeContainer` と `nonComposeBase` の判定
+            - [x] : `devcontainer read-configuration` の結果に `dockerComposeFile` が含まれているかで判定
+        - [x] : `composeContainer` の場合
             - `docker compose ps --format json` して `Project` の値を取得し、 `docker compose -p ${PROJECT_NAME} down` する
-        - [ ] : `nonComposeBase`
+        - [x] : `nonComposeBase` の場合
             - `docker ps --format json` して `Labels` 内に `devcontainer.local_folder=xxx` が含まれており、 `xxx` が現在のディレクトリと一致するものを探し、そいつの ID で `docker rm -f ${CONTAINER_ID}` する
 - [ ] : v0.5.0
     - [ ] : 暗黙の docker option を追加できるようにする
@@ -125,6 +146,8 @@ TODO:
     - [ ] : キャッシュクリアコマンド
     - [ ] : アンインストールコマンド
     - [ ] : Vim アップデートコマンド
+- [ ] : v0.6.0
+    - [ ] : stop コマンドの実装
 
 
 ## License:
