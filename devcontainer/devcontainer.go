@@ -8,8 +8,9 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"strconv"
 	"strings"
+
+	"github.com/mikoto2000/devcontainer.vim/dockerCompose"
 )
 
 const CONTAINER_COMMAND = "docker"
@@ -102,8 +103,6 @@ func Down(args []string, devcontainerFilePath string) {
 
 	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
 	workspaceFolder := args[len(args)-1]
-
-	// 末尾以外のものはそのまま `devcontainer up` への引数として渡す
 	readConfigurationArgs := []string{"read-configuration", "--workspace-folder", workspaceFolder}
 	fmt.Printf("run devcontainer: `%s %s\n", devcontainerFilePath, strings.Join(readConfigurationArgs, " "))
 	devconteinerReadConfigurationCommand := exec.Command(devcontainerFilePath, readConfigurationArgs...)
@@ -118,7 +117,33 @@ func Down(args []string, devcontainerFilePath string) {
 
 	// `dockerComposeFile` が含まれているかを確認する
 	// 含まれているなら docker compose によるコンテナ構築がされている
-	isCompose := strings.Contains(stdoutString, "dockerComposeFile")
+	if strings.Contains(stdoutString, "dockerComposeFile") {
 
-	fmt.Printf("isCompose: %s\n", strconv.FormatBool(isCompose))
+		// docker compose ps コマンドで compose の情報取得
+		dockerComposePsResultString, err := dockerCompose.Ps(workspaceFolder)
+		if err != nil {
+			panic(err)
+		}
+		if dockerComposePsResultString == "" {
+			fmt.Println("devcontainer already downed.")
+			os.Exit(0)
+		}
+
+		// docker compose ps コマンドの結果からプロジェクト名を取得
+		projectName, err := dockerCompose.GetProjectName(dockerComposePsResultString)
+		if err != nil {
+			panic(err)
+		}
+
+		// プロジェクト名を使って docker compose down を実行
+		fmt.Printf("Run `docker compose -p %s down`(Async)\n", projectName)
+		err = dockerCompose.Down(projectName)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		fmt.Println("single container down not implements...")
+	}
+
 }
+
