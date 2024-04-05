@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -93,4 +94,31 @@ func ExecuteDevcontainer(args []string, devcontainerFilePath string, vimFilePath
 	}
 
 	// コンテナ停止は別途 down コマンドで行う
+}
+
+func Down(args []string, devcontainerFilePath string) {
+
+	// `devcontainer read-configuration` で docker compose の利用判定
+
+	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
+	workspaceFolder := args[len(args)-1]
+
+	// 末尾以外のものはそのまま `devcontainer up` への引数として渡す
+	readConfigurationArgs := []string{"read-configuration", "--workspace-folder", workspaceFolder}
+	fmt.Printf("run devcontainer: `%s %s\n", devcontainerFilePath, strings.Join(readConfigurationArgs, " "))
+	devconteinerReadConfigurationCommand := exec.Command(devcontainerFilePath, readConfigurationArgs...)
+
+	stdout, _ := devconteinerReadConfigurationCommand.Output()
+	stdoutString := string(stdout)
+
+	if stdoutString == "" {
+		fmt.Printf("This directory is not a workspace for devcontainer: %s\n", workspaceFolder)
+		os.Exit(0)
+	}
+
+	// `dockerComposeFile` が含まれているかを確認する
+	// 含まれているなら docker compose によるコンテナ構築がされている
+	isCompose := strings.Contains(stdoutString, "dockerComposeFile")
+
+	fmt.Printf("isCompose: %s\n", strconv.FormatBool(isCompose))
 }

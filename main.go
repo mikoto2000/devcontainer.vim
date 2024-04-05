@@ -121,6 +121,27 @@ func main() {
 					return nil
 				},
 			},
+			{
+				Name:            "down",
+				Usage:           "Stop and remove devcontainers.",
+				UsageText:       "devcontainer.vim down WORKSPACE_FOLDER",
+				HideHelp:        true,
+				SkipFlagParsing: true,
+				Action: func(cCtx *cli.Context) error {
+					// devcontainer でコンテナを立てる
+
+					// 必要なファイルのダウンロード
+					devcontainerPath, err := tools.DEVCONTAINER.Install(appCacheDir)
+					if err != nil {
+						panic(err)
+					}
+
+					// devcontainer を用いたコンテナ終了
+					devcontainer.Down(cCtx.Args().Slice(), devcontainerPath)
+
+					return nil
+				},
+			},
 		},
 	})
 

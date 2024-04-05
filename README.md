@@ -103,9 +103,11 @@ TODO:
     - [x] : `devcontainer.json` の `nonComposeBase` 対応
 - [ ] : v0.4.0
     - [ ] : down コマンドの実装
-        - [ ] : `composeContainer`
+        - [ ] : `composeContainer` と `nonComposeBase` の判定
+            - [ ] : `devcontainer read-configuration` の結果に `dockerComposeFile` が含まれているかで判定
+        - [ ] : `composeContainer` の場合
             - `docker compose ps --format json` して `Project` の値を取得し、 `docker compose -p ${PROJECT_NAME} down` する
-        - [ ] : `nonComposeBase`
+        - [ ] : `nonComposeBase` の場合
             - `docker ps --format json` して `Labels` 内に `devcontainer.local_folder=xxx` が含まれており、 `xxx` が現在のディレクトリと一致するものを探し、そいつの ID で `docker rm -f ${CONTAINER_ID}` する
 - [ ] : v0.5.0
     - [ ] : 暗黙の docker option を追加できるようにする
