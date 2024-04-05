@@ -60,4 +60,3 @@ func UnmarshalPsCommandResult(data []byte) (PsCommandResult, error) {
 
 	return result, nil
 }
-

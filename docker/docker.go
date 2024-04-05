@@ -90,7 +90,7 @@ func Run(args []string, vimFilePath string) {
 }
 
 // workspaceFolder で指定したディレクトリに対応するコンテナのコンテナ ID を返却する
-func GetContainerIdFromWorkspaceFolder(workspaceFolder string) (string, error){
+func GetContainerIdFromWorkspaceFolder(workspaceFolder string) (string, error) {
 
 	// `devcontainer.local_folder=${workspaceFolder}` が含まれている行を探す
 
@@ -99,7 +99,7 @@ func GetContainerIdFromWorkspaceFolder(workspaceFolder string) (string, error){
 		return "", err
 	}
 
-	psResult, err := Ps("label=devcontainer.local_folder="+workspaceFilderAbs)
+	psResult, err := Ps("label=devcontainer.local_folder=" + workspaceFilderAbs)
 
 	id, err := GetId(psResult)
 	if err != nil {
@@ -110,7 +110,7 @@ func GetContainerIdFromWorkspaceFolder(workspaceFolder string) (string, error){
 }
 
 // `docker ps --format json` コマンドを実行する。
-func Ps(filter string) (string, error){
+func Ps(filter string) (string, error) {
 	dockerPsCommand := exec.Command("docker", "ps", "--format", "json", "--filter", filter)
 	stdout, err := dockerPsCommand.Output()
 	return string(stdout), err
@@ -122,4 +122,3 @@ func Rm(containerId string) error {
 	err := dockerRmCommand.Start()
 	return err
 }
-

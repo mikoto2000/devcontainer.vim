@@ -157,4 +157,3 @@ func Down(args []string, devcontainerFilePath string) {
 		}
 	}
 }
-
