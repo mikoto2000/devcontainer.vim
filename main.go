@@ -10,7 +10,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/mikoto2000/devcontainer.vim/devcontainer"
-	"github.com/mikoto2000/devcontainer.vim/dockerRun"
+	"github.com/mikoto2000/devcontainer.vim/docker"
 	"github.com/mikoto2000/devcontainer.vim/tools"
 	"github.com/mikoto2000/devcontainer.vim/util"
 )
@@ -90,7 +90,7 @@ func main() {
 					}
 
 					// コンテナ起動
-					dockerRun.ExecuteDockerRun(cCtx.Args().Slice(), vimPath)
+					docker.Run(cCtx.Args().Slice(), vimPath)
 
 					return nil
 				},
