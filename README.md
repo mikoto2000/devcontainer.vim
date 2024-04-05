@@ -2,6 +2,8 @@
 
 コンテナ上で Vim を使った開発をするためのツール。
 
+VSCode Dev Container の Vim 版を目指しています。
+
 ## Usage:
 
 ### `devcontainer.json` が存在しないプロジェクトで、ワンショットで環境を立ち上げる
