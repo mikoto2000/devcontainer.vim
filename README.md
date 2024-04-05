@@ -18,7 +18,11 @@ devcontainer.vim run -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim
 
 ### `devcontainer.json` が存在する場合
 
-カレントディレクトリから `devcontainer.json` を検索し、読み込み、環境を立ち上げ、Vim を転送し、起動する。
+#### 環境の起動
+
+`start` サブコマンドで、環境を立ち上げ、Vim を転送し、起動できる。
+
+たとえば、カレントディレクトリから `devcontainer.json` を検索し、読み込み、環境を立ち上げ、Vim を転送し、起動する場合は以下。
 
 ```sh
 devcontainer.vim start .
@@ -28,9 +32,22 @@ devcontainer.vim start .
 `.vim` をバインドしたい場合、以下のように指定する。
 
 ```sh
-devcontainer.vim start --mount "type=bind,source=$HOME/.vim,target=/root/.vim" ./
+devcontainer.vim start --mount "type=bind,source=$HOME/.vim,target=/root/.vim" .
 ```
 
+
+#### 環境の停止
+
+TODO:
+
+
+#### 環境の削除
+
+`down` サブコマンドで環境の削除ができる。
+
+```sh
+devcontainer.vim down .
+```
 
 ## Requirements:
 
@@ -127,6 +144,8 @@ TODO:
     - [ ] : キャッシュクリアコマンド
     - [ ] : アンインストールコマンド
     - [ ] : Vim アップデートコマンド
+- [ ] : v0.6.0
+    - [ ] : stop コマンドの実装
 
 
 ## License:
