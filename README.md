@@ -75,13 +75,6 @@ PROJECT_ROOT/
 {
   "name":"Go",
   "image":"mcr.microsoft.com/devcontainers/go:1-1.22-bookworm",
-  "mounts": [
-    {
-      "type": "bind",
-      "source": "${localEnv:HOME}/.vim",
-      "target": "/home/vscode/.vim"
-    }
-  ],
   "features":{},
   "remoteUser":"vscode"
 }
@@ -94,7 +87,7 @@ PROJECT_ROOT/
   "mounts": [
     {
       "type": "bind",
-      "source": "${localEnv:HOME}/.cache/devcontainer.vim",
+      "source": "${localEnv:HOME}/.vim",
       "target": "/home/vscode/.vim"
     }
   ]
