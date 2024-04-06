@@ -51,6 +51,57 @@ TODO:
 devcontainer.vim down .
 ```
 
+
+## Customize:
+
+`.vim` や `vimfiles` など、ホストからバインドマンとさせたいものがあるが、
+VSCode 等の他ツール向けに作成した `devcontainer.json` に devcontainer.vim 専用の `mounts` 定義を付けることはしたくない。
+
+そのため、別途 devcontainer.vim のみが読み込むファイルを `.devcontainer/devcontainer.vim.json` に配置する。
+devcontainer.vim は、 `.devcontainer/devcontainer.json` と `.devcontainer/devcontainer.vim.json` をマージして実行する。
+
+```
+PROJECT_ROOT/
+    +- .devcontainer/
+    |   +- devcontainer.json      # 普通の devcontainer 向けの設定を記述
+    |   +- devcontainer.vim.json  # .vim のマウントなど、 devcontainer.vim のみで利用したい設定を記述
+    |
+    +- ...(other project files)
+```
+
+`devcontainer.json`:
+
+```json
+{
+  "name":"Go",
+  "image":"mcr.microsoft.com/devcontainers/go:1-1.22-bookworm",
+  "mounts": [
+    {
+      "type": "bind",
+      "source": "${localEnv:HOME}/.vim",
+      "target": "/home/vscode/.vim"
+    }
+  ],
+  "features":{},
+  "remoteUser":"vscode"
+}
+```
+
+`devcontainer.vim.json`:
+
+```json
+{
+  "mounts": [
+    {
+      "type": "bind",
+      "source": "${localEnv:HOME}/.cache/devcontainer.vim",
+      "target": "/home/vscode/.vim"
+    }
+  ]
+}
+```
+
+
 ## Requirements:
 
 以下コマンドがインストール済みで、PATH が通っていること。
@@ -129,10 +180,8 @@ TODO:
         - [x] : `nonComposeBase` の場合
             - `docker ps --format json` して `Labels` 内に `devcontainer.local_folder=xxx` が含まれており、 `xxx` が現在のディレクトリと一致するものを探し、そいつの ID で `docker rm -f ${CONTAINER_ID}` する
 - [ ] : v0.5.0
-    - [ ] : 暗黙の docker option を追加できるようにする
-        - [ ] : 設定ファイルに暗黙のオプション設定を追加し、 `run` サブコマンド実行時にそれを読み込む
-        - [ ] : 設定ファイルを開くサブコマンドを追加
-            - [ ] : 関連付けられているファイルで開けるなら開く、そうでなければパスを表示
+    - [ ] : devcontainer.vim のみが利用する設定に関する仕組みを追加
+        - [ ] : `devcontainer.json` と `devcontainer.vim.json` をマージしてからコンテナを起動する
     - [ ] : リリーススクリプト・リリースワークフローを作る
 - [ ] : v0.6.0
     - [ ] : クリップボード転送機能追加
@@ -146,7 +195,7 @@ TODO:
     - [ ] : キャッシュクリアコマンド
     - [ ] : アンインストールコマンド
     - [ ] : Vim アップデートコマンド
-- [ ] : v0.6.0
+- [ ] : v0.8.0
     - [ ] : stop コマンドの実装
 
 
