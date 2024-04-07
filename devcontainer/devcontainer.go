@@ -130,8 +130,11 @@ func Down(args []string, devcontainerFilePath string) {
 			os.Exit(0)
 		}
 
+		// 必要なのは最初の 1 行だけなので、最初の 1 行のみを取得
+		dockerComposePsResultFirstItemString := strings.Split(dockerComposePsResultString, "\n")[0]
+
 		// docker compose ps コマンドの結果からプロジェクト名を取得
-		projectName, err := dockerCompose.GetProjectName(dockerComposePsResultString)
+		projectName, err := dockerCompose.GetProjectName(dockerComposePsResultFirstItemString)
 		if err != nil {
 			panic(err)
 		}
