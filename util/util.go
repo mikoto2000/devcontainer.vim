@@ -46,3 +46,10 @@ func AddExecutePermission(filePath string) error {
 
 	return nil
 }
+
+// TODO: 実装
+func CreateConfigFileForDevcontainerVim(cacheDir string, configFilePath string, additionalConfigFilePath string) (string, error) {
+
+	// TODO: 設定管理フォルダに JSON を配置
+	return configFilePath, nil
+}

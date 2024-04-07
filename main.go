@@ -110,13 +110,21 @@ func main() {
 						panic(err)
 					}
 
-					devcontainerPath, err := tools.DEVCONTAINER.Install(appCacheDir)
+					devcontainerFilePath, err := tools.DEVCONTAINER.Install(appCacheDir)
+					if err != nil {
+						panic(err)
+					}
+
+					// コマンドライン引数の末尾は `--workspace-folder` の値として使う
+					args := cCtx.Args().Slice()
+					workspaceFolder := args[len(args)-1]
+					configFilePath, err := createConfigFile(devcontainerFilePath, workspaceFolder, appCacheDir)
 					if err != nil {
 						panic(err)
 					}
 
 					// devcontainer を用いたコンテナ立ち上げ
-					devcontainer.ExecuteDevcontainer(cCtx.Args().Slice(), devcontainerPath, vimPath)
+					devcontainer.ExecuteDevcontainer(args, devcontainerFilePath, vimPath, configFilePath)
 
 					return nil
 				},
@@ -150,4 +158,30 @@ func main() {
 	if err != nil {
 		os.Exit(1)
 	}
+}
+
+// devcontainer.vim 起動時に使用する設定ファイルを作成する
+// TODO: マージしてキャッシュディレクトリに格納
+func createConfigFile(devcontainerFilePath string, workspaceFolder string, appCacheDir string) (string, error) {
+	// devcontainer の設定ファイルパス取得
+	configFilePath, err := devcontainer.GetConfigurationFilePath(devcontainerFilePath, workspaceFolder)
+	if err != nil {
+		return "", err
+	}
+
+	// devcontainer.vim 用の追加設定ファイルを探す
+	isExists, additionalConfigFilePath, err := devcontainer.FindAdditionalConfiguration(configFilePath)
+	if err != nil {
+		panic(err)
+	}
+
+	if isExists {
+		fmt.Printf("Found additional config: `%s`.\n", additionalConfigFilePath)
+		// TODO: マージ
+	}
+
+	// TODO: 設定管理フォルダに JSON を配置
+	mergedConfigFilePath, err := util.CreateConfigFileForDevcontainerVim(appCacheDir, configFilePath, additionalConfigFilePath)
+
+	return mergedConfigFilePath, err
 }

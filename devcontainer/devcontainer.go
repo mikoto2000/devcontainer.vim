@@ -19,29 +19,17 @@ const CONTAINER_COMMAND = "docker"
 
 var DEVCONTAINRE_ARGS_PREFIX = []string{"up"}
 
-func ExecuteDevcontainer(args []string, devcontainerFilePath string, vimFilePath string) {
+func ExecuteDevcontainer(args []string, devcontainerFilePath string, vimFilePath string, configFilePath string) {
 	vimFileName := filepath.Base(vimFilePath)
 
 	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
 	workspaceFolder := args[len(args)-1]
 
-	// devcontainer.vim 用の追加設定ファイルを探す
-	isExists, additionalConfigFilePath, err := findAdditionalConfiguration(devcontainerFilePath, workspaceFolder)
-	if err != nil {
-		panic(err)
-	}
-	if isExists {
-		fmt.Printf("Found additional config: `%s`.\n", additionalConfigFilePath)
-		// TODO: マージ
-	}
-
-	// TODO: 設定管理フォルダに JSON を配置
-
 	// `devcontainer up` でコンテナを起動
 
 	// 末尾以外のものはそのまま `devcontainer up` への引数として渡す
 	userArgs := args[0 : len(args)-1]
-	userArgs = append(userArgs, "--workspace-folder", workspaceFolder)
+	userArgs = append(userArgs, "--config", configFilePath, "--workspace-folder", workspaceFolder)
 	devcontainerArgs := append(DEVCONTAINRE_ARGS_PREFIX, userArgs...)
 	fmt.Printf("run container: `%s \"%s\"`\n", devcontainerFilePath, strings.Join(devcontainerArgs, "\" \""))
 	dockerRunCommand := exec.Command(devcontainerFilePath, devcontainerArgs...)
@@ -188,14 +176,9 @@ func Execute(devcontainerFilePath string, args ...string) (string, error) {
 // devcontainer.vim 用の追加設定ファイルを探す。
 // bool: 追加設定ファイルの有無(true: 有, false: 無)
 // string: 追加設定ファイルのパス
-func findAdditionalConfiguration(devcontainerFilePath string, workspaceFolder string) (bool, string, error) {
-	path, err := GetConfigurationFilePath(devcontainerFilePath, workspaceFolder)
-	if err != nil {
-		panic(err)
-	}
-
+func FindAdditionalConfiguration(configFilePath string) (bool, string, error) {
 	// configurationFilePath と同じ階層に同じ名前で拡張子が `.vim.json` であるものを探す
-	configurationFileName := path[:len(path)-len(filepath.Ext(path))]
+	configurationFileName := configFilePath[:len(configFilePath)-len(filepath.Ext(configFilePath))]
 	additionalConfigurationFilePath := configurationFileName + ".vim.json"
 	return util.IsExists(additionalConfigurationFilePath), additionalConfigurationFilePath, nil
 }
