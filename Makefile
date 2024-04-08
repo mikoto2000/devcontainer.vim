@@ -12,13 +12,15 @@ DEST := ./build
 
 WATCH_SRC := ./main.go \
 						 ./devcontainer/devcontainer.go \
+						 ./devcontainer/readConfigurationResult.go \
 						 ./devcontainer/upCommandResult.go \
 						 ./docker/docker.go \
+						 ./docker/dockerPsResult.go \
 						 ./dockerCompose/dockerCompose.go \
 						 ./dockerCompose/dockerComposePsResult.go \
 						 ./tools/tools.go \
-						 ./tools/tools_windows.go \
 						 ./tools/tools_nowindows.go \
+						 ./tools/tools_windows.go \
 						 ./util/util.go
 
 ### 開発関連
