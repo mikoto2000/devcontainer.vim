@@ -176,10 +176,10 @@ TODO:
     - [x] : devcontainer.vim のみが利用する設定に関する仕組みを追加
         - [x] : `devcontainer.json` と `devcontainer.vim.json` をマージしてからコンテナを起動する
         - [x] : キャッシュディレクトリ内の構造整理
-    - [ ] : `devcontainer.vim.json` の設定例出力機能
-        - [ ] : 標準出力
-        - [ ] : ファイルパス指定( `-o` オプション)
-    - [ ] : Windows 向けに環境変数をセット
+    - [x] : `devcontainer.vim.json` の設定例出力機能
+        - [x] : 標準出力
+        - [x] : ファイルパス指定( `-o` オプション)
+    - [x] : Windows 向けに環境変数をセット
         - `USERPROFILE` -> `HOME`
     - [ ] : リリーススクリプト・リリースワークフローを作る
 - [ ] : v0.6.0
