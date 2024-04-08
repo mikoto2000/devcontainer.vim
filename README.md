@@ -173,8 +173,14 @@ TODO:
         - [x] : `nonComposeBase` の場合
             - `docker ps --format json` して `Labels` 内に `devcontainer.local_folder=xxx` が含まれており、 `xxx` が現在のディレクトリと一致するものを探し、そいつの ID で `docker rm -f ${CONTAINER_ID}` する
 - [ ] : v0.5.0
-    - [ ] : devcontainer.vim のみが利用する設定に関する仕組みを追加
-        - [ ] : `devcontainer.json` と `devcontainer.vim.json` をマージしてからコンテナを起動する
+    - [x] : devcontainer.vim のみが利用する設定に関する仕組みを追加
+        - [x] : `devcontainer.json` と `devcontainer.vim.json` をマージしてからコンテナを起動する
+        - [x] : キャッシュディレクトリ内の構造整理
+    - [x] : `devcontainer.vim.json` の設定例出力機能
+        - [x] : 標準出力
+        - [x] : ファイルパス指定( `-o` オプション)
+    - [x] : Windows 向けに環境変数をセット
+        - `USERPROFILE` -> `HOME`
     - [ ] : リリーススクリプト・リリースワークフローを作る
 - [ ] : v0.6.0
     - [ ] : クリップボード転送機能追加

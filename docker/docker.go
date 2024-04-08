@@ -75,10 +75,8 @@ func Run(args []string, vimFilePath string) {
 		return dockerExec.Process.Signal(os.Interrupt)
 	}
 
-	err = dockerExec.Run()
-	if err != nil {
-		panic(err)
-	}
+	// 失敗してもコンテナのあと片付けはしたいのでエラーを無視
+	dockerExec.Run()
 
 	// コンテナ停止
 	// `docker stop <dockerrun 時に標準出力に表示される CONTAINER ID>`
