@@ -39,7 +39,7 @@ func main() {
 	// 2. ユーザーキャッシュ用ディレクトリ
 	//    `os.UserCacheDir` + `devcontainer.vim`
 	util.CreateDirectory(os.UserConfigDir, APP_NAME)
-	appCacheDir := util.CreateDirectory(os.UserCacheDir, APP_NAME)
+	appCacheDir, binDir, appConfigDir := util.CreateDirectory(os.UserCacheDir, APP_NAME)
 
 	devcontainerVimArgProcess := (&cli.App{
 		Name:                   "devcontainer.vim",
@@ -77,7 +77,7 @@ func main() {
 					// `docker run` でコンテナを立てる
 
 					// 必要なファイルのダウンロード
-					vimPath, err := tools.VIM.Install(appCacheDir)
+					vimPath, err := tools.VIM.Install(binDir)
 					if err != nil {
 						panic(err)
 					}
@@ -106,12 +106,12 @@ func main() {
 					// devcontainer でコンテナを立てる
 
 					// 必要なファイルのダウンロード
-					vimPath, err := tools.VIM.Install(appCacheDir)
+					vimPath, err := tools.VIM.Install(binDir)
 					if err != nil {
 						panic(err)
 					}
 
-					devcontainerFilePath, err := tools.DEVCONTAINER.Install(appCacheDir)
+					devcontainerFilePath, err := tools.DEVCONTAINER.Install(binDir)
 					if err != nil {
 						panic(err)
 					}
@@ -119,7 +119,7 @@ func main() {
 					// コマンドライン引数の末尾は `--workspace-folder` の値として使う
 					args := cCtx.Args().Slice()
 					workspaceFolder := args[len(args)-1]
-					configFilePath, err := createConfigFile(devcontainerFilePath, workspaceFolder, appCacheDir)
+					configFilePath, err := createConfigFile(devcontainerFilePath, workspaceFolder, appConfigDir)
 					if err != nil {
 						panic(err)
 					}
@@ -140,7 +140,7 @@ func main() {
 					// devcontainer でコンテナを立てる
 
 					// 必要なファイルのダウンロード
-					devcontainerPath, err := tools.DEVCONTAINER.Install(appCacheDir)
+					devcontainerPath, err := tools.DEVCONTAINER.Install(binDir)
 					if err != nil {
 						panic(err)
 					}
@@ -173,7 +173,7 @@ func main() {
 // devcontainer.vim 起動時に使用する設定ファイルを作成する
 // 設定ファイルは、 devcontainer.vim のキャッシュ内の `config` ディレクトリに、
 // ワークスペースフォルダのパスを md5 ハッシュ化した名前のディレクトリに格納する.
-func createConfigFile(devcontainerFilePath string, workspaceFolder string, appCacheDir string) (string, error) {
+func createConfigFile(devcontainerFilePath string, workspaceFolder string, appConfigDir string) (string, error) {
 	// devcontainer の設定ファイルパス取得
 	configFilePath, err := devcontainer.GetConfigurationFilePath(devcontainerFilePath, workspaceFolder)
 	if err != nil {
@@ -185,7 +185,7 @@ func createConfigFile(devcontainerFilePath string, workspaceFolder string, appCa
 	additionalConfigurationFilePath := configurationFileName + ".vim.json"
 
 	// 設定管理フォルダに JSON を配置
-	mergedConfigFilePath, err := util.CreateConfigFileForDevcontainerVim(appCacheDir, workspaceFolder, configFilePath, additionalConfigurationFilePath)
+	mergedConfigFilePath, err := util.CreateConfigFileForDevcontainerVim(appConfigDir, workspaceFolder, configFilePath, additionalConfigurationFilePath)
 
 	fmt.Printf("Use configuration file: `%s`", mergedConfigFilePath)
 
