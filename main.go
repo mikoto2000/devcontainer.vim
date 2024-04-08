@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/urfave/cli/v2"
@@ -52,6 +53,14 @@ const devcontainerVimJsonTemplate = `{
 const APP_NAME = "devcontainer.vim"
 
 func main() {
+
+	// Windows でも `${ localEnv:HOME }` でホームディレクトリの指定ができるように、
+	// 環境変数を更新
+	if runtime.GOOS == "windows" {
+		fmt.Printf("Set environment variable HOME to %s.\n", os.Getenv("USERPROFILE"))
+		os.Setenv("HOME", os.Getenv("USERPROFILE"))
+	}
+
 	// コマンドラインオプションのパース
 
 	// devcontainer.vim 用のディレクトリ作成
