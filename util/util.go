@@ -1,9 +1,13 @@
 package util
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/Jeffail/gabs/v2"
 )
 
 func IsExistsCommand(command string) bool {
@@ -47,9 +51,63 @@ func AddExecutePermission(filePath string) error {
 	return nil
 }
 
-// TODO: 実装
-func CreateConfigFileForDevcontainerVim(cacheDir string, configFilePath string, additionalConfigFilePath string) (string, error) {
+// baseConfigPath で指定した JSON に additionalConfigPath で指定した JSON をマージし、その結果を返却する
+func readAndMergeConfig(baseConfigPath string, additionalConfigPath string) ([]byte, error) {
+	parsedBaseJson, err := gabs.ParseJSONFile(baseConfigPath)
+	if err != nil {
+		return nil, err
+	}
 
-	// TODO: 設定管理フォルダに JSON を配置
-	return configFilePath, nil
+	// 追加の JSON を読み込み
+	parsedAdditionalJson, err := gabs.ParseJSONFile(additionalConfigPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// JSON をマージ
+	parsedBaseJson.Merge(parsedAdditionalJson)
+
+	// 設定ファイルの内容を返却
+	return parsedBaseJson.Bytes(), nil
+}
+
+// configFilePath と additionalConfigFilePath の JSON をマージし、
+// devcontainer.vim のキャッシュディレクトリ内の設定ファイル格納ディレクトリへ格納する。
+// 作成した devcontainer.json を格納しているディレクトリのパスを返却する。
+func CreateConfigFileForDevcontainerVim(cacheDir string, workspaceFolder string, configFilePath string, additionalConfigFilePath string) (string, error) {
+
+	// マージ要否判定して最終的に使う JSON のコンテンツを組み立てる
+	var configFileContent []byte
+	var err error
+	if IsExists(additionalConfigFilePath) {
+		// JSON のマージ
+		configFileContent, err = readAndMergeConfig(configFilePath, additionalConfigFilePath)
+	} else {
+		// ベースの設定をそのまま使用
+		configFileContent, err = os.ReadFile(configFilePath)
+	}
+	if err != nil {
+		return "", err
+	}
+
+	// 設定管理フォルダに JSON を配置
+	generateConfigDir := GetConfigDir(cacheDir, workspaceFolder)
+	generateConfigFilePath := filepath.Join(generateConfigDir, "devcontainer.json")
+	err = os.MkdirAll(generateConfigDir, 0777)
+	if err != nil {
+		return "", err
+	}
+	err = os.WriteFile(generateConfigFilePath, configFileContent, 0666)
+	if err != nil {
+		return "", err
+	}
+	return generateConfigFilePath, nil
+}
+
+// devcontainer.vim 用の devcontainer.json 格納先ディレクトリを計算して返却する。
+// `<devcontainer.vim のキャッシュディレクトリ>/config/<workspaceFolder のパスを md5 播種化した文字列>` のディレクトリを返却
+func GetConfigDir(cacheDir string, workspaceFolder string) string {
+	workspaceFolderHash := md5.Sum([]byte(workspaceFolder))
+	workspaceFolderHashString := hex.EncodeToString(workspaceFolderHash[:])
+	return filepath.Join(cacheDir, "config", workspaceFolderHashString)
 }

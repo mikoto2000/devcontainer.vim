@@ -12,7 +12,6 @@ import (
 
 	"github.com/mikoto2000/devcontainer.vim/docker"
 	"github.com/mikoto2000/devcontainer.vim/dockerCompose"
-	"github.com/mikoto2000/devcontainer.vim/util"
 )
 
 const CONTAINER_COMMAND = "docker"
@@ -29,7 +28,7 @@ func ExecuteDevcontainer(args []string, devcontainerFilePath string, vimFilePath
 
 	// 末尾以外のものはそのまま `devcontainer up` への引数として渡す
 	userArgs := args[0 : len(args)-1]
-	userArgs = append(userArgs, "--config", configFilePath, "--workspace-folder", workspaceFolder)
+	userArgs = append(userArgs, "--override-config", configFilePath, "--workspace-folder", workspaceFolder)
 	devcontainerArgs := append(DEVCONTAINRE_ARGS_PREFIX, userArgs...)
 	fmt.Printf("run container: `%s \"%s\"`\n", devcontainerFilePath, strings.Join(devcontainerArgs, "\" \""))
 	dockerRunCommand := exec.Command(devcontainerFilePath, devcontainerArgs...)
@@ -171,14 +170,4 @@ func Execute(devcontainerFilePath string, args ...string) (string, error) {
 	cmd := exec.Command(devcontainerFilePath, args...)
 	stdout, err := cmd.Output()
 	return string(stdout), err
-}
-
-// devcontainer.vim 用の追加設定ファイルを探す。
-// bool: 追加設定ファイルの有無(true: 有, false: 無)
-// string: 追加設定ファイルのパス
-func FindAdditionalConfiguration(configFilePath string) (bool, string, error) {
-	// configurationFilePath と同じ階層に同じ名前で拡張子が `.vim.json` であるものを探す
-	configurationFileName := configFilePath[:len(configFilePath)-len(filepath.Ext(configFilePath))]
-	additionalConfigurationFilePath := configurationFileName + ".vim.json"
-	return util.IsExists(additionalConfigurationFilePath), additionalConfigurationFilePath, nil
 }

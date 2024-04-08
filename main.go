@@ -6,6 +6,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/urfave/cli/v2"
 
@@ -147,6 +148,15 @@ func main() {
 					// devcontainer を用いたコンテナ終了
 					devcontainer.Down(cCtx.Args().Slice(), devcontainerPath)
 
+					// 設定ファイルを削除
+					// コマンドライン引数の末尾は `--workspace-folder` の値として使う
+					args := cCtx.Args().Slice()
+					workspaceFolder := args[len(args)-1]
+					configDir := util.GetConfigDir(appCacheDir, workspaceFolder)
+
+					fmt.Printf("Remove configuration file: `%s`\n", configDir)
+					os.RemoveAll(configDir)
+
 					return nil
 				},
 			},
@@ -161,7 +171,8 @@ func main() {
 }
 
 // devcontainer.vim 起動時に使用する設定ファイルを作成する
-// TODO: マージしてキャッシュディレクトリに格納
+// 設定ファイルは、 devcontainer.vim のキャッシュ内の `config` ディレクトリに、
+// ワークスペースフォルダのパスを md5 ハッシュ化した名前のディレクトリに格納する.
 func createConfigFile(devcontainerFilePath string, workspaceFolder string, appCacheDir string) (string, error) {
 	// devcontainer の設定ファイルパス取得
 	configFilePath, err := devcontainer.GetConfigurationFilePath(devcontainerFilePath, workspaceFolder)
@@ -170,18 +181,13 @@ func createConfigFile(devcontainerFilePath string, workspaceFolder string, appCa
 	}
 
 	// devcontainer.vim 用の追加設定ファイルを探す
-	isExists, additionalConfigFilePath, err := devcontainer.FindAdditionalConfiguration(configFilePath)
-	if err != nil {
-		panic(err)
-	}
+	configurationFileName := configFilePath[:len(configFilePath)-len(filepath.Ext(configFilePath))]
+	additionalConfigurationFilePath := configurationFileName + ".vim.json"
 
-	if isExists {
-		fmt.Printf("Found additional config: `%s`.\n", additionalConfigFilePath)
-		// TODO: マージ
-	}
+	// 設定管理フォルダに JSON を配置
+	mergedConfigFilePath, err := util.CreateConfigFileForDevcontainerVim(appCacheDir, workspaceFolder, configFilePath, additionalConfigurationFilePath)
 
-	// TODO: 設定管理フォルダに JSON を配置
-	mergedConfigFilePath, err := util.CreateConfigFileForDevcontainerVim(appCacheDir, configFilePath, additionalConfigFilePath)
+	fmt.Printf("Use configuration file: `%s`", mergedConfigFilePath)
 
 	return mergedConfigFilePath, err
 }
