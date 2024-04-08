@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/urfave/cli/v2"
 
@@ -22,11 +23,31 @@ const FLAG_NAME_HELP_SHORT = "h"
 const FLAG_NAME_VERSION_LONG = "version"
 const SPLIT_ARG_MARK = "--"
 
+const FLAG_NAME_GENERATE = "generate"
+const FLAG_NAME_HOME = "home"
+const FLAG_NAME_OUTPUT = "output"
+
 //go:embed LICENSE
 var license string
 
 //go:embed NOTICE
 var notice string
+
+const devcontainerVimJsonTemplate = `{
+  "mounts": [
+    {
+      "type": "bind",
+      "source": "${localEnv:HOME}/.vim",
+      "target": "{{ remoteEnv:HOME }}/.vim"
+    },
+    {
+      "type": "bind",
+      "source": "${localEnv:HOME}/.gitconfig",
+      "target": "{{ remoteEnv:HOME }}/.gitconfig"
+    }
+  ]
+}
+`
 
 const APP_NAME = "devcontainer.vim"
 
@@ -156,6 +177,68 @@ func main() {
 
 					fmt.Printf("Remove configuration file: `%s`\n", configDir)
 					os.RemoveAll(configDir)
+
+					return nil
+				},
+			},
+			{
+				Name:            "config",
+				Usage:           "devcontainer.vim's config information.",
+				UsageText:       "devcontainer.vim config [OPTIONS...]",
+				HideHelp:        false,
+				SkipFlagParsing: false,
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    FLAG_NAME_GENERATE,
+						Aliases: []string{"g"},
+						Value:   false,
+						Usage:   "generate sample config file.",
+					},
+					&cli.StringFlag{
+						Name:    FLAG_NAME_HOME,
+						Aliases: []string{},
+						Value:   "/home/vscode",
+						Usage:   "generate sample config's home directory.",
+					},
+					&cli.StringFlag{
+						Name:    FLAG_NAME_OUTPUT,
+						Aliases: []string{"o"},
+						Value:   ".devcontainer/devcontainer.vim.json",
+						Usage:   "generate sample config output file path.",
+					},
+				},
+				Action: func(cCtx *cli.Context) error {
+					// 何かしらオプションでない引数を渡されたらヘルプを出力して終了
+					if cCtx.NumFlags() == 0 || cCtx.Args().Present() {
+						cli.ShowSubcommandHelpAndExit(cCtx, 0)
+					}
+
+					// generate フラグがセットされていたら設定ファイルのひな形を出力する
+					if cCtx.Bool(FLAG_NAME_GENERATE) {
+
+						// home オプションで指定された値を利用して、バインド先を置換
+						devcontainerVimJson := strings.Replace(devcontainerVimJsonTemplate, "{{ remoteEnv:HOME }}", cCtx.String(FLAG_NAME_HOME), -1)
+
+						if cCtx.IsSet(FLAG_NAME_OUTPUT) {
+							// output オプションが指定されている場合、指定されたパスへ出力する
+							configFilePath := cCtx.String(FLAG_NAME_OUTPUT)
+
+							// 生成先ディレクトリを作成
+							err := os.MkdirAll(filepath.Dir(configFilePath), 0766)
+							if err != nil {
+								panic(err)
+							}
+
+							// 設定ファイルサンプルを出力
+							err = os.WriteFile(configFilePath, []byte(devcontainerVimJson), 0666)
+							if err != nil {
+								panic(err)
+							}
+						} else {
+							// output オプションが指定されていない場合、標準出力へ出力する
+							fmt.Print(devcontainerVimJson)
+						}
+					}
 
 					return nil
 				},
