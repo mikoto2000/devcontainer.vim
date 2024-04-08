@@ -35,7 +35,7 @@ type Configuration struct {
 }
 
 type ConfigFilePath struct {
-	Path string `json:"path"`
+	FsPath string `json:"fsPath"`
 }
 
 func GetConfigFilePath(readConfigurationCommandResult string) (string, error) {
@@ -44,7 +44,7 @@ func GetConfigFilePath(readConfigurationCommandResult string) (string, error) {
 		return "", err
 	}
 
-	return result.Configuration.ConfigFilePath.Path, nil
+	return result.Configuration.ConfigFilePath.FsPath, nil
 }
 
 func UnmarshalReadConfigurationCommandResult(data []byte) (ReadConfigurationCommandResult, error) {
