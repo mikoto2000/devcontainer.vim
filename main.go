@@ -35,6 +35,11 @@ var license string
 var notice string
 
 const devcontainerVimJsonTemplate = `{
+  "remoteEnv": {
+    "EDITOR": "/vim --appimage-extract-and-run",
+    "LESSCHARSET": "utf-8",
+    "SHELL": "bash"
+  },
   "mounts": [
     {
       "type": "bind",
@@ -45,6 +50,11 @@ const devcontainerVimJsonTemplate = `{
       "type": "bind",
       "source": "${localEnv:HOME}/.gitconfig",
       "target": "{{ remoteEnv:HOME }}/.gitconfig"
+    },
+    {
+      "type": "bind",
+      "source": "${localEnv:HOME}/.ssh",
+      "target": "{{ remoteEnv:HOME }}/.ssh"
     }
   ]
 }
