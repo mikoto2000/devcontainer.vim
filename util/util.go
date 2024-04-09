@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/Jeffail/gabs/v2"
+	"github.com/marcozac/go-jsonc"
 )
 
 const binDirName = "bin"
@@ -72,22 +73,40 @@ func AddExecutePermission(filePath string) error {
 
 // baseConfigPath で指定した JSON に additionalConfigPath で指定した JSON をマージし、その結果を返却する
 func readAndMergeConfig(baseConfigPath string, additionalConfigPath string) ([]byte, error) {
-	parsedBaseJson, err := gabs.ParseJSONFile(baseConfigPath)
+
+	// 設定ファイル読み込み
+	parsedBaseJsonContentBytes, err := os.ReadFile(baseConfigPath)
 	if err != nil {
 		return nil, err
 	}
 
-	// 追加の JSON を読み込み
-	parsedAdditionalJson, err := gabs.ParseJSONFile(additionalConfigPath)
+	// 設定ファイルを jsonc としてパース
+	var parsedBaseJson map[string]interface{}
+	err = jsonc.Unmarshal(parsedBaseJsonContentBytes, &parsedBaseJson)
 	if err != nil {
 		return nil, err
 	}
 
-	// JSON をマージ
-	parsedBaseJson.Merge(parsedAdditionalJson)
+	// devcontainer.vim 用追加設定ファイル読み込み
+	parsedAdditionalJsonContentBytes, err := os.ReadFile(additionalConfigPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// devcontainer.vim 用追加設定ファイルを jsonc としてパース
+	var parsedAdditionalJson map[string]interface{}
+	err = jsonc.Unmarshal(parsedAdditionalJsonContentBytes, &parsedAdditionalJson)
+	if err != nil {
+		return nil, err
+	}
+
+	// パース↓ JSON を gabs.Container に変換し、マージ
+	parsedBaseJsonGrabContainer := gabs.Wrap(parsedBaseJson)
+	parsedAdditionalJsonGrabContainer := gabs.Wrap(parsedAdditionalJson)
+	parsedBaseJsonGrabContainer.Merge(parsedAdditionalJsonGrabContainer)
 
 	// 設定ファイルの内容を返却
-	return parsedBaseJson.Bytes(), nil
+	return parsedBaseJsonGrabContainer.Bytes(), nil
 }
 
 // configFilePath と additionalConfigFilePath の JSON をマージし、
