@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/Jeffail/gabs/v2"
+	"github.com/tailscale/hujson"
 )
 
 const binDirName = "bin"
@@ -72,22 +73,40 @@ func AddExecutePermission(filePath string) error {
 
 // baseConfigPath で指定した JSON に additionalConfigPath で指定した JSON をマージし、その結果を返却する
 func readAndMergeConfig(baseConfigPath string, additionalConfigPath string) ([]byte, error) {
-	parsedBaseJson, err := gabs.ParseJSONFile(baseConfigPath)
+
+	// 設定ファイル読み込み
+	parsedBaseJsonContentBytes, err := os.ReadFile(baseConfigPath)
 	if err != nil {
 		return nil, err
 	}
 
-	// 追加の JSON を読み込み
-	parsedAdditionalJson, err := gabs.ParseJSONFile(additionalConfigPath)
+	// 設定ファイルを JWCC としてパースし、標準 JSON へ変換
+	parsedBaseJson, err := hujson.Parse(parsedBaseJsonContentBytes)
+	parsedBaseJson.Standardize()
 	if err != nil {
 		return nil, err
 	}
 
-	// JSON をマージ
-	parsedBaseJson.Merge(parsedAdditionalJson)
+	// devcontainer.vim 用追加設定ファイル読み込み
+	parsedAdditionalJsonContentBytes, err := os.ReadFile(additionalConfigPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// devcontainer.vim 用追加設定ファイルを JWCC としてパースし、標準 JSON へ変換
+	parsedAdditionalJson, err := hujson.Parse(parsedAdditionalJsonContentBytes)
+	parsedAdditionalJson.Standardize()
+	if err != nil {
+		return nil, err
+	}
+
+	// パースした JSON を gabs.Container に変換し、マージ
+	parsedBaseJsonGrabContainer := gabs.Wrap(parsedBaseJson.Pack())
+	parsedAdditionalJsonGrabContainer := gabs.Wrap(parsedAdditionalJson.Pack())
+	parsedBaseJsonGrabContainer.Merge(parsedAdditionalJsonGrabContainer)
 
 	// 設定ファイルの内容を返却
-	return parsedBaseJson.Bytes(), nil
+	return parsedBaseJsonGrabContainer.Bytes(), nil
 }
 
 // configFilePath と additionalConfigFilePath の JSON をマージし、
