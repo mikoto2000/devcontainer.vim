@@ -39,6 +39,10 @@ const devcontainerVimJsonTemplate = `{
     "EDITOR": "/vim --appimage-extract-and-run",
     "LESSCHARSET": "utf-8",
     "SHELL": "bash"
+    // If use WSLG
+    // "DISPLAY": "${localEnv:DISPLAY}",
+    // "WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",
+    // "XDG_RUNTIME_DIR": "${localEnv:XDG_RUNTIME_DIR}",
   },
   "mounts": [
     {
@@ -56,6 +60,17 @@ const devcontainerVimJsonTemplate = `{
       "source": "${localEnv:HOME}/.ssh",
       "target": "{{ remoteEnv:HOME }}/.ssh"
     }
+    // If use WSLG
+    //{
+    //  "type": "bind",
+    //  "source": "/tmp/.X11-unix",
+    //  "target": "/tmp/.X11-unix"
+    //},
+    //{
+    //  "type": "bind",
+    //  "source": "/mnt/wslg",
+    //  "target": "/mnt/wslg"
+    //}
   ]
 }
 `
