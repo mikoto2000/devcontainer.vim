@@ -44,7 +44,16 @@ const devcontainerVimJsonTemplate = `{
     // "WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",
     // "XDG_RUNTIME_DIR": "${localEnv:XDG_RUNTIME_DIR}",
   },
+  // devcontainer/cli はまだ forwardPorts に対応していないため、
+  // 必要に応じて forwardPorts の定義を addPort に転記する。
+  // "addPort" [
+  // ],
   "mounts": [
+    {
+      "type": "bind",
+      "source": "${localEnv:HOME}/.bashrc",
+      "target": "{{ remoteEnv:HOME }}/.bashrc"
+    },
     {
       "type": "bind",
       "source": "${localEnv:HOME}/.vim",
