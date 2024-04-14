@@ -1,5 +1,3 @@
-// TODO: vimFilePath の名前変更(hostVimFilePath?)
-
 package main
 
 import (
