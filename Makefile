@@ -5,8 +5,8 @@ LINUX_BINARY_NAME := ${APP_NAME}-linux-${GOARCH}
 DARWIN_BINARY_NAME := ${APP_NAME}-darwin-${GOARCH}
 
 GO_BIN := ${GOPATH}/bin
-LD_FLAGS := "-s -w"
-VERSION := 0.0.1
+VERSION := 0.5.0
+LD_FLAGS := "-s -w -X main.version=${VERSION}"
 
 DEST := ./build
 

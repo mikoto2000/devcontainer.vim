@@ -16,6 +16,8 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/util"
 )
 
+var version string
+
 const FLAG_NAME_LICENSE = "license"
 const FLAG_NAME_HELP_LONG = "help"
 const FLAG_NAME_HELP_SHORT = "h"
@@ -110,7 +112,7 @@ func main() {
 	devcontainerVimArgProcess := (&cli.App{
 		Name:                   "devcontainer.vim",
 		Usage:                  "devcontainer for vim.",
-		Version:                "0.0.1",
+		Version:                version,
 		UseShortOptionHandling: true,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
