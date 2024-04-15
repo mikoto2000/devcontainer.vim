@@ -1,0 +1,24 @@
+name: release
+
+on:
+  push:
+    tags: [ "v*" ]
+
+jobs:
+  release:
+    runs-on: ubuntu-22.04
+    env:
+      GOARCH: "amd64"
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22.1'
+    - name: Build
+      run: make build-all
+    - uses: ncipollo/release-action@v1
+      with:
+        artifacts: build/*
+        allowUpdates: true
+        draft: true
