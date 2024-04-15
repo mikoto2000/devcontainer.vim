@@ -36,7 +36,7 @@ const devcontainerVimJsonTemplate = `{
   "remoteEnv": {
     "EDITOR": "/vim --appimage-extract-and-run",
     "LESSCHARSET": "utf-8",
-    "SHELL": "bash"
+    "SHELL": "bash",
     // If use WSLG
     // "DISPLAY": "${localEnv:DISPLAY}",
     // "WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",
@@ -66,7 +66,7 @@ const devcontainerVimJsonTemplate = `{
       "type": "bind",
       "source": "${localEnv:HOME}/.ssh",
       "target": "{{ remoteEnv:HOME }}/.ssh"
-    }
+    },
     // If use WSLG
     //{
     //  "type": "bind",
@@ -77,8 +77,12 @@ const devcontainerVimJsonTemplate = `{
     //  "type": "bind",
     //  "source": "/mnt/wslg",
     //  "target": "/mnt/wslg"
-    //}
-  ]
+    //},
+  ],
+  //"features": {
+  //  "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+  //  "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  //}
 }
 `
 
