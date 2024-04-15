@@ -37,21 +37,6 @@ devcontainer.vim start .
 devcontainer.vim start --mount "type=bind,source=$HOME/.vim,target=/root/.vim" .
 ```
 
-### 追加の設定を生成する
-
-`devcontainer.vim config -g` で `devcontainer.vim` が使用するための追加設定ファイルのテンプレートを生成できる。
-
-```sh
-devcontainer.vim config -g --home /home/containerUser > .devcontainer/devcontainer.vim.json
-```
-
-使用できるオプションは以下:
-
-- `-g` : 設定生成フラグ
-- `-o` : 生成した設定の出力先ファイルを指定(default: STDOUT)
-- `--home` : 設定テンプレート内のホームディレクトリのパス
-
-
 #### 環境の停止
 
 TODO:
@@ -107,6 +92,20 @@ PROJECT_ROOT/
   ]
 }
 ```
+
+### 追加の設定を生成する
+
+`devcontainer.vim config -g` で `devcontainer.vim` が使用するための追加設定ファイルのテンプレートを生成できる。
+
+```sh
+devcontainer.vim config -g --home /home/containerUser > .devcontainer/devcontainer.vim.json
+```
+
+使用できるオプションは以下:
+
+- `-g` : 設定生成フラグ
+- `-o` : 生成した設定の出力先ファイルを指定(default: STDOUT)
+- `--home` : 設定テンプレート内のホームディレクトリのパス
 
 
 ## Requirements:
