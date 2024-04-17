@@ -1,7 +1,6 @@
 package devcontainer
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -32,14 +31,11 @@ func ExecuteDevcontainer(args []string, devcontainerFilePath string, vimFilePath
 	devcontainerArgs := append(DEVCONTAINRE_ARGS_PREFIX, userArgs...)
 	fmt.Printf("run container: `%s \"%s\"`\n", devcontainerFilePath, strings.Join(devcontainerArgs, "\" \""))
 	dockerRunCommand := exec.Command(devcontainerFilePath, devcontainerArgs...)
-
-	stderrByteBuffer := &bytes.Buffer{}
-	dockerRunCommand.Stderr = stderrByteBuffer
+	dockerRunCommand.Stderr = os.Stderr
 
 	stdout, err := dockerRunCommand.Output()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Container start error.")
-		fmt.Fprintln(os.Stderr, stderrByteBuffer.String())
 		panic(err)
 	}
 
@@ -165,9 +161,26 @@ func ReadConfiguration(devcontainerFilePath string, readConfiguration ...string)
 	return Execute(devcontainerFilePath, args...)
 }
 
+func Templates(devcontainerFilePath string, templatesArgs ...string) (string, error) {
+	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
+	workspaceFolder := templatesArgs[len(templatesArgs)-1]
+	otherArgs := templatesArgs[:len(templatesArgs)-1]
+
+	args := append([]string{"templates"}, otherArgs...)
+	args = append(args, "--workspace-folder", workspaceFolder)
+	return ExecuteCombineOutput(devcontainerFilePath, args...)
+}
+
 func Execute(devcontainerFilePath string, args ...string) (string, error) {
 	fmt.Printf("run devcontainer: `%s %s`\n", devcontainerFilePath, strings.Join(args, " "))
 	cmd := exec.Command(devcontainerFilePath, args...)
 	stdout, err := cmd.Output()
+	return string(stdout), err
+}
+
+func ExecuteCombineOutput(devcontainerFilePath string, args ...string) (string, error) {
+	fmt.Printf("run devcontainer: `%s %s`\n", devcontainerFilePath, strings.Join(args, " "))
+	cmd := exec.Command(devcontainerFilePath, args...)
+	stdout, err := cmd.CombinedOutput()
 	return string(stdout), err
 }

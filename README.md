@@ -196,9 +196,9 @@ TODO:
         - `USERPROFILE` -> `HOME`
     - [x] : config コマンドの実装
     - [x] : リリーススクリプト・リリースワークフローを作る
-- [ ] : v0.6.0
-    - [ ] : `devcontainer up` の出力を表示する
-    - [ ] : `devcontainer templates apply` コマンドを使えるようにする
+- [x] : v0.6.0
+    - [x] : `devcontainer up` の出力を表示する
+    - [x] : `devcontainer templates apply` コマンドを使えるようにする
 - [ ] : v0.7.0
     - [ ] : クリップボード転送機能追加
         1. TCP でテキストを待ち受け、受信したテキストをクリップボードへ反映するプログラムを作る
@@ -213,6 +213,9 @@ TODO:
     - [ ] : Vim アップデートコマンド
 - [ ] : v0.9.0
     - [ ] : stop コマンドの実装
+- [ ] : v0.10.0
+    - [ ] : テンプレートリスト出力機能
+        - `devcontainer.vim templates apply` に渡す `--template-id` として使える ID の一覧を出力
 
 
 ## License:

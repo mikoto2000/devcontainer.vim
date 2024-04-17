@@ -165,6 +165,28 @@ func main() {
 				},
 			},
 			{
+				Name:            "templates",
+				Usage:           "Run `devcontainer templates`",
+				UsageText:       "devcontainer.vim templates [DEVCONTAINER_OPTIONS...] WORKSPACE_FOLDER",
+				HideHelp:        true,
+				SkipFlagParsing: true,
+				Action: func(cCtx *cli.Context) error {
+					// devcontainer の template サブコマンド実行
+
+					// 必要なファイルのダウンロード
+					devcontainerFilePath, err := tools.DEVCONTAINER.Install(binDir)
+					if err != nil {
+						panic(err)
+					}
+
+					// devcontainer を用いたコンテナ立ち上げ
+					output, _ := devcontainer.Templates(devcontainerFilePath, cCtx.Args().Slice()...)
+					fmt.Println("👺:"+output)
+
+					return nil
+				},
+			},
+			{
 				Name:            "start",
 				Usage:           "Run `devcontainer up` and `devcontainer exec`",
 				UsageText:       "devcontainer.vim start [DEVCONTAINER_OPTIONS...] WORKSPACE_FOLDER",
