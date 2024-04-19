@@ -45,15 +45,10 @@ const devcontainerVimJsonTemplate = `{
     // "XDG_RUNTIME_DIR": "${localEnv:XDG_RUNTIME_DIR}",
   },
   // devcontainer/cli はまだ forwardPorts に対応していないため、
-  // 必要に応じて forwardPorts の定義を addPort に転記する。
-  // "addPort" [
+  // 必要に応じて forwardPorts の定義を appPort に転記する。
+  // "appPort" [
   // ],
   "mounts": [
-    {
-      "type": "bind",
-      "source": "${localEnv:HOME}/.bashrc",
-      "target": "{{ remoteEnv:HOME }}/.bashrc"
-    },
     {
       "type": "bind",
       "source": "${localEnv:HOME}/.vim",
@@ -69,6 +64,12 @@ const devcontainerVimJsonTemplate = `{
       "source": "${localEnv:HOME}/.ssh",
       "target": "{{ remoteEnv:HOME }}/.ssh"
     },
+    // If use host's bashrc
+    //{
+    //  "type": "bind",
+    //  "source": "${localEnv:HOME}/.bashrc",
+    //  "target": "{{ remoteEnv:HOME }}/.bashrc"
+    //},
     // If use WSLG
     //{
     //  "type": "bind",
