@@ -34,60 +34,8 @@ var license string
 //go:embed NOTICE
 var notice string
 
-const devcontainerVimJsonTemplate = `{
-  "remoteEnv": {
-    "EDITOR": "/vim --appimage-extract-and-run",
-    "LESSCHARSET": "utf-8",
-    "SHELL": "bash",
-    // If use WSLG
-    // "DISPLAY": "${localEnv:DISPLAY}",
-    // "WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",
-    // "XDG_RUNTIME_DIR": "${localEnv:XDG_RUNTIME_DIR}",
-  },
-  // devcontainer/cli はまだ forwardPorts に対応していないため、
-  // 必要に応じて forwardPorts の定義を appPort に転記する。
-  // "appPort" [
-  // ],
-  "mounts": [
-    {
-      "type": "bind",
-      "source": "${localEnv:HOME}/.vim",
-      "target": "{{ remoteEnv:HOME }}/.vim"
-    },
-    {
-      "type": "bind",
-      "source": "${localEnv:HOME}/.gitconfig",
-      "target": "{{ remoteEnv:HOME }}/.gitconfig"
-    },
-    {
-      "type": "bind",
-      "source": "${localEnv:HOME}/.ssh",
-      "target": "{{ remoteEnv:HOME }}/.ssh"
-    },
-    // If use host's bashrc
-    //{
-    //  "type": "bind",
-    //  "source": "${localEnv:HOME}/.bashrc",
-    //  "target": "{{ remoteEnv:HOME }}/.bashrc"
-    //},
-    // If use WSLG
-    //{
-    //  "type": "bind",
-    //  "source": "/tmp/.X11-unix",
-    //  "target": "/tmp/.X11-unix"
-    //},
-    //{
-    //  "type": "bind",
-    //  "source": "/mnt/wslg",
-    //  "target": "/mnt/wslg"
-    //},
-  ],
-  //"features": {
-  //  "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
-  //  "ghcr.io/devcontainers/features/docker-in-docker:2": {}
-  //}
-}
-`
+//go:embed devcontainer.vim.template.json
+var devcontainerVimJsonTemplate string
 
 const APP_NAME = "devcontainer.vim"
 
