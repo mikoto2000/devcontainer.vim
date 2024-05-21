@@ -46,7 +46,7 @@ func simpleInstall(downloadUrl string, installDir string, fileName string) (stri
 }
 
 // Vim のダウンロード URL
-const VIM_DOWNLOAD_URL = "https://github.com/vim/vim-appimage/releases/download/v9.1.0346/Vim-v9.1.0346.glibc2.29-x86_64.AppImage"
+const VIM_DOWNLOAD_URL = "https://github.com/vim/vim-appimage/releases/download/v9.1.0421/Vim-v9.1.0421.glibc2.29-x86_64.AppImage"
 
 // Vim のツール情報
 var VIM Tool = Tool{
