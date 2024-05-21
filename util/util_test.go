@@ -33,7 +33,7 @@ func TestCreateDirectorySuccess(t *testing.T) {
 
 	// Create directory
 	// TempDir にテスト用ディレクトリを作成
-	createdDirectory := CreateDirectory(CreateTestCreateDirectorySuccessPath, "TestCreateDirectory")
+	createdDirectory, _, _ := CreateDirectory(CreateTestCreateDirectorySuccessPath, "TestCreateDirectory")
 
 	if !IsExists(createdDirectory) {
 		t.Fatalf("directory create failed: %s.", createdDirectory)
