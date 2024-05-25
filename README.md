@@ -143,52 +143,6 @@ devcontainer.vim config -g --home /home/containerUser > .devcontainer/devcontain
 
 ## Features:
 
-TODO
-
-
-## Install:
-
-### binary download
-
-[Latest version](https://github.com/mikoto2000/devcontainer.vim/releases/latest)
-
-
-### go install
-
-```sh
-go install github.com/mikoto2000/devcontainer.vim@latest
-```
-
-
-## Uninstall:
-
-### Windows
-
-Delete executable file, config directory(`~/AppData/Roaming/devcontainer.vim`), and cache directory(`~/AppData/Local/devcontainer.vim`).
-
-```sh
-Remove-Item PATH_TO/devcontainer.vim.exe
-Remove-Item -Recurse ~/AppData/Roaming/devcontainer.vim
-Remove-Item -Recurse ~/AppData/Local/devcontainer.vim
-```
-
-### Linux
-
-Delete executable file, config directory(`~/.config/devcontainer.vim`), and cache directory(`~/.cache/devcontainer.vim`).
-
-```sh
-rm PATH_TO/devcontainer.vim
-rm -rf ~/.config/devcontainer.vim
-rm -rf ~/.cache/devcontainer.vim
-```
-
-### MacOS
-
-TODO:
-
-
-## TODO:
-
 - [x] : v0.1.0
     - [x] : docker run 対応
         - [x] : コンテナの起動
@@ -243,6 +197,47 @@ TODO:
 - [ ] : v0.11.0
     - [ ] : テンプレートリスト出力機能
         - `devcontainer.vim templates apply` に渡す `--template-id` として使える ID の一覧を出力
+
+
+## Install:
+
+### binary download
+
+[Latest version](https://github.com/mikoto2000/devcontainer.vim/releases/latest)
+
+
+### go install
+
+```sh
+go install github.com/mikoto2000/devcontainer.vim@latest
+```
+
+
+## Uninstall:
+
+### Windows
+
+Delete executable file, config directory(`~/AppData/Roaming/devcontainer.vim`), and cache directory(`~/AppData/Local/devcontainer.vim`).
+
+```sh
+Remove-Item PATH_TO/devcontainer.vim.exe
+Remove-Item -Recurse ~/AppData/Roaming/devcontainer.vim
+Remove-Item -Recurse ~/AppData/Local/devcontainer.vim
+```
+
+### Linux
+
+Delete executable file, config directory(`~/.config/devcontainer.vim`), and cache directory(`~/.cache/devcontainer.vim`).
+
+```sh
+rm PATH_TO/devcontainer.vim
+rm -rf ~/.config/devcontainer.vim
+rm -rf ~/.cache/devcontainer.vim
+```
+
+### MacOS
+
+TODO:
 
 
 ## License:
