@@ -199,6 +199,11 @@ devcontainer.vim config -g --home /home/containerUser > .devcontainer/devcontain
         - `devcontainer.vim templates apply` に渡す `--template-id` として使える ID の一覧を出力
 
 
+## Limitation:
+
+amd64 のコンテナしか使用できません。
+
+
 ## Install:
 
 ### binary download
