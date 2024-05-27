@@ -40,7 +40,6 @@ var devcontainerVimJsonTemplate string
 const APP_NAME = "devcontainer.vim"
 
 func main() {
-
 	// Windows でも `${ localEnv:HOME }` でホームディレクトリの指定ができるように、
 	// 環境変数を更新
 	if runtime.GOOS == "windows" {
@@ -130,7 +129,7 @@ func main() {
 
 					// devcontainer を用いたコンテナ立ち上げ
 					output, _ := devcontainer.Templates(devcontainerFilePath, cCtx.Args().Slice()...)
-					fmt.Println("👺:"+output)
+					fmt.Println(output)
 
 					return nil
 				},

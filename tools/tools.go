@@ -12,14 +12,14 @@ import (
 
 // ツール情報
 type Tool struct {
-	FileName    string
-	DownloadUrl string
-	installFunc func(downloadUrl string, installDir string, name string) (string, error)
+	FileName             string
+	CalculateDounloadUrl func() string
+	installFunc          func(downloadUrl string, installDir string, name string) (string, error)
 }
 
 // ツールのインストールを実行
 func (t Tool) Install(installDir string) (string, error) {
-	return t.installFunc(t.DownloadUrl, installDir, t.FileName)
+	return t.installFunc(t.CalculateDounloadUrl(), installDir, t.FileName)
 }
 
 // 単純なファイル配置でインストールが完了するもののインストール処理。
@@ -46,12 +46,20 @@ func simpleInstall(downloadUrl string, installDir string, fileName string) (stri
 }
 
 // Vim のダウンロード URL
-const VIM_DOWNLOAD_URL = "https://github.com/vim/vim-appimage/releases/download/v9.1.0421/Vim-v9.1.0421.glibc2.29-x86_64.AppImage"
+// ※ 全ての `%s` はリリースタグ名
+const VIM_DOWNLOAD_URL_PATTERN = "https://github.com/vim/vim-appimage/releases/download/%s/Vim-%s.glibc2.29-x86_64.AppImage"
 
 // Vim のツール情報
 var VIM Tool = Tool{
-	FileName:    "vim",
-	DownloadUrl: VIM_DOWNLOAD_URL,
+	FileName: "vim",
+	CalculateDounloadUrl: func() string {
+		latestTagName, err := util.GetLatestReleaseFromGitHub("vim", "vim-appimage")
+		if err != nil {
+			panic(err)
+		}
+
+		return fmt.Sprintf(VIM_DOWNLOAD_URL_PATTERN, latestTagName, latestTagName)
+	},
 	installFunc: func(downloadUrl string, installDir string, fileName string) (string, error) {
 		return simpleInstall(downloadUrl, installDir, fileName)
 	},
@@ -59,8 +67,15 @@ var VIM Tool = Tool{
 
 // devcontainer/cli のツール情報
 var DEVCONTAINER Tool = Tool{
-	FileName:    DEVCONTAINER_FILE_NAME,
-	DownloadUrl: DOWNLOAD_URL_DEVCONTAINERS_CLI,
+	FileName: DEVCONTAINER_FILE_NAME,
+	CalculateDounloadUrl: func() string {
+		latestTagName, err := util.GetLatestReleaseFromGitHub("mikoto2000", "devcontainers-cli")
+		if err != nil {
+			panic(err)
+		}
+
+		return fmt.Sprintf(DOWNLOAD_URL_DEVCONTAINERS_CLI_PATTERN, latestTagName, latestTagName)
+	},
 	installFunc: func(downloadUrl string, installDir string, fileName string) (string, error) {
 		return simpleInstall(downloadUrl, installDir, fileName)
 	},
