@@ -10,9 +10,6 @@ import (
 
 /**
  * ユーザー名、リポジトリ名から最新リリースタグ名を返却する。
- *
- * latest タグの取得に成功した場合、タグ名を標準出力へ出力する。
- * latest タグの取得に失敗した場合、エラーを出力し、終了コード 1 で終了する。
  */
 func GetLatestReleaseFromGitHub(owner string, repository string) (string, error) {
 	ctx := context.Background()
