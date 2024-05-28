@@ -293,6 +293,32 @@ func main() {
 							},
 						},
 					},
+					{
+						Name:            "devcontainer",
+						Usage:           "Management devcontainer cli",
+						UsageText:       "devcontainer.vim tool devcontainer SUB_COMMAND",
+						HideHelp:        false,
+						SkipFlagParsing: false,
+						Subcommands: []*cli.Command{
+							{
+								Name:            "download",
+								Usage:           "Download newly devcontainer cli",
+								UsageText:       "devcontainer.vim tool devcontainer download",
+								HideHelp:        false,
+								SkipFlagParsing: false,
+								Action: func(cCtx *cli.Context) error {
+
+									// devcontainer のダウンロード
+									_, err := tools.DEVCONTAINER.Install(binDir, true)
+									if err != nil {
+										panic(err)
+									}
+
+									return nil
+								},
+							},
+						},
+					},
 				},
 			},
 		},
