@@ -13,13 +13,13 @@ import (
 // ツール情報
 type Tool struct {
 	FileName             string
-	CalculateDounloadUrl func() string
+	CalculateDownloadUrl func() string
 	installFunc          func(downloadUrl string, installDir string, name string, override bool) (string, error)
 }
 
 // ツールのインストールを実行
 func (t Tool) Install(installDir string, override bool) (string, error) {
-	return t.installFunc(t.CalculateDounloadUrl(), installDir, t.FileName, override)
+	return t.installFunc(t.CalculateDownloadUrl(), installDir, t.FileName, override)
 }
 
 // 単純なファイル配置でインストールが完了するもののインストール処理。
@@ -52,7 +52,7 @@ const VIM_DOWNLOAD_URL_PATTERN = "https://github.com/vim/vim-appimage/releases/d
 // Vim のツール情報
 var VIM Tool = Tool{
 	FileName: "vim",
-	CalculateDounloadUrl: func() string {
+	CalculateDownloadUrl: func() string {
 		latestTagName, err := util.GetLatestReleaseFromGitHub("vim", "vim-appimage")
 		if err != nil {
 			panic(err)
@@ -68,7 +68,7 @@ var VIM Tool = Tool{
 // devcontainer/cli のツール情報
 var DEVCONTAINER Tool = Tool{
 	FileName: DEVCONTAINER_FILE_NAME,
-	CalculateDounloadUrl: func() string {
+	CalculateDownloadUrl: func() string {
 		latestTagName, err := util.GetLatestReleaseFromGitHub("mikoto2000", "devcontainers-cli")
 		if err != nil {
 			panic(err)
