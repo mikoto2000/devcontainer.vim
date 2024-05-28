@@ -14,24 +14,24 @@ import (
 type Tool struct {
 	FileName             string
 	CalculateDounloadUrl func() string
-	installFunc          func(downloadUrl string, installDir string, name string) (string, error)
+	installFunc          func(downloadUrl string, installDir string, name string, override bool) (string, error)
 }
 
 // ツールのインストールを実行
-func (t Tool) Install(installDir string) (string, error) {
-	return t.installFunc(t.CalculateDounloadUrl(), installDir, t.FileName)
+func (t Tool) Install(installDir string, override bool) (string, error) {
+	return t.installFunc(t.CalculateDounloadUrl(), installDir, t.FileName, override)
 }
 
 // 単純なファイル配置でインストールが完了するもののインストール処理。
 //
 // downloadUrl からファイルをダウンロードし、 installDir に fileName とう名前で配置する。
-func simpleInstall(downloadUrl string, installDir string, fileName string) (string, error) {
+func simpleInstall(downloadUrl string, installDir string, fileName string, override bool) (string, error) {
 
 	// ツールの配置先組み立て
 	filePath := filepath.Join(installDir, fileName)
 
 	// ツールのダウンロード
-	err := download(downloadUrl, filePath)
+	err := download(downloadUrl, filePath, override)
 	if err != nil {
 		return filePath, err
 	}
@@ -60,8 +60,8 @@ var VIM Tool = Tool{
 
 		return fmt.Sprintf(VIM_DOWNLOAD_URL_PATTERN, latestTagName, latestTagName)
 	},
-	installFunc: func(downloadUrl string, installDir string, fileName string) (string, error) {
-		return simpleInstall(downloadUrl, installDir, fileName)
+	installFunc: func(downloadUrl string, installDir string, fileName string, override bool) (string, error) {
+		return simpleInstall(downloadUrl, installDir, fileName, override)
 	},
 }
 
@@ -76,16 +76,16 @@ var DEVCONTAINER Tool = Tool{
 
 		return fmt.Sprintf(DOWNLOAD_URL_DEVCONTAINERS_CLI_PATTERN, latestTagName, latestTagName)
 	},
-	installFunc: func(downloadUrl string, installDir string, fileName string) (string, error) {
-		return simpleInstall(downloadUrl, installDir, fileName)
+	installFunc: func(downloadUrl string, installDir string, fileName string, override bool) (string, error) {
+		return simpleInstall(downloadUrl, installDir, fileName, override)
 	},
 }
 
 // ファイルダウンロード処理。
 //
 // downloadUrl からファイルをダウンロードし、 destPath へ配置する。
-func download(downloadUrl string, destPath string) error {
-	if util.IsExists(destPath) {
+func download(downloadUrl string, destPath string, override bool) error {
+	if util.IsExists(destPath) && !override {
 		fmt.Printf("%s aleady exist, use this.\n", filepath.Base(destPath))
 	} else {
 		fmt.Printf("Download %s from %s ...", filepath.Base(destPath), downloadUrl)
