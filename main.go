@@ -40,7 +40,6 @@ var devcontainerVimJsonTemplate string
 const APP_NAME = "devcontainer.vim"
 
 func main() {
-
 	// Windows でも `${ localEnv:HOME }` でホームディレクトリの指定ができるように、
 	// 環境変数を更新
 	if runtime.GOOS == "windows" {
@@ -94,7 +93,7 @@ func main() {
 					// `docker run` でコンテナを立てる
 
 					// 必要なファイルのダウンロード
-					vimPath, err := tools.VIM.Install(binDir)
+					vimPath, err := tools.VIM.Install(binDir, false)
 					if err != nil {
 						panic(err)
 					}
@@ -123,14 +122,14 @@ func main() {
 					// devcontainer の template サブコマンド実行
 
 					// 必要なファイルのダウンロード
-					devcontainerFilePath, err := tools.DEVCONTAINER.Install(binDir)
+					devcontainerFilePath, err := tools.DEVCONTAINER.Install(binDir, false)
 					if err != nil {
 						panic(err)
 					}
 
 					// devcontainer を用いたコンテナ立ち上げ
 					output, _ := devcontainer.Templates(devcontainerFilePath, cCtx.Args().Slice()...)
-					fmt.Println("👺:"+output)
+					fmt.Println(output)
 
 					return nil
 				},
@@ -145,12 +144,12 @@ func main() {
 					// devcontainer でコンテナを立てる
 
 					// 必要なファイルのダウンロード
-					vimPath, err := tools.VIM.Install(binDir)
+					vimPath, err := tools.VIM.Install(binDir, false)
 					if err != nil {
 						panic(err)
 					}
 
-					devcontainerFilePath, err := tools.DEVCONTAINER.Install(binDir)
+					devcontainerFilePath, err := tools.DEVCONTAINER.Install(binDir, false)
 					if err != nil {
 						panic(err)
 					}
@@ -179,7 +178,7 @@ func main() {
 					// devcontainer でコンテナを立てる
 
 					// 必要なファイルのダウンロード
-					devcontainerPath, err := tools.DEVCONTAINER.Install(binDir)
+					devcontainerPath, err := tools.DEVCONTAINER.Install(binDir, false)
 					if err != nil {
 						panic(err)
 					}
@@ -259,6 +258,67 @@ func main() {
 					}
 
 					return nil
+				},
+			},
+			{
+				Name:            "tool",
+				Usage:           "Management tools",
+				UsageText:       "devcontainer.vim tool SUB_COMMAND",
+				HideHelp:        false,
+				SkipFlagParsing: false,
+				Subcommands: []*cli.Command{
+					{
+						Name:            "vim",
+						Usage:           "Management vim",
+						UsageText:       "devcontainer.vim tool vim SUB_COMMAND",
+						HideHelp:        false,
+						SkipFlagParsing: false,
+						Subcommands: []*cli.Command{
+							{
+								Name:            "download",
+								Usage:           "Download newly vim",
+								UsageText:       "devcontainer.vim tool vim download",
+								HideHelp:        false,
+								SkipFlagParsing: false,
+								Action: func(cCtx *cli.Context) error {
+
+									// Vim のダウンロード
+									_, err := tools.VIM.Install(binDir, true)
+									if err != nil {
+										panic(err)
+									}
+
+									return nil
+								},
+							},
+						},
+					},
+					{
+						Name:            "devcontainer",
+						Usage:           "Management devcontainer cli",
+						UsageText:       "devcontainer.vim tool devcontainer SUB_COMMAND",
+						HideHelp:        false,
+						SkipFlagParsing: false,
+						Subcommands: []*cli.Command{
+							{
+								Name:            "download",
+								Usage:           "Download newly devcontainer cli",
+								UsageText:       "devcontainer.vim tool devcontainer download",
+								HideHelp:        false,
+								SkipFlagParsing: false,
+								Action: func(cCtx *cli.Context) error {
+
+									// devcontainer のダウンロード
+									_, err := tools.DEVCONTAINER.Install(binDir, true)
+									if err != nil {
+										panic(err)
+									}
+
+									return nil
+								},
+							},
+						},
+					},
 				},
 			},
 		},

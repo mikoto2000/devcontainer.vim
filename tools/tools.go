@@ -12,26 +12,26 @@ import (
 
 // ツール情報
 type Tool struct {
-	FileName    string
-	DownloadUrl string
-	installFunc func(downloadUrl string, installDir string, name string) (string, error)
+	FileName             string
+	CalculateDownloadUrl func() string
+	installFunc          func(downloadUrl string, installDir string, name string, override bool) (string, error)
 }
 
 // ツールのインストールを実行
-func (t Tool) Install(installDir string) (string, error) {
-	return t.installFunc(t.DownloadUrl, installDir, t.FileName)
+func (t Tool) Install(installDir string, override bool) (string, error) {
+	return t.installFunc(t.CalculateDownloadUrl(), installDir, t.FileName, override)
 }
 
 // 単純なファイル配置でインストールが完了するもののインストール処理。
 //
 // downloadUrl からファイルをダウンロードし、 installDir に fileName とう名前で配置する。
-func simpleInstall(downloadUrl string, installDir string, fileName string) (string, error) {
+func simpleInstall(downloadUrl string, installDir string, fileName string, override bool) (string, error) {
 
 	// ツールの配置先組み立て
 	filePath := filepath.Join(installDir, fileName)
 
 	// ツールのダウンロード
-	err := download(downloadUrl, filePath)
+	err := download(downloadUrl, filePath, override)
 	if err != nil {
 		return filePath, err
 	}
@@ -46,31 +46,46 @@ func simpleInstall(downloadUrl string, installDir string, fileName string) (stri
 }
 
 // Vim のダウンロード URL
-const VIM_DOWNLOAD_URL = "https://github.com/vim/vim-appimage/releases/download/v9.1.0421/Vim-v9.1.0421.glibc2.29-x86_64.AppImage"
+// ※ 全ての `%s` はリリースタグ名
+const VIM_DOWNLOAD_URL_PATTERN = "https://github.com/vim/vim-appimage/releases/download/%s/Vim-%s.glibc2.29-x86_64.AppImage"
 
 // Vim のツール情報
 var VIM Tool = Tool{
-	FileName:    "vim",
-	DownloadUrl: VIM_DOWNLOAD_URL,
-	installFunc: func(downloadUrl string, installDir string, fileName string) (string, error) {
-		return simpleInstall(downloadUrl, installDir, fileName)
+	FileName: "vim",
+	CalculateDownloadUrl: func() string {
+		latestTagName, err := util.GetLatestReleaseFromGitHub("vim", "vim-appimage")
+		if err != nil {
+			panic(err)
+		}
+
+		return fmt.Sprintf(VIM_DOWNLOAD_URL_PATTERN, latestTagName, latestTagName)
+	},
+	installFunc: func(downloadUrl string, installDir string, fileName string, override bool) (string, error) {
+		return simpleInstall(downloadUrl, installDir, fileName, override)
 	},
 }
 
 // devcontainer/cli のツール情報
 var DEVCONTAINER Tool = Tool{
-	FileName:    DEVCONTAINER_FILE_NAME,
-	DownloadUrl: DOWNLOAD_URL_DEVCONTAINERS_CLI,
-	installFunc: func(downloadUrl string, installDir string, fileName string) (string, error) {
-		return simpleInstall(downloadUrl, installDir, fileName)
+	FileName: DEVCONTAINER_FILE_NAME,
+	CalculateDownloadUrl: func() string {
+		latestTagName, err := util.GetLatestReleaseFromGitHub("mikoto2000", "devcontainers-cli")
+		if err != nil {
+			panic(err)
+		}
+
+		return fmt.Sprintf(DOWNLOAD_URL_DEVCONTAINERS_CLI_PATTERN, latestTagName, latestTagName)
+	},
+	installFunc: func(downloadUrl string, installDir string, fileName string, override bool) (string, error) {
+		return simpleInstall(downloadUrl, installDir, fileName, override)
 	},
 }
 
 // ファイルダウンロード処理。
 //
 // downloadUrl からファイルをダウンロードし、 destPath へ配置する。
-func download(downloadUrl string, destPath string) error {
-	if util.IsExists(destPath) {
+func download(downloadUrl string, destPath string, override bool) error {
+	if util.IsExists(destPath) && !override {
 		fmt.Printf("%s aleady exist, use this.\n", filepath.Base(destPath))
 	} else {
 		fmt.Printf("Download %s from %s ...", filepath.Base(destPath), downloadUrl)

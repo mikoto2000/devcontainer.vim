@@ -1,18 +1,10 @@
 # Development
 
-## Start container
+## Start dev container
 
 ```sh
-docker run -it --rm -v "$(pwd):/work" --workdir /work --name devcontainer.vim golang:1.22.1-bookworm
+devcontainer.vim start .
 ```
-
-
-## Create project
-
-```sh
-go mod init github.com/mikoto2000/devcontainer.vim
-```
-
 
 ## Format source
 
@@ -24,5 +16,17 @@ go fmt ./...
 
 ```sh
 make build-all
+```
+
+## Start dev container without devcontainer.vim
+
+```sh
+docker run -it --rm -v "$(pwd):/work" --workdir /work --name devcontainer.vim golang:1.22.1-bookworm
+```
+
+## Create project
+
+```sh
+go mod init github.com/mikoto2000/devcontainer.vim
 ```
 
