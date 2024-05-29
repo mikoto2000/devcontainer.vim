@@ -1,8 +1,9 @@
 # devcontainer.vim
 
-コンテナ上で Vim を使った開発をするためのツール。
+コンテナ上で Vim を使った開発をするためのツール。 (VSCode Dev Container の Vim 版)
 
-VSCode Dev Container の Vim 版を目指しています。
+VSCode 向けに作成された `devcontainer.json` に追加する形で Vim による Dev Container 開発のための設定を追加・起動するツールです。
+
 
 ## Usage:
 
@@ -48,6 +49,19 @@ TODO:
 
 ```sh
 devcontainer.vim down .
+```
+
+
+#### ツールのアップデート
+
+`devcontainer.vim` が内部で利用するツールをアップデートしたい場合には、 `tool` サブコマンドを使用する。
+
+```sh
+# Vim のアップデート
+devcontainer.vim tool vim download
+
+# devcontainer CLI のアップデート
+devcontainer.vim tool devcontainer download
 ```
 
 
@@ -179,8 +193,8 @@ devcontainer.vim config -g --home /home/containerUser > .devcontainer/devcontain
 - [x] : v0.6.0
     - [x] : `devcontainer up` の出力を表示する
     - [x] : `devcontainer templates apply` コマンドを使えるようにする
-- [ ] : v0.7.0
-    - [ ] : Vim アップデートコマンドを追加
+- [x] : v0.7.0
+    - [x] : Vim アップデートコマンドを追加
 - [ ] : v0.8.0
     - [ ] : クリップボード転送機能追加
         1. TCP でテキストを待ち受け、受信したテキストをクリップボードへ反映するプログラムを作る
