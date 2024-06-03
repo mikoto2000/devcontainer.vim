@@ -7,11 +7,11 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/util"
 )
 
-// devcontainer/cli のツール情報
-var DEVCONTAINER Tool = Tool{
-	FileName: DEVCONTAINER_FILE_NAME,
+// clipboard-data-receiver のツール情報
+var CDR Tool = Tool{
+	FileName: CDR_FILE_NAME,
 	CalculateDownloadUrl: func() string {
-		latestTagName, err := util.GetLatestReleaseFromGitHub("mikoto2000", "devcontainers-cli")
+		latestTagName, err := util.GetLatestReleaseFromGitHub("mikoto2000", "clipboard-data-receiver")
 		if err != nil {
 			panic(err)
 		}

@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+	"text/template"
 
 	"github.com/mikoto2000/devcontainer.vim/util"
 )
@@ -46,8 +48,7 @@ func simpleInstall(downloadUrl string, installDir string, fileName string, overr
 }
 
 // Vim のダウンロード URL
-// ※ 全ての `%s` はリリースタグ名
-const VIM_DOWNLOAD_URL_PATTERN = "https://github.com/vim/vim-appimage/releases/download/%s/Vim-%s.glibc2.29-x86_64.AppImage"
+const VIM_DOWNLOAD_URL_PATTERN = "https://github.com/vim/vim-appimage/releases/download/{{ .TagName }}/Vim-{{ .TagName }}.glibc2.29-x86_64.AppImage"
 
 // Vim のツール情報
 var VIM Tool = Tool{
@@ -58,7 +59,19 @@ var VIM Tool = Tool{
 			panic(err)
 		}
 
-		return fmt.Sprintf(VIM_DOWNLOAD_URL_PATTERN, latestTagName, latestTagName)
+		pattern := "pattern"
+		tmpl, err := template.New(pattern).Parse(VIM_DOWNLOAD_URL_PATTERN)
+		if err != nil {
+			panic(err)
+		}
+
+		tmplParams := map[string]string{"TagName": latestTagName}
+		var downloadUrl strings.Builder
+		err = tmpl.Execute(&downloadUrl, tmplParams)
+		if err != nil {
+			panic(err)
+		}
+		return downloadUrl.String()
 	},
 	installFunc: func(downloadUrl string, installDir string, fileName string, override bool) (string, error) {
 		return simpleInstall(downloadUrl, installDir, fileName, override)

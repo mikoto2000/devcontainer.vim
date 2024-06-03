@@ -319,6 +319,32 @@ func main() {
 							},
 						},
 					},
+					{
+						Name:            "clipboard-data-receiver",
+						Usage:           "Management clipboard-data-receiver",
+						UsageText:       "devcontainer.vim tool clipboard-data-receiver SUB_COMMAND",
+						HideHelp:        false,
+						SkipFlagParsing: false,
+						Subcommands: []*cli.Command{
+							{
+								Name:            "download",
+								Usage:           "Download newly devcontainer cli",
+								UsageText:       "devcontainer.vim tool devcontainer download",
+								HideHelp:        false,
+								SkipFlagParsing: false,
+								Action: func(cCtx *cli.Context) error {
+
+									// devcontainer のダウンロード
+									_, err := tools.CDR.Install(binDir, true)
+									if err != nil {
+										panic(err)
+									}
+
+									return nil
+								},
+							},
+						},
+					},
 				},
 			},
 		},

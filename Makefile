@@ -22,6 +22,9 @@ WATCH_SRC := ./main.go \
 						 ./tools/devcontainer.go \
 						 ./tools/devcontainer_nowindows.go \
 						 ./tools/devcontainer_windows.go \
+						 ./tools/clipboard-data-receiver.go \
+						 ./tools/clipboard-data-receiver_nowindows.go \
+						 ./tools/clipboard-data-receiver_windows.go \
 						 ./util/util.go
 
 ### 開発関連
@@ -30,7 +33,7 @@ WATCH_SRC := ./main.go \
 all: build
 build: build/devcontainer.vim
 build/devcontainer.vim: ${WATCH_SRC}
-	go build -ldflags=${LD_FLAGS} -trimpath -o ./build/${APP_NAME} ${SRC}
+	go build -ldflags=${LD_FLAGS} -trimpath -o ./build/${APP_NAME}
 
 build-all: build-windows build-linux build-darwin
 
