@@ -19,8 +19,9 @@ WATCH_SRC := ./main.go \
 						 ./dockerCompose/dockerCompose.go \
 						 ./dockerCompose/dockerComposePsResult.go \
 						 ./tools/tools.go \
-						 ./tools/tools_nowindows.go \
-						 ./tools/tools_windows.go \
+						 ./tools/devcontainer.go \
+						 ./tools/devcontainer_nowindows.go \
+						 ./tools/devcontainer_windows.go \
 						 ./util/util.go
 
 ### 開発関連
