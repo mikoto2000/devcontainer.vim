@@ -114,9 +114,16 @@ func download(downloadUrl string, destPath string, override bool) error {
 }
 
 // run サブコマンド用のツールインストール
-func InstallRunTools(installDir string) (string, error) {
+func InstallRunTools(installDir string) (string, string, error) {
 	vimPath, err := VIM.Install(installDir, false)
-	return vimPath, err
+	if err != nil {
+		return vimPath, "", err
+	}
+	cdrPath, err := CDR.Install(installDir, false)
+	if err != nil {
+		return vimPath, cdrPath, err
+	}
+	return vimPath, cdrPath, err
 }
 
 // start サブコマンド用のツールインストール

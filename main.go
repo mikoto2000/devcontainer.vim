@@ -92,12 +92,6 @@ func main() {
 				Action: func(cCtx *cli.Context) error {
 					// `docker run` でコンテナを立てる
 
-					// 必要なファイルのダウンロード
-					vimPath, err := tools.InstallRunTools(binDir)
-					if err != nil {
-						panic(err)
-					}
-
 					// Requirements のチェック
 					// 1. docker
 					isExistsDocker := util.IsExistsCommand("docker")
@@ -106,8 +100,14 @@ func main() {
 						os.Exit(1)
 					}
 
+					// 必要なファイルのダウンロード
+					vimPath, cdrPath, err := tools.InstallRunTools(binDir)
+					if err != nil {
+						panic(err)
+					}
+
 					// コンテナ起動
-					docker.Run(cCtx.Args().Slice(), vimPath)
+					docker.Run(cCtx.Args().Slice(), vimPath, cdrPath)
 
 					return nil
 				},

@@ -15,7 +15,7 @@ const CONTAINER_COMMAND = "docker"
 var DOCKER_RUN_ARGS_PREFIX = []string{"run", "-d", "--rm"}
 var DOCKER_RUN_ARGS_SUFFIX = []string{"sh", "-c", "trap \"exit 0\" TERM; sleep infinity & wait"}
 
-func Run(args []string, vimFilePath string) {
+func Run(args []string, vimFilePath string, cdrPath string) {
 	vimFileName := filepath.Base(vimFilePath)
 
 	// バックグラウンドでコンテナを起動
@@ -58,6 +58,8 @@ func Run(args []string, vimFilePath string) {
 	}
 	fmt.Printf(" done.\n")
 
+	// TODO: clipboard-data-receiver を起動
+
 	// コンテナへ接続
 	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> /Vim-AppImage`
 
@@ -77,6 +79,8 @@ func Run(args []string, vimFilePath string) {
 
 	// 失敗してもコンテナのあと片付けはしたいのでエラーを無視
 	dockerExec.Run()
+
+	// TODO: clipboard-data-receiver を停止
 
 	// コンテナ停止
 	// `docker stop <dockerrun 時に標準出力に表示される CONTAINER ID>`
