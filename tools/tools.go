@@ -112,3 +112,41 @@ func download(downloadUrl string, destPath string, override bool) error {
 
 	return nil
 }
+
+// run サブコマンド用のツールインストール
+func InstallRunTools(installDir string) (string, error) {
+	vimPath, err := VIM.Install(installDir, false)
+	return vimPath, err
+}
+
+// start サブコマンド用のツールインストール
+func InstallStartTools(installDir string) (string, string, error) {
+	vimPath, err := VIM.Install(installDir, false)
+	if err != nil {
+		return vimPath, "", err
+	}
+	devcontainerPath, err := DEVCONTAINER.Install(installDir, false)
+	if err != nil {
+		return vimPath, devcontainerPath, err
+	}
+	return vimPath, devcontainerPath, err
+}
+
+// devcontainer サブコマンド用のツールインストール
+func InstallDevcontainerTools(installDir string) (string, error) {
+	devcontainerPath, err := DEVCONTAINER.Install(installDir, false)
+	return devcontainerPath, err
+}
+
+// Templates サブコマンド用のツールインストール
+func InstallTemplatesTools(installDir string) (string, error) {
+	devcontainerPath, err := DEVCONTAINER.Install(installDir, false)
+	return devcontainerPath, err
+}
+
+// Down サブコマンド用のツールインストール
+func InstallDownTools(installDir string) (string, error) {
+	devcontainerPath, err := DEVCONTAINER.Install(installDir, false)
+	return devcontainerPath, err
+}
+

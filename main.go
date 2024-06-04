@@ -93,7 +93,7 @@ func main() {
 					// `docker run` でコンテナを立てる
 
 					// 必要なファイルのダウンロード
-					vimPath, err := tools.VIM.Install(binDir, false)
+					vimPath, err := tools.InstallRunTools(binDir)
 					if err != nil {
 						panic(err)
 					}
@@ -122,7 +122,7 @@ func main() {
 					// devcontainer の template サブコマンド実行
 
 					// 必要なファイルのダウンロード
-					devcontainerFilePath, err := tools.DEVCONTAINER.Install(binDir, false)
+					devcontainerFilePath, err := tools.InstallTemplatesTools(binDir)
 					if err != nil {
 						panic(err)
 					}
@@ -144,12 +144,7 @@ func main() {
 					// devcontainer でコンテナを立てる
 
 					// 必要なファイルのダウンロード
-					vimPath, err := tools.VIM.Install(binDir, false)
-					if err != nil {
-						panic(err)
-					}
-
-					devcontainerFilePath, err := tools.DEVCONTAINER.Install(binDir, false)
+					vimPath, devcontainerFilePath, err := tools.InstallStartTools(binDir)
 					if err != nil {
 						panic(err)
 					}
@@ -178,7 +173,7 @@ func main() {
 					// devcontainer でコンテナを立てる
 
 					// 必要なファイルのダウンロード
-					devcontainerPath, err := tools.DEVCONTAINER.Install(binDir, false)
+					devcontainerPath, err := tools.InstallDownTools(binDir)
 					if err != nil {
 						panic(err)
 					}
@@ -334,7 +329,7 @@ func main() {
 								SkipFlagParsing: false,
 								Action: func(cCtx *cli.Context) error {
 
-									// devcontainer のダウンロード
+									// clipboard-data-receiver のダウンロード
 									_, err := tools.CDR.Install(binDir, true)
 									if err != nil {
 										panic(err)
