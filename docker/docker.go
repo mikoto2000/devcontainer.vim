@@ -15,7 +15,7 @@ const CONTAINER_COMMAND = "docker"
 var DOCKER_RUN_ARGS_PREFIX = []string{"run", "-d", "--rm"}
 var DOCKER_RUN_ARGS_SUFFIX = []string{"sh", "-c", "trap \"exit 0\" TERM; sleep infinity & wait"}
 
-func Run(args []string, vimFilePath string, cdrPath string) {
+func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker string) {
 	vimFileName := filepath.Base(vimFilePath)
 
 	// バックグラウンドでコンテナを起動

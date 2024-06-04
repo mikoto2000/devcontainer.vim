@@ -54,8 +54,7 @@ func main() {
 	//    `os.UserConfigDir` + `devcontainer.vim`
 	// 2. ユーザーキャッシュ用ディレクトリ
 	//    `os.UserCacheDir` + `devcontainer.vim`
-	util.CreateDirectory(os.UserConfigDir, APP_NAME)
-	appCacheDir, binDir, appConfigDir := util.CreateDirectory(os.UserCacheDir, APP_NAME)
+	appCacheDir, binDir, configDirForDocker, configDirForDevcontainer := util.CreateDirectory(os.UserCacheDir, APP_NAME)
 
 	devcontainerVimArgProcess := (&cli.App{
 		Name:                   "devcontainer.vim",
@@ -107,7 +106,7 @@ func main() {
 					}
 
 					// コンテナ起動
-					docker.Run(cCtx.Args().Slice(), vimPath, cdrPath)
+					docker.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker)
 
 					return nil
 				},
@@ -152,7 +151,7 @@ func main() {
 					// コマンドライン引数の末尾は `--workspace-folder` の値として使う
 					args := cCtx.Args().Slice()
 					workspaceFolder := args[len(args)-1]
-					configFilePath, err := createConfigFile(devcontainerFilePath, workspaceFolder, appConfigDir)
+					configFilePath, err := createConfigFile(devcontainerFilePath, workspaceFolder, configDirForDevcontainer)
 					if err != nil {
 						panic(err)
 					}
@@ -355,7 +354,7 @@ func main() {
 // devcontainer.vim 起動時に使用する設定ファイルを作成する
 // 設定ファイルは、 devcontainer.vim のキャッシュ内の `config` ディレクトリに、
 // ワークスペースフォルダのパスを md5 ハッシュ化した名前のディレクトリに格納する.
-func createConfigFile(devcontainerFilePath string, workspaceFolder string, appConfigDir string) (string, error) {
+func createConfigFile(devcontainerFilePath string, workspaceFolder string, configDirForDevcontainer string) (string, error) {
 	// devcontainer の設定ファイルパス取得
 	configFilePath, err := devcontainer.GetConfigurationFilePath(devcontainerFilePath, workspaceFolder)
 	if err != nil {
@@ -367,7 +366,7 @@ func createConfigFile(devcontainerFilePath string, workspaceFolder string, appCo
 	additionalConfigurationFilePath := configurationFileName + ".vim.json"
 
 	// 設定管理フォルダに JSON を配置
-	mergedConfigFilePath, err := util.CreateConfigFileForDevcontainerVim(appConfigDir, workspaceFolder, configFilePath, additionalConfigurationFilePath)
+	mergedConfigFilePath, err := util.CreateConfigFileForDevcontainer(configDirForDevcontainer, workspaceFolder, configFilePath, additionalConfigurationFilePath)
 
 	fmt.Printf("Use configuration file: `%s`", mergedConfigFilePath)
 

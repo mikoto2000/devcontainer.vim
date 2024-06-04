@@ -32,7 +32,7 @@ type GetDirFunc func() (string, error)
 // devcontainer.vim 用のキャッシュディレクトリ
 // devcontainer.vim 用の実行バイナリ格納ディレクトリ
 // devcontainer.vim のマージ済み設定ファイル格納ディレクトリ
-func CreateDirectory(pathFunc GetDirFunc, dirName string) (string, string, string) {
+func CreateDirectory(pathFunc GetDirFunc, dirName string) (string, string, string, string) {
 	var baseDir, err = pathFunc()
 	if err != nil {
 		panic(err)
@@ -49,7 +49,17 @@ func CreateDirectory(pathFunc GetDirFunc, dirName string) (string, string, strin
 	if err := os.MkdirAll(configDir, 0766); err != nil {
 		panic(err)
 	}
-	return appCacheDir, binDir, configDir
+	// docker 用のコンフィグディレクトリ作成
+	var configDirForDocker = filepath.Join(baseDir, dirName, configDirName, "docker")
+	if err := os.MkdirAll(configDirForDocker, 0766); err != nil {
+		panic(err)
+	}
+	// devcontainer 用のコンフィグディレクトリ作成
+	var configDirForDevcontainer = filepath.Join(baseDir, dirName, configDirName, "devcontainer")
+	if err := os.MkdirAll(configDirForDevcontainer, 0766); err != nil {
+		panic(err)
+	}
+	return appCacheDir, binDir, configDirForDocker, configDirForDevcontainer
 }
 
 func IsExists(filePath string) bool {
@@ -122,7 +132,7 @@ func readAndMergeConfig(baseConfigPath string, additionalConfigPath string) ([]b
 // configFilePath と additionalConfigFilePath の JSON をマージし、
 // devcontainer.vim のキャッシュディレクトリ内の設定ファイル格納ディレクトリへ格納する。
 // 作成した devcontainer.json を格納しているディレクトリのパスを返却する。
-func CreateConfigFileForDevcontainerVim(appConfigDir string, workspaceFolder string, configFilePath string, additionalConfigFilePath string) (string, error) {
+func CreateConfigFileForDevcontainer(configDirForDevcontainer string, workspaceFolder string, configFilePath string, additionalConfigFilePath string) (string, error) {
 
 	// マージ要否判定して最終的に使う JSON のコンテンツを組み立てる
 	var configFileContent []byte
@@ -139,7 +149,7 @@ func CreateConfigFileForDevcontainerVim(appConfigDir string, workspaceFolder str
 	}
 
 	// 設定管理フォルダに JSON を配置
-	generateConfigDir := GetConfigDir(appConfigDir, workspaceFolder)
+	generateConfigDir := GetConfigDir(configDirForDevcontainer, workspaceFolder)
 	generateConfigFilePath := filepath.Join(generateConfigDir, "devcontainer.json")
 	err = os.MkdirAll(generateConfigDir, 0777)
 	if err != nil {
@@ -153,9 +163,14 @@ func CreateConfigFileForDevcontainerVim(appConfigDir string, workspaceFolder str
 }
 
 // devcontainer.vim 用の devcontainer.json 格納先ディレクトリを計算して返却する。
-// `<devcontainer.vim のキャッシュディレクトリ>/config/<workspaceFolder のパスを md5 播種化した文字列>` のディレクトリを返却
-func GetConfigDir(appConfigDir string, workspaceFolder string) string {
-	workspaceFolderHash := md5.Sum([]byte(workspaceFolder))
+// `<devcontainer.vim のキャッシュディレクトリ>/config/<workspaceFolder の絶対パスを md5 播種化した文字列>` のディレクトリを返却
+func GetConfigDir(configDir string, workspaceFolder string) string {
+	workspaceFolderAbs, err := filepath.Abs(workspaceFolder)
+	if err != nil {
+		panic(err)
+	}
+	workspaceFolderHash := md5.Sum([]byte(workspaceFolderAbs))
+
 	workspaceFolderHashString := hex.EncodeToString(workspaceFolderHash[:])
-	return filepath.Join(appConfigDir, workspaceFolderHashString)
+	return filepath.Join(configDir, workspaceFolderHashString)
 }
