@@ -127,16 +127,21 @@ func InstallRunTools(installDir string) (string, string, error) {
 }
 
 // start サブコマンド用のツールインストール
-func InstallStartTools(installDir string) (string, string, error) {
+// 戻り値は、 vimPath, devcontainerPath, cdrPath, error
+func InstallStartTools(installDir string) (string, string, string, error) {
 	vimPath, err := VIM.Install(installDir, false)
 	if err != nil {
-		return vimPath, "", err
+		return vimPath, "",  "", err
 	}
 	devcontainerPath, err := DEVCONTAINER.Install(installDir, false)
 	if err != nil {
-		return vimPath, devcontainerPath, err
+		return vimPath, devcontainerPath, "", err
 	}
-	return vimPath, devcontainerPath, err
+	cdrPath, err := CDR.Install(installDir, false)
+	if err != nil {
+		return vimPath, devcontainerPath, cdrPath, err
+	}
+	return vimPath, devcontainerPath, cdrPath, err
 }
 
 // devcontainer サブコマンド用のツールインストール

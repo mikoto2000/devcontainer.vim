@@ -15,13 +15,23 @@ const CDR_FILE_NAME = "clipboard-data-receiver.exe"
 // clipboard-data-receiver のダウンロード URL
 const DOWNLOAD_URL_CDR_PATTERN = "https://github.com/mikoto2000/clipboard-data-receiver/releases/download/{{ .TagName }}/clipboard-data-receiver.windows-amd64.exe"
 
-func RunCdr(cdrFilePath string, configFileDir string) (int, int, error) {
+func RunCdrForDocker(cdrPath string, configFileDir string) (int, int, error) {
 	// configFileDir から pid ファイルと port ファイルのパスを組み立てる
 	pidFile := filepath.Join(configFileDir, "pid")
 	portFile := filepath.Join(configFileDir, "port")
+	return runCdr(cdrPath, pidFile, portFile)
+}
 
-	fmt.Println("\""+cdrFilePath+"\"", "--pid-file", pidFile, "--port-file", portFile, "--random-port")
-	cdrRunCommand := exec.Command(cdrFilePath, "--pid-file", pidFile, "--port-file", portFile, "--random-port")
+func RunCdrForDevcontainer(cdrPath string, configFileDir string) (int, int, error) {
+	// configFileDir から pid ファイルと port ファイルのパスを組み立てる
+	pidFile := filepath.Join(configFileDir, "pid")
+	portFile := filepath.Join(configFileDir, "port")
+	return runCdr(cdrPath, pidFile, portFile)
+}
+
+func runCdr(cdrPath string, pidFile string, portFile string) (int, int, error) {
+	fmt.Println("\""+cdrPath+"\"", "--pid-file", pidFile, "--port-file", portFile, "--random-port")
+	cdrRunCommand := exec.Command(cdrPath, "--pid-file", pidFile, "--port-file", portFile, "--random-port")
 	var stdout strings.Builder
 	cdrRunCommand.Stdout = &stdout
 	err := cdrRunCommand.Start()

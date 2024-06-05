@@ -106,7 +106,8 @@ func main() {
 					}
 
 					// clipboard-data-receiver を起動
-					pid, port, err := tools.RunCdr(cdrPath, configDirForDocker)
+					// TODO: コンテナ ID 入れなきゃいけないから、 docker.Run に移動しないと...
+					pid, port, err := tools.RunCdrForDevcontainer(cdrPath, configDirForDevcontainer)
 					if err != nil {
 						panic(err)
 					}
@@ -116,6 +117,7 @@ func main() {
 					docker.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker)
 
 					// clipboard-data-receiver を停止
+					// TODO: 起動と対称性をとるため、 docker.Run に移動
 					process, err := os.FindProcess(pid)
 					if err != nil {
 						panic(err)
@@ -157,7 +159,7 @@ func main() {
 					// devcontainer でコンテナを立てる
 
 					// 必要なファイルのダウンロード
-					vimPath, devcontainerFilePath, err := tools.InstallStartTools(binDir)
+					vimPath, devcontainerPath, cdrPath, err := tools.InstallStartTools(binDir)
 					if err != nil {
 						panic(err)
 					}
@@ -165,13 +167,29 @@ func main() {
 					// コマンドライン引数の末尾は `--workspace-folder` の値として使う
 					args := cCtx.Args().Slice()
 					workspaceFolder := args[len(args)-1]
-					configFilePath, err := createConfigFile(devcontainerFilePath, workspaceFolder, configDirForDevcontainer)
+					configFilePath, err := createConfigFile(devcontainerPath, workspaceFolder, configDirForDevcontainer)
 					if err != nil {
 						panic(err)
 					}
 
+					// clipboard-data-receiver を起動
+					// TODO: コンテナ ID 入れなきゃいけないから、 devcontainer.ExecuteDevcontainer に移動しないと...
+					pid, port, err := tools.RunCdrForDocker(cdrPath, configDirForDocker)
+					if err != nil {
+						panic(err)
+					}
+					fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
+
 					// devcontainer を用いたコンテナ立ち上げ
-					devcontainer.ExecuteDevcontainer(args, devcontainerFilePath, vimPath, configFilePath)
+					devcontainer.ExecuteDevcontainer(args, devcontainerPath, vimPath, configFilePath)
+
+					// clipboard-data-receiver を停止
+					// TODO: 起動と対称性をとるため、 docker.Run に移動
+					process, err := os.FindProcess(pid)
+					if err != nil {
+						panic(err)
+					}
+					process.Kill()
 
 					return nil
 				},
