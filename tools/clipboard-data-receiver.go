@@ -17,7 +17,7 @@ var CDR Tool = Tool{
 		}
 
 		pattern := "pattern"
-		tmpl, err := template.New(pattern).Parse(VIM_DOWNLOAD_URL_PATTERN)
+		tmpl, err := template.New(pattern).Parse(DOWNLOAD_URL_CDR_PATTERN)
 		if err != nil {
 			panic(err)
 		}
