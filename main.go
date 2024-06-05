@@ -115,7 +115,12 @@ func main() {
 					// コンテナ起動
 					docker.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker)
 
-					// TODO: clipboard-data-receiver を停止
+					// clipboard-data-receiver を停止
+					process, err := os.FindProcess(pid)
+					if err != nil {
+						panic(err)
+					}
+					process.Kill()
 
 					return nil
 				},
