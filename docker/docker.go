@@ -58,7 +58,7 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	}
 	fmt.Printf(" done.\n")
 
-	// TODO: clipboard-data-receiver を起動
+	// TODO: Vim 関連ファイルの転送(`SendToTcp.vim` と、追加の `vimrc`)
 
 	// コンテナへ接続
 	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> /Vim-AppImage`
@@ -79,8 +79,6 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 
 	// 失敗してもコンテナのあと片付けはしたいのでエラーを無視
 	dockerExec.Run()
-
-	// TODO: clipboard-data-receiver を停止
 
 	// コンテナ停止
 	// `docker stop <dockerrun 時に標準出力に表示される CONTAINER ID>`

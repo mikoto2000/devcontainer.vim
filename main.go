@@ -105,8 +105,17 @@ func main() {
 						panic(err)
 					}
 
+					// clipboard-data-receiver を起動
+					pid, port, err := tools.RunCdr(cdrPath, configDirForDocker)
+					if err != nil {
+						panic(err)
+					}
+					fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
+
 					// コンテナ起動
 					docker.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker)
+
+					// TODO: clipboard-data-receiver を停止
 
 					return nil
 				},
