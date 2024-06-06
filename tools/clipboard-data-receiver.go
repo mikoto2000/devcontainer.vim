@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -127,17 +128,36 @@ func runCdrForWsl(cdrPath string, pidFile string, portFile string) (int, int, er
 	}
 
 	// clipboard-data-receiver の出力を待つ
-	// タイムアウト 10 秒
-	var pid, port int
+	// WSL から Windows の exe を起動すると、なぜか標準出力が取得できないので
+	// pid ファイル, port ファイルからポート番号を取得する
+
+	var pid int
 	for i := 0; i < 10; i++ {
-		pid, _, port, err = GetProcessInfo(stdout.String())
+		pidFileContentBytes, err := os.ReadFile(pidFile)
 		if err != nil {
+			// PID ファイル出力まで待つ
 			time.Sleep(1 * time.Second)
 			continue
-		} else {
-			break
 		}
+
+		pid, err = strconv.Atoi(string(pidFileContentBytes))
+		break
 	}
+
+	// タイムアウト 10 秒
+	var port int
+	for i := 0; i < 10; i++ {
+		portFileContentBytes, err := os.ReadFile(portFile)
+		if err != nil {
+			// ポートファイル出力まで待つ
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		port, err = strconv.Atoi(string(portFileContentBytes))
+		break
+	}
+
 
 	return pid, port, nil
 }
