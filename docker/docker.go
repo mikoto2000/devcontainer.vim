@@ -46,15 +46,10 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 
 	// コンテナへ appimage を転送して実行権限を追加
 	// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
-	dockerCpArgs := []string{"cp", vimFilePath, containerId + ":/"}
-	fmt.Printf("Copy AppImage: `%s \"%s\"` ...", CONTAINER_COMMAND, strings.Join(dockerCpArgs, "\" \""))
-	copyResult, err := exec.Command(CONTAINER_COMMAND, dockerCpArgs...).CombinedOutput()
+	err = Cp("AppImage", vimFilePath, containerId, "/")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "AppImage copy error.")
-		fmt.Fprintln(os.Stderr, string(copyResult))
 		panic(err)
 	}
-	fmt.Printf(" done.\n")
 
 	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> chmod +x /Vim-AppImage`
 	dockerChownArgs := []string{"exec", containerId, "sh", "-c", "chmod +x /" + vimFileName}
@@ -68,6 +63,16 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	fmt.Printf(" done.\n")
 
 	// TODO: Vim 関連ファイルの転送(`SendToTcp.vim` と、追加の `vimrc`)
+	sendToTcp, err := tools.CreateSendToTcp(configDirForDocker, port)
+	if err != nil {
+		panic(err)
+	}
+
+	// コンテナへ SendToTcp.vim を転送
+	err = Cp("SendToTcp.vim", sendToTcp, containerId, "/")
+	if err != nil {
+		panic(err)
+	}
 
 	// コンテナへ接続
 	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> /Vim-AppImage`
@@ -75,7 +80,7 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	dockerVimArgs := []string{"exec", "-it", containerId, "/" + vimFileName, "--appimage-extract-and-run"}
+	dockerVimArgs := []string{"exec", "-it", containerId, "/" + vimFileName, "--appimage-extract-and-run", "-S", "/SendToTcp.vim"}
 	fmt.Printf("Start vim: `%s \"%s\"`\n", CONTAINER_COMMAND, strings.Join(dockerVimArgs, "\" \""))
 	dockerExec := exec.CommandContext(ctx, CONTAINER_COMMAND, dockerVimArgs...)
 	dockerExec.Stdin = os.Stdin
@@ -133,4 +138,17 @@ func Rm(containerId string) error {
 	dockerRmCommand := exec.Command("docker", "rm", "-f", containerId)
 	err := dockerRmCommand.Start()
 	return err
+}
+
+func Cp(tagForLog string, from string, containerId string, to string) error {
+	dockerCpArgs := []string{"cp", from, containerId + ":" + to}
+	fmt.Printf("Copy %s: `%s \"%s\"` ...", tagForLog, CONTAINER_COMMAND, strings.Join(dockerCpArgs, "\" \""))
+	copyResult, err := exec.Command(CONTAINER_COMMAND, dockerCpArgs...).CombinedOutput()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "AppImage copy error.")
+		fmt.Fprintln(os.Stderr, string(copyResult))
+		return err
+	}
+	fmt.Printf(" done.\n")
+	return nil
 }

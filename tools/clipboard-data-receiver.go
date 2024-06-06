@@ -20,6 +20,12 @@ const CDR_FILE_NAME_FOR_WINDOWS = "clipboard-data-receiver.exe"
 const DOWNLOAD_URL_CDR_PATTERN = "https://github.com/mikoto2000/clipboard-data-receiver/releases/download/{{ .TagName }}/clipboard-data-receiver.linux-amd64"
 const DOWNLOAD_URL_CDR_PATTERN_FOR_WINDOWS = "https://github.com/mikoto2000/clipboard-data-receiver/releases/download/{{ .TagName }}/clipboard-data-receiver.windows-amd64.exe"
 
+const VIM_SCRIPT_TEMPLATE_SEND_TO_CDR = `function! SendToCdr(message) abort
+  let l:channelToCdr = ch_open("host.docker.internal:{{ .Port }}", {"mode": "raw"})
+  call ch_sendraw(channelToCdr, a:message, {})
+  call ch_close(l:channelToCdr)
+endfunction`
+
 // clipboard-data-receiver のツール情報
 var CDR Tool = func() Tool {
 
@@ -153,4 +159,29 @@ func KillCdr(pid int) {
 		process.Kill()
 	}
 
+}
+
+func CreateSendToTcp(configDir string, port int) (string, error) {
+	// SendToTcp.vim の文字列を組み立て
+	tmpl, err := template.New("SendToTcp").Parse(VIM_SCRIPT_TEMPLATE_SEND_TO_CDR)
+	if err != nil {
+		return "", nil
+	}
+
+	tmplParams := map[string]int{"Port": port}
+	var sendToTcpString strings.Builder
+	err = tmpl.Execute(&sendToTcpString, tmplParams)
+	if err != nil {
+		return "", nil
+	}
+
+	// ファイルに出力
+	sendToTcp := filepath.Join(configDir, "SendToTcp.vim")
+	err = os.WriteFile(sendToTcp, []byte(sendToTcpString.String()), 0666)
+	if err != nil {
+		return sendToTcp, nil
+	}
+
+	// 作成したファイルを返却
+	return sendToTcp, nil
 }
