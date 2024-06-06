@@ -38,7 +38,7 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	fmt.Printf("Container started. id: %s\n", containerId)
 
 	// clipboard-data-receiver を起動
-	pid, port, err := tools.RunCdrForDocker(cdrPath, configDirForDocker)
+	pid, port, err := tools.RunCdr(cdrPath, configDirForDocker)
 	if err != nil {
 		panic(err)
 	}

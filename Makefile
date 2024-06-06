@@ -23,8 +23,6 @@ WATCH_SRC := ./main.go \
 						 ./tools/devcontainer_nowindows.go \
 						 ./tools/devcontainer_windows.go \
 						 ./tools/clipboard-data-receiver.go \
-						 ./tools/clipboard-data-receiver_nowindows.go \
-						 ./tools/clipboard-data-receiver_windows.go \
 						 ./util/util.go
 
 ### 開発関連

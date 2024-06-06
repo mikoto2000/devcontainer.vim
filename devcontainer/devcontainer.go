@@ -52,7 +52,7 @@ func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath str
 
 	// clipboard-data-receiver を起動
 	configDirForDevcontainer := filepath.Dir(configFilePath)
-	pid, port, err := tools.RunCdrForDocker(cdrPath, configDirForDevcontainer)
+	pid, port, err := tools.RunCdr(cdrPath, configDirForDevcontainer)
 	if err != nil {
 		panic(err)
 	}

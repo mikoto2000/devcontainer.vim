@@ -174,3 +174,9 @@ func GetConfigDir(configDirForDevcontainer string, workspaceFolder string) strin
 	workspaceFolderHashString := hex.EncodeToString(workspaceFolderHash[:])
 	return filepath.Join(configDirForDevcontainer, workspaceFolderHashString)
 }
+
+// WSL 上で動いているかを判定する
+func IsWsl() bool {
+	_, exists := os.LookupEnv("WSL_DISTRO_NAME")
+	return exists
+}
