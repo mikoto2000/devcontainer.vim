@@ -2,6 +2,7 @@ package tools
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -17,7 +18,7 @@ const CDR_FILE_NAME_FOR_WINDOWS = "clipboard-data-receiver.exe"
 
 // clipboard-data-receiver のダウンロード URL
 const DOWNLOAD_URL_CDR_PATTERN = "https://github.com/mikoto2000/clipboard-data-receiver/releases/download/{{ .TagName }}/clipboard-data-receiver.linux-amd64"
-const DOWNLOAD_URL_CDR_PATTERN_FOR_WINDOWS = "https://github.com/mikoto2000/clipboard-data-receiver/releases/download/{{ .TagName }}/clipboard-data-receiver.linux-amd64.exe"
+const DOWNLOAD_URL_CDR_PATTERN_FOR_WINDOWS = "https://github.com/mikoto2000/clipboard-data-receiver/releases/download/{{ .TagName }}/clipboard-data-receiver.windows-amd64.exe"
 
 // clipboard-data-receiver のツール情報
 var CDR Tool = func() Tool {
@@ -29,10 +30,10 @@ var CDR Tool = func() Tool {
 	var err error
 	if util.IsWsl() {
 		cdrFileName = CDR_FILE_NAME_FOR_WINDOWS
-		tmpl, err = template.New("ducp").Parse(DOWNLOAD_URL_CDR_PATTERN)
+		tmpl, err = template.New("ducp").Parse(DOWNLOAD_URL_CDR_PATTERN_FOR_WINDOWS)
 	} else {
 		cdrFileName = CDR_FILE_NAME
-		tmpl, err = template.New("ducp").Parse(DOWNLOAD_URL_CDR_PATTERN_FOR_WINDOWS)
+		tmpl, err = template.New("ducp").Parse(DOWNLOAD_URL_CDR_PATTERN)
 	}
 	if err != nil {
 		panic(err)
@@ -109,5 +110,47 @@ func runCdrForNative(cdrPath string, pidFile string, portFile string) (int, int,
 
 func runCdrForWsl(cdrPath string, pidFile string, portFile string) (int, int, error) {
 	// clipboard-data-receiver.exe を実行
-	panic("not implement")
+	commandString := fmt.Sprintf("%s --random-port --pid-file $(wslpath -w %s) --port-file $(wslpath -w %s)", cdrPath, pidFile, portFile)
+	fmt.Println(commandString)
+	cdrRunCommand := exec.Command("sh", "-c", commandString)
+	var stdout strings.Builder
+	cdrRunCommand.Stdout = &stdout
+	err := cdrRunCommand.Start()
+	if err != nil {
+		return 0, 0, err
+	}
+
+	// clipboard-data-receiver の出力を待つ
+	// タイムアウト 10 秒
+	var pid, port int
+	for i := 0; i < 10; i++ {
+		pid, _, port, err = GetProcessInfo(stdout.String())
+		if err != nil {
+			time.Sleep(1 * time.Second)
+			continue
+		} else {
+			break
+		}
+	}
+
+	return pid, port, nil
+}
+
+func KillCdr(pid int) {
+	if util.IsWsl() {
+		commandString := fmt.Sprintf("Stop-Process -Id %d", pid)
+		fmt.Println(commandString)
+		cdrRunCommand := exec.Command("powershell.exe", "-Command", commandString)
+		err := cdrRunCommand.Start()
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		process, err := os.FindProcess(pid)
+		if err != nil {
+			panic(err)
+		}
+		process.Kill()
+	}
+
 }

@@ -169,8 +169,7 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 
 		// pid ファイル参照のために、
 		// コンテナ別の設定ファイル格納ディレクトリの名前(コンテナIDを記録)を記録
-		configFilePath, err := GetConfigurationFilePath(devcontainerPath, workspaceFolder)
-		configDir = filepath.Dir(configFilePath)
+		configDir = util.GetConfigDir(configDirForDevcontainer, workspaceFolder)
 	}
 
 	// clipboard-data-receiver を停止
@@ -185,12 +184,7 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 		panic(err)
 	}
 	fmt.Printf("clipboard-data-receiver PID: %d\n", pid)
-	process, err := os.FindProcess(pid)
-	if err != nil {
-		panic(err)
-	}
-	process.Kill()
-
+	tools.KillCdr(pid)
 }
 
 func GetConfigurationFilePath(devcontainerFilePath string, workspaceFolder string) (string, error) {

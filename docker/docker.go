@@ -98,12 +98,7 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	}
 
 	// clipboard-data-receiver を停止
-	process, err := os.FindProcess(pid)
-	if err != nil {
-		panic(err)
-	}
-	process.Kill()
-
+	tools.KillCdr(pid)
 }
 
 // workspaceFolder で指定したディレクトリに対応するコンテナのコンテナ ID を返却する
