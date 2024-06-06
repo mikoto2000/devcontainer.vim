@@ -7,17 +7,22 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/mikoto2000/devcontainer.vim/docker"
 	"github.com/mikoto2000/devcontainer.vim/dockerCompose"
+	"github.com/mikoto2000/devcontainer.vim/tools"
+	"github.com/mikoto2000/devcontainer.vim/util"
 )
 
 const CONTAINER_COMMAND = "docker"
 
 var DEVCONTAINRE_ARGS_PREFIX = []string{"up"}
 
-func ExecuteDevcontainer(args []string, devcontainerFilePath string, vimFilePath string, configFilePath string) {
+// devcontainer でコンテナを立ち上げ、 Vim を転送し、実行する。
+// 既存実装の都合上、configFilePath から configDirForDevcontainer を抽出している
+func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath string, cdrPath, configFilePath string) {
 	vimFileName := filepath.Base(vimFilePath)
 
 	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
@@ -29,8 +34,8 @@ func ExecuteDevcontainer(args []string, devcontainerFilePath string, vimFilePath
 	userArgs := args[0 : len(args)-1]
 	userArgs = append(userArgs, "--override-config", configFilePath, "--workspace-folder", workspaceFolder)
 	devcontainerArgs := append(DEVCONTAINRE_ARGS_PREFIX, userArgs...)
-	fmt.Printf("run container: `%s \"%s\"`\n", devcontainerFilePath, strings.Join(devcontainerArgs, "\" \""))
-	dockerRunCommand := exec.Command(devcontainerFilePath, devcontainerArgs...)
+	fmt.Printf("run container: `%s \"%s\"`\n", devcontainerPath, strings.Join(devcontainerArgs, "\" \""))
+	dockerRunCommand := exec.Command(devcontainerPath, devcontainerArgs...)
 	dockerRunCommand.Stderr = os.Stderr
 
 	stdout, err := dockerRunCommand.Output()
@@ -44,6 +49,14 @@ func ExecuteDevcontainer(args []string, devcontainerFilePath string, vimFilePath
 		panic(err)
 	}
 	fmt.Printf("finished devcontainer up: %s\n", upCommandResult)
+
+	// clipboard-data-receiver を起動
+	configDirForDevcontainer := filepath.Dir(configFilePath)
+	pid, port, err := tools.RunCdrForDocker(cdrPath, configDirForDevcontainer)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
 
 	// コンテナへ appimage を転送して実行権限を追加
 	// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
@@ -76,8 +89,8 @@ func ExecuteDevcontainer(args []string, devcontainerFilePath string, vimFilePath
 	defer cancel()
 
 	dockerVimArgs := []string{"exec", "--container-id", containerId, "--workspace-folder", workspaceFolder, "/" + vimFileName, "--appimage-extract-and-run"}
-	fmt.Printf("Start vim: `%s \"%s\"`\n", devcontainerFilePath, strings.Join(dockerVimArgs, "\" \""))
-	dockerExec := exec.CommandContext(ctx, devcontainerFilePath, dockerVimArgs...)
+	fmt.Printf("Start vim: `%s \"%s\"`\n", devcontainerPath, strings.Join(dockerVimArgs, "\" \""))
+	dockerExec := exec.CommandContext(ctx, devcontainerPath, dockerVimArgs...)
 	dockerExec.Stdin = os.Stdin
 	dockerExec.Stdout = os.Stdout
 	dockerExec.Stderr = os.Stderr
@@ -94,13 +107,13 @@ func ExecuteDevcontainer(args []string, devcontainerFilePath string, vimFilePath
 	// コンテナ停止は別途 down コマンドで行う
 }
 
-func Down(args []string, devcontainerFilePath string) {
+func Down(args []string, devcontainerPath string, configDirForDevcontainer string) {
 
 	// `devcontainer read-configuration` で docker compose の利用判定
 
 	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
 	workspaceFolder := args[len(args)-1]
-	stdout, _ := ReadConfiguration(devcontainerFilePath, "--workspace-folder", workspaceFolder)
+	stdout, _ := ReadConfiguration(devcontainerPath, "--workspace-folder", workspaceFolder)
 	if stdout == "" {
 		fmt.Printf("This directory is not a workspace for devcontainer: %s\n", workspaceFolder)
 		os.Exit(0)
@@ -108,6 +121,7 @@ func Down(args []string, devcontainerFilePath string) {
 
 	// `dockerComposeFile` が含まれているかを確認する
 	// 含まれているなら docker compose によるコンテナ構築がされている
+	var configDir string
 	if strings.Contains(stdout, "dockerComposeFile") {
 
 		// docker compose ps コマンドで compose の情報取得
@@ -135,6 +149,10 @@ func Down(args []string, devcontainerFilePath string) {
 		if err != nil {
 			panic(err)
 		}
+
+		// pid ファイル参照のために、
+		// コンテナ別の設定ファイル格納ディレクトリの名前(コンテナIDを記録)を記録
+		configDir = util.GetConfigDir(configDirForDevcontainer, workspaceFolder)
 	} else {
 		// ワークスペースに対応するコンテナを探して ID を取得する
 		containerId, err := docker.GetContainerIdFromWorkspaceFolder(workspaceFolder)
@@ -148,7 +166,31 @@ func Down(args []string, devcontainerFilePath string) {
 		if err != nil {
 			panic(err)
 		}
+
+		// pid ファイル参照のために、
+		// コンテナ別の設定ファイル格納ディレクトリの名前(コンテナIDを記録)を記録
+		configFilePath, err := GetConfigurationFilePath(devcontainerPath, workspaceFolder)
+		configDir = filepath.Dir(configFilePath)
 	}
+
+	// clipboard-data-receiver を停止
+	pidFile := filepath.Join(configDir, "pid")
+	fmt.Printf("Read PID file: %s\n", pidFile)
+	pidStringBytes, err := os.ReadFile(pidFile)
+	if err != nil {
+		panic(err)
+	}
+	pid, err := strconv.Atoi(string(pidStringBytes))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("clipboard-data-receiver PID: %d\n", pid)
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		panic(err)
+	}
+	process.Kill()
+
 }
 
 func GetConfigurationFilePath(devcontainerFilePath string, workspaceFolder string) (string, error) {

@@ -164,7 +164,7 @@ func CreateConfigFileForDevcontainer(configDirForDevcontainer string, workspaceF
 
 // devcontainer.vim 用の devcontainer.json 格納先ディレクトリを計算して返却する。
 // `<devcontainer.vim のキャッシュディレクトリ>/config/<workspaceFolder の絶対パスを md5 播種化した文字列>` のディレクトリを返却
-func GetConfigDir(configDir string, workspaceFolder string) string {
+func GetConfigDir(configDirForDevcontainer string, workspaceFolder string) string {
 	workspaceFolderAbs, err := filepath.Abs(workspaceFolder)
 	if err != nil {
 		panic(err)
@@ -172,5 +172,5 @@ func GetConfigDir(configDir string, workspaceFolder string) string {
 	workspaceFolderHash := md5.Sum([]byte(workspaceFolderAbs))
 
 	workspaceFolderHashString := hex.EncodeToString(workspaceFolderHash[:])
-	return filepath.Join(configDir, workspaceFolderHashString)
+	return filepath.Join(configDirForDevcontainer, workspaceFolderHashString)
 }

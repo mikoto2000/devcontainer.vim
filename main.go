@@ -105,24 +105,8 @@ func main() {
 						panic(err)
 					}
 
-					// clipboard-data-receiver を起動
-					// TODO: コンテナ ID 入れなきゃいけないから、 docker.Run に移動しないと...
-					pid, port, err := tools.RunCdrForDevcontainer(cdrPath, configDirForDevcontainer)
-					if err != nil {
-						panic(err)
-					}
-					fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
-
 					// コンテナ起動
 					docker.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker)
-
-					// clipboard-data-receiver を停止
-					// TODO: 起動と対称性をとるため、 docker.Run に移動
-					process, err := os.FindProcess(pid)
-					if err != nil {
-						panic(err)
-					}
-					process.Kill()
 
 					return nil
 				},
@@ -172,24 +156,8 @@ func main() {
 						panic(err)
 					}
 
-					// clipboard-data-receiver を起動
-					// TODO: コンテナ ID 入れなきゃいけないから、 devcontainer.ExecuteDevcontainer に移動しないと...
-					pid, port, err := tools.RunCdrForDocker(cdrPath, configDirForDocker)
-					if err != nil {
-						panic(err)
-					}
-					fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
-
 					// devcontainer を用いたコンテナ立ち上げ
-					devcontainer.ExecuteDevcontainer(args, devcontainerPath, vimPath, configFilePath)
-
-					// clipboard-data-receiver を停止
-					// TODO: 起動と対称性をとるため、 docker.Run に移動
-					process, err := os.FindProcess(pid)
-					if err != nil {
-						panic(err)
-					}
-					process.Kill()
+					devcontainer.ExecuteDevcontainer(args, devcontainerPath, vimPath, cdrPath, configFilePath)
 
 					return nil
 				},
@@ -210,7 +178,7 @@ func main() {
 					}
 
 					// devcontainer を用いたコンテナ終了
-					devcontainer.Down(cCtx.Args().Slice(), devcontainerPath)
+					devcontainer.Down(cCtx.Args().Slice(), devcontainerPath, configDirForDevcontainer)
 
 					// 設定ファイルを削除
 					// コマンドライン引数の末尾は `--workspace-folder` の値として使う
@@ -386,9 +354,9 @@ func main() {
 // devcontainer.vim 起動時に使用する設定ファイルを作成する
 // 設定ファイルは、 devcontainer.vim のキャッシュ内の `config` ディレクトリに、
 // ワークスペースフォルダのパスを md5 ハッシュ化した名前のディレクトリに格納する.
-func createConfigFile(devcontainerFilePath string, workspaceFolder string, configDirForDevcontainer string) (string, error) {
+func createConfigFile(devcontainerPath string, workspaceFolder string, configDirForDevcontainer string) (string, error) {
 	// devcontainer の設定ファイルパス取得
-	configFilePath, err := devcontainer.GetConfigurationFilePath(devcontainerFilePath, workspaceFolder)
+	configFilePath, err := devcontainer.GetConfigurationFilePath(devcontainerPath, workspaceFolder)
 	if err != nil {
 		return "", err
 	}

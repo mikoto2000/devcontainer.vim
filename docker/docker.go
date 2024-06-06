@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+
+	"github.com/mikoto2000/devcontainer.vim/tools"
 )
 
 const CONTAINER_COMMAND = "docker"
@@ -34,6 +36,13 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	containerId = strings.ReplaceAll(containerId, "\n", "")
 	containerId = strings.ReplaceAll(containerId, "\r", "")
 	fmt.Printf("Container started. id: %s\n", containerId)
+
+	// clipboard-data-receiver を起動
+	pid, port, err := tools.RunCdrForDocker(cdrPath, configDirForDocker)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
 
 	// コンテナへ appimage を転送して実行権限を追加
 	// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
@@ -87,6 +96,14 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	if err != nil {
 		panic(err)
 	}
+
+	// clipboard-data-receiver を停止
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		panic(err)
+	}
+	process.Kill()
+
 }
 
 // workspaceFolder で指定したディレクトリに対応するコンテナのコンテナ ID を返却する
