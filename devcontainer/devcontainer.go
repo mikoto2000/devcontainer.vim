@@ -82,13 +82,25 @@ func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath str
 	}
 	fmt.Printf(" done.\n")
 
+	// Vim 関連ファイルの転送(`SendToTcp.vim` と、追加の `vimrc`)
+	sendToTcp, err := tools.CreateSendToTcp(configDirForDevcontainer, port)
+	if err != nil {
+		panic(err)
+	}
+
+	// コンテナへ SendToTcp.vim を転送
+	err = docker.Cp("SendToTcp.vim", sendToTcp, containerId, "/")
+	if err != nil {
+		panic(err)
+	}
+
 	// コンテナへ接続
 	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> /Vim-AppImage`
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	dockerVimArgs := []string{"exec", "--container-id", containerId, "--workspace-folder", workspaceFolder, "/" + vimFileName, "--appimage-extract-and-run"}
+	dockerVimArgs := []string{"exec", "--container-id", containerId, "--workspace-folder", workspaceFolder, "/" + vimFileName, "--appimage-extract-and-run", "-S", "/SendToTcp.vim"}
 	fmt.Printf("Start vim: `%s \"%s\"`\n", devcontainerPath, strings.Join(dockerVimArgs, "\" \""))
 	dockerExec := exec.CommandContext(ctx, devcontainerPath, dockerVimArgs...)
 	dockerExec.Stdin = os.Stdin
@@ -185,6 +197,11 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 	}
 	fmt.Printf("clipboard-data-receiver PID: %d\n", pid)
 	tools.KillCdr(pid)
+
+	err = os.RemoveAll(configDir)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func GetConfigurationFilePath(devcontainerFilePath string, workspaceFolder string) (string, error) {
