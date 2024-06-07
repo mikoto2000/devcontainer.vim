@@ -7,6 +7,32 @@ VSCode 向けに作成された `devcontainer.json` に追加する形で Vim �
 
 ## Usage:
 
+```
+NAME:
+   devcontainer.vim - devcontainer for vim.
+
+USAGE:
+   devcontainer.vim [global options] command [command options]
+
+VERSION:
+   0.7.0
+
+COMMANDS:
+   run        Run container use `docker run`
+   templates  Run `devcontainer templates`
+   start      Run `devcontainer up` and `devcontainer exec`
+   down       Stop and remove devcontainers.
+   config     devcontainer.vim's config information.
+   vimrc      devcontainer.vim's vimrc information.
+   tool       Management tools
+   help, h    Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --license, -l  show licensesa.
+   --help, -h     show help
+   --version, -v  print the version
+```
+
 ### `devcontainer.json` が存在しないプロジェクトで、ワンショットで環境を立ち上げる
 
 ```sh
@@ -93,6 +119,8 @@ devcontainer.vim templates apply --template-id ghcr.io/devcontainers/templates/g
 
 ## Customize:
 
+### コンテナのカスタマイズ
+
 `.vim` や `vimfiles` など、ホストからバインドマンとさせたいものがあるが、
 VSCode 等の他ツール向けに作成した `devcontainer.json` に devcontainer.vim 専用の `mounts` 定義を付けることはしたくない。
 
@@ -133,7 +161,7 @@ PROJECT_ROOT/
 }
 ```
 
-### 追加の設定を生成する
+#### 追加の設定を生成する
 
 `devcontainer.vim config -g` で `devcontainer.vim` が使用するための追加設定ファイルのテンプレートを生成できる。
 
@@ -146,6 +174,27 @@ devcontainer.vim config -g --home /home/containerUser > .devcontainer/devcontain
 - `-g` : 設定生成フラグ
 - `-o` : 生成した設定の出力先ファイルを指定(default: STDOUT)
 - `--home` : 設定テンプレート内のホームディレクトリのパス
+
+### Vim のカスタマイズ
+
+`devcontainer.vim vimrc -o` で、コンテナ上で実行する Vim に、追加で読み込ませるスクリプトが開きます。
+
+このスクリプトを更新することで、コンテナ上の Vim のみに適用させたい設定ができます。
+
+デフォルトでは、以下の内容になっています。
+(ノーマルモードで `"*yy`, ヴィジュアルモードで `"*y` でホストへ `"` レジスタの内容を送信する)
+好みに応じて修正してください。
+
+```vimrc
+nnoremap <silent> "*yy yy:call SendToCdr('"')<CR>
+vnoremap <silent> "*y y:call SendToCdr('"')<CR>
+```
+
+また、デフォルトに戻したい場合には、 `-g` オプションで vimrc を再生成してください。
+
+```sh
+devcontainer.vim vimrc -g
+```
 
 
 ## Requirements:
@@ -195,8 +244,8 @@ devcontainer.vim config -g --home /home/containerUser > .devcontainer/devcontain
     - [x] : `devcontainer templates apply` コマンドを使えるようにする
 - [x] : v0.7.0
     - [x] : Vim アップデートコマンドを追加
-- [ ] : v0.8.0
-    - [ ] : クリップボード転送機能追加
+- [x] : v0.8.0
+    - [x] : クリップボード転送機能追加
         1. TCP でテキストを待ち受け、受信したテキストをクリップボードへ反映するプログラムを作る
         2. TCP ソケット通信する関数、ヤンク処理時にテキスト送信をするマッピングを実装したスクリプトを作る
             - `docker cp` で `/SendToTcp.vim` にコピーし、 `-c "source /SendToTcp.vim` する
@@ -215,7 +264,8 @@ devcontainer.vim config -g --home /home/containerUser > .devcontainer/devcontain
 
 ## Limitation:
 
-amd64 のコンテナしか使用できません。
+- amd64 のコンテナしか使用できません
+- alpine 系のコンテナでは使用できません
 
 
 ## Install:

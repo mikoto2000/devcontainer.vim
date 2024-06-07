@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+
+	"github.com/mikoto2000/devcontainer.vim/tools"
 )
 
 const CONTAINER_COMMAND = "docker"
@@ -15,7 +17,7 @@ const CONTAINER_COMMAND = "docker"
 var DOCKER_RUN_ARGS_PREFIX = []string{"run", "-d", "--rm"}
 var DOCKER_RUN_ARGS_SUFFIX = []string{"sh", "-c", "trap \"exit 0\" TERM; sleep infinity & wait"}
 
-func Run(args []string, vimFilePath string) {
+func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker string, vimrc string) {
 	vimFileName := filepath.Base(vimFilePath)
 
 	// バックグラウンドでコンテナを起動
@@ -35,17 +37,24 @@ func Run(args []string, vimFilePath string) {
 	containerId = strings.ReplaceAll(containerId, "\r", "")
 	fmt.Printf("Container started. id: %s\n", containerId)
 
-	// コンテナへ appimage を転送して実行権限を追加
-	// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
-	dockerCpArgs := []string{"cp", vimFilePath, containerId + ":/"}
-	fmt.Printf("Copy AppImage: `%s \"%s\"` ...", CONTAINER_COMMAND, strings.Join(dockerCpArgs, "\" \""))
-	copyResult, err := exec.Command(CONTAINER_COMMAND, dockerCpArgs...).CombinedOutput()
+	// clipboard-data-receiver を起動
+	configDirForCdr := filepath.Join(configDirForDocker, containerId)
+	err = os.MkdirAll(configDirForCdr, 0744)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "AppImage copy error.")
-		fmt.Fprintln(os.Stderr, string(copyResult))
 		panic(err)
 	}
-	fmt.Printf(" done.\n")
+	pid, port, err := tools.RunCdr(cdrPath, configDirForCdr)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
+
+	// コンテナへ appimage を転送して実行権限を追加
+	// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
+	err = Cp("AppImage", vimFilePath, containerId, "/")
+	if err != nil {
+		panic(err)
+	}
 
 	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> chmod +x /Vim-AppImage`
 	dockerChownArgs := []string{"exec", containerId, "sh", "-c", "chmod +x /" + vimFileName}
@@ -58,13 +67,31 @@ func Run(args []string, vimFilePath string) {
 	}
 	fmt.Printf(" done.\n")
 
+	// Vim 関連ファイルの転送(`SendToTcp.vim` と、追加の `vimrc`)
+	sendToTcp, err := tools.CreateSendToTcp(configDirForDocker, port)
+	if err != nil {
+		panic(err)
+	}
+
+	// コンテナへ SendToTcp.vim を転送
+	err = Cp("SendToTcp.vim", sendToTcp, containerId, "/")
+	if err != nil {
+		panic(err)
+	}
+
+	// コンテナへ vimrc を転送
+	err = Cp("vimrc", vimrc, containerId, "/")
+	if err != nil {
+		panic(err)
+	}
+
 	// コンテナへ接続
 	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> /Vim-AppImage`
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	dockerVimArgs := []string{"exec", "-it", containerId, "/" + vimFileName, "--appimage-extract-and-run"}
+	dockerVimArgs := []string{"exec", "-it", containerId, "/" + vimFileName, "--appimage-extract-and-run", "-S", "/SendToTcp.vim", "-S", "/vimrc"}
 	fmt.Printf("Start vim: `%s \"%s\"`\n", CONTAINER_COMMAND, strings.Join(dockerVimArgs, "\" \""))
 	dockerExec := exec.CommandContext(ctx, CONTAINER_COMMAND, dockerVimArgs...)
 	dockerExec.Stdin = os.Stdin
@@ -82,6 +109,13 @@ func Run(args []string, vimFilePath string) {
 	// `docker stop <dockerrun 時に標準出力に表示される CONTAINER ID>`
 	fmt.Printf("Stop container(Async) %s.\n", containerId)
 	err = exec.Command(CONTAINER_COMMAND, "stop", containerId).Start()
+	if err != nil {
+		panic(err)
+	}
+
+	// clipboard-data-receiver を停止
+	tools.KillCdr(pid)
+	err = os.RemoveAll(configDirForCdr)
 	if err != nil {
 		panic(err)
 	}
@@ -119,4 +153,17 @@ func Rm(containerId string) error {
 	dockerRmCommand := exec.Command("docker", "rm", "-f", containerId)
 	err := dockerRmCommand.Start()
 	return err
+}
+
+func Cp(tagForLog string, from string, containerId string, to string) error {
+	dockerCpArgs := []string{"cp", from, containerId + ":" + to}
+	fmt.Printf("Copy %s: `%s \"%s\"` ...", tagForLog, CONTAINER_COMMAND, strings.Join(dockerCpArgs, "\" \""))
+	copyResult, err := exec.Command(CONTAINER_COMMAND, dockerCpArgs...).CombinedOutput()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "AppImage copy error.")
+		fmt.Fprintln(os.Stderr, string(copyResult))
+		return err
+	}
+	fmt.Printf(" done.\n")
+	return nil
 }

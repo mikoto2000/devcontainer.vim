@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+	"text/template"
 
 	"github.com/mikoto2000/devcontainer.vim/util"
 )
@@ -46,8 +48,7 @@ func simpleInstall(downloadUrl string, installDir string, fileName string, overr
 }
 
 // Vim のダウンロード URL
-// ※ 全ての `%s` はリリースタグ名
-const VIM_DOWNLOAD_URL_PATTERN = "https://github.com/vim/vim-appimage/releases/download/%s/Vim-%s.glibc2.29-x86_64.AppImage"
+const VIM_DOWNLOAD_URL_PATTERN = "https://github.com/vim/vim-appimage/releases/download/{{ .TagName }}/Vim-{{ .TagName }}.glibc2.29-x86_64.AppImage"
 
 // Vim のツール情報
 var VIM Tool = Tool{
@@ -58,23 +59,19 @@ var VIM Tool = Tool{
 			panic(err)
 		}
 
-		return fmt.Sprintf(VIM_DOWNLOAD_URL_PATTERN, latestTagName, latestTagName)
-	},
-	installFunc: func(downloadUrl string, installDir string, fileName string, override bool) (string, error) {
-		return simpleInstall(downloadUrl, installDir, fileName, override)
-	},
-}
-
-// devcontainer/cli のツール情報
-var DEVCONTAINER Tool = Tool{
-	FileName: DEVCONTAINER_FILE_NAME,
-	CalculateDownloadUrl: func() string {
-		latestTagName, err := util.GetLatestReleaseFromGitHub("mikoto2000", "devcontainers-cli")
+		pattern := "pattern"
+		tmpl, err := template.New(pattern).Parse(VIM_DOWNLOAD_URL_PATTERN)
 		if err != nil {
 			panic(err)
 		}
 
-		return fmt.Sprintf(DOWNLOAD_URL_DEVCONTAINERS_CLI_PATTERN, latestTagName, latestTagName)
+		tmplParams := map[string]string{"TagName": latestTagName}
+		var downloadUrl strings.Builder
+		err = tmpl.Execute(&downloadUrl, tmplParams)
+		if err != nil {
+			panic(err)
+		}
+		return downloadUrl.String()
 	},
 	installFunc: func(downloadUrl string, installDir string, fileName string, override bool) (string, error) {
 		return simpleInstall(downloadUrl, installDir, fileName, override)
@@ -115,3 +112,53 @@ func download(downloadUrl string, destPath string, override bool) error {
 
 	return nil
 }
+
+// run サブコマンド用のツールインストール
+func InstallRunTools(installDir string) (string, string, error) {
+	vimPath, err := VIM.Install(installDir, false)
+	if err != nil {
+		return vimPath, "", err
+	}
+	cdrPath, err := CDR.Install(installDir, false)
+	if err != nil {
+		return vimPath, cdrPath, err
+	}
+	return vimPath, cdrPath, err
+}
+
+// start サブコマンド用のツールインストール
+// 戻り値は、 vimPath, devcontainerPath, cdrPath, error
+func InstallStartTools(installDir string) (string, string, string, error) {
+	vimPath, err := VIM.Install(installDir, false)
+	if err != nil {
+		return vimPath, "",  "", err
+	}
+	devcontainerPath, err := DEVCONTAINER.Install(installDir, false)
+	if err != nil {
+		return vimPath, devcontainerPath, "", err
+	}
+	cdrPath, err := CDR.Install(installDir, false)
+	if err != nil {
+		return vimPath, devcontainerPath, cdrPath, err
+	}
+	return vimPath, devcontainerPath, cdrPath, err
+}
+
+// devcontainer サブコマンド用のツールインストール
+func InstallDevcontainerTools(installDir string) (string, error) {
+	devcontainerPath, err := DEVCONTAINER.Install(installDir, false)
+	return devcontainerPath, err
+}
+
+// Templates サブコマンド用のツールインストール
+func InstallTemplatesTools(installDir string) (string, error) {
+	devcontainerPath, err := DEVCONTAINER.Install(installDir, false)
+	return devcontainerPath, err
+}
+
+// Down サブコマンド用のツールインストール
+func InstallDownTools(installDir string) (string, error) {
+	devcontainerPath, err := DEVCONTAINER.Install(installDir, false)
+	return devcontainerPath, err
+}
+
