@@ -38,7 +38,12 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	fmt.Printf("Container started. id: %s\n", containerId)
 
 	// clipboard-data-receiver を起動
-	pid, port, err := tools.RunCdr(cdrPath, configDirForDocker)
+	configDirForCdr := filepath.Join(configDirForDocker, containerId)
+	err = os.MkdirAll(configDirForCdr, 0744)
+	if err != nil {
+		panic(err)
+	}
+	pid, port, err := tools.RunCdr(cdrPath, configDirForCdr)
 	if err != nil {
 		panic(err)
 	}
@@ -104,6 +109,10 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 
 	// clipboard-data-receiver を停止
 	tools.KillCdr(pid)
+	err = os.RemoveAll(configDirForCdr)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // workspaceFolder で指定したディレクトリに対応するコンテナのコンテナ ID を返却する

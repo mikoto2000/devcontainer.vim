@@ -128,14 +128,14 @@ func runCdrForWsl(cdrPath string, pidFile string, portFile string) (int, int, er
 	}
 
 	// clipboard-data-receiver の出力を待つ
-	// WSL から Windows の exe を起動すると、なぜか標準出力が取得できないので
-	// pid ファイル, port ファイルからポート番号を取得する
 
+	// PID ファイル出力まで待つ
+	// 現状 Windows で PID ファイルとポートファイルの後始末ができないので、
+	// とりあえず 1 秒待てば生成されるでしょうという感じで待っている。
 	var pid int
 	for i := 0; i < 10; i++ {
 		pidFileContentBytes, err := os.ReadFile(pidFile)
 		if err != nil {
-			// PID ファイル出力まで待つ
 			time.Sleep(1 * time.Second)
 			continue
 		}
@@ -144,7 +144,7 @@ func runCdrForWsl(cdrPath string, pidFile string, portFile string) (int, int, er
 		break
 	}
 
-	// タイムアウト 10 秒
+	// ポートファイル出力まで待つ
 	var port int
 	for i := 0; i < 10; i++ {
 		portFileContentBytes, err := os.ReadFile(portFile)
@@ -158,14 +158,13 @@ func runCdrForWsl(cdrPath string, pidFile string, portFile string) (int, int, er
 		break
 	}
 
-
 	return pid, port, nil
 }
 
 func KillCdr(pid int) {
 	if util.IsWsl() {
-		commandString := fmt.Sprintf("Stop-Process -Id %d", pid)
-		fmt.Println(commandString)
+		commandString := fmt.Sprintf("Stop-Process -Id %d -Force", pid)
+		fmt.Printf("Stop clipboard-data-receiver: %s\n", commandString)
 		cdrRunCommand := exec.Command("powershell.exe", "-Command", commandString)
 		err := cdrRunCommand.Start()
 		if err != nil {
