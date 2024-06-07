@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 
 	"github.com/Jeffail/gabs/v2"
 	"github.com/tailscale/hujson"
@@ -26,13 +27,26 @@ func IsExistsCommand(command string) bool {
 
 type GetDirFunc func() (string, error)
 
+// devcontainer.vim が使用するコンフィグディレクトリを作成し、返却する。
+func CreateConfigDirectory(pathFunc GetDirFunc, dirName string) (string) {
+	var baseDir, err = pathFunc()
+	if err != nil {
+		panic(err)
+	}
+	var appConfigDir = filepath.Join(baseDir, dirName)
+	if err := os.MkdirAll(appConfigDir, 0766); err != nil {
+		panic(err)
+	}
+	return appConfigDir
+}
+
 // devcontainer.vim が使用するキャッシュディレクトリを作成し、返却する。
 //
 // 返却値:
 // devcontainer.vim 用のキャッシュディレクトリ
 // devcontainer.vim 用の実行バイナリ格納ディレクトリ
 // devcontainer.vim のマージ済み設定ファイル格納ディレクトリ
-func CreateDirectory(pathFunc GetDirFunc, dirName string) (string, string, string, string) {
+func CreateCacheDirectory(pathFunc GetDirFunc, dirName string) (string, string, string, string) {
 	var baseDir, err = pathFunc()
 	if err != nil {
 		panic(err)
@@ -179,4 +193,20 @@ func GetConfigDir(configDirForDevcontainer string, workspaceFolder string) strin
 func IsWsl() bool {
 	_, exists := os.LookupEnv("WSL_DISTRO_NAME")
 	return exists
+}
+
+// 関連付けられたアプリケーションで開く
+func OpenFileWithDefaultApp(filePath string) error {
+    var cmd *exec.Cmd
+
+    switch runtime.GOOS {
+    case "darwin":
+        cmd = exec.Command("open", filePath) // macOS
+    case "windows":
+        cmd = exec.Command("cmd", "/c", "start", "", filePath) // Windows
+    default:
+        cmd = exec.Command("xdg-open", filePath) // Linux
+    }
+
+    return cmd.Run()
 }

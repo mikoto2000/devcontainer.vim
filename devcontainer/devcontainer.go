@@ -22,7 +22,7 @@ var DEVCONTAINRE_ARGS_PREFIX = []string{"up"}
 
 // devcontainer でコンテナを立ち上げ、 Vim を転送し、実行する。
 // 既存実装の都合上、configFilePath から configDirForDevcontainer を抽出している
-func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath string, cdrPath, configFilePath string) {
+func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath string, cdrPath, configFilePath string, vimrc string) {
 	vimFileName := filepath.Base(vimFilePath)
 
 	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
@@ -94,13 +94,19 @@ func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath str
 		panic(err)
 	}
 
+	// コンテナへ vimrc を転送
+	err = docker.Cp("vimrc", vimrc, containerId, "/")
+	if err != nil {
+		panic(err)
+	}
+
 	// コンテナへ接続
 	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> /Vim-AppImage`
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	dockerVimArgs := []string{"exec", "--container-id", containerId, "--workspace-folder", workspaceFolder, "/" + vimFileName, "--appimage-extract-and-run", "-S", "/SendToTcp.vim"}
+	dockerVimArgs := []string{"exec", "--container-id", containerId, "--workspace-folder", workspaceFolder, "/" + vimFileName, "--appimage-extract-and-run", "-S", "/SendToTcp.vim", "-S", "/vimrc"}
 	fmt.Printf("Start vim: `%s \"%s\"`\n", devcontainerPath, strings.Join(dockerVimArgs, "\" \""))
 	dockerExec := exec.CommandContext(ctx, devcontainerPath, dockerVimArgs...)
 	dockerExec.Stdin = os.Stdin

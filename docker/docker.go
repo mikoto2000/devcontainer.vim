@@ -17,7 +17,7 @@ const CONTAINER_COMMAND = "docker"
 var DOCKER_RUN_ARGS_PREFIX = []string{"run", "-d", "--rm"}
 var DOCKER_RUN_ARGS_SUFFIX = []string{"sh", "-c", "trap \"exit 0\" TERM; sleep infinity & wait"}
 
-func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker string) {
+func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker string, vimrc string) {
 	vimFileName := filepath.Base(vimFilePath)
 
 	// バックグラウンドでコンテナを起動
@@ -79,13 +79,19 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 		panic(err)
 	}
 
+	// コンテナへ vimrc を転送
+	err = Cp("vimrc", vimrc, containerId, "/")
+	if err != nil {
+		panic(err)
+	}
+
 	// コンテナへ接続
 	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> /Vim-AppImage`
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	dockerVimArgs := []string{"exec", "-it", containerId, "/" + vimFileName, "--appimage-extract-and-run", "-S", "/SendToTcp.vim"}
+	dockerVimArgs := []string{"exec", "-it", containerId, "/" + vimFileName, "--appimage-extract-and-run", "-S", "/SendToTcp.vim", "-S", "/vimrc"}
 	fmt.Printf("Start vim: `%s \"%s\"`\n", CONTAINER_COMMAND, strings.Join(dockerVimArgs, "\" \""))
 	dockerExec := exec.CommandContext(ctx, CONTAINER_COMMAND, dockerVimArgs...)
 	dockerExec.Stdin = os.Stdin

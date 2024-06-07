@@ -27,6 +27,7 @@ const SPLIT_ARG_MARK = "--"
 const FLAG_NAME_GENERATE = "generate"
 const FLAG_NAME_HOME = "home"
 const FLAG_NAME_OUTPUT = "output"
+const FLAG_NAME_OPEN = "open"
 
 //go:embed LICENSE
 var license string
@@ -36,6 +37,9 @@ var notice string
 
 //go:embed devcontainer.vim.template.json
 var devcontainerVimJsonTemplate string
+
+//go:embed vimrc.template.vim
+var additionalVimrc string
 
 const APP_NAME = "devcontainer.vim"
 
@@ -54,7 +58,20 @@ func main() {
 	//    `os.UserConfigDir` + `devcontainer.vim`
 	// 2. ユーザーキャッシュ用ディレクトリ
 	//    `os.UserCacheDir` + `devcontainer.vim`
-	appCacheDir, binDir, configDirForDocker, configDirForDevcontainer := util.CreateDirectory(os.UserCacheDir, APP_NAME)
+	appConfigDir := util.CreateConfigDirectory(os.UserConfigDir, APP_NAME)
+	appCacheDir, binDir, configDirForDocker, configDirForDevcontainer := util.CreateCacheDirectory(os.UserCacheDir, APP_NAME)
+
+	// vimrc ファイルの出力先を組み立て
+	vimrc := filepath.Join(appConfigDir, "vimrc")
+
+	// vimrc を出力(既に存在するなら何もしない)
+	if !util.IsExists(vimrc) {
+		err := os.WriteFile(vimrc, []byte(additionalVimrc), 0666)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("Generated additional vimrc to: %s\n", vimrc)
+	}
 
 	devcontainerVimArgProcess := (&cli.App{
 		Name:                   "devcontainer.vim",
@@ -106,7 +123,7 @@ func main() {
 					}
 
 					// コンテナ起動
-					docker.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker)
+					docker.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker, vimrc)
 
 					return nil
 				},
@@ -157,7 +174,7 @@ func main() {
 					}
 
 					// devcontainer を用いたコンテナ立ち上げ
-					devcontainer.ExecuteDevcontainer(args, devcontainerPath, vimPath, cdrPath, configFilePath)
+					devcontainer.ExecuteDevcontainer(args, devcontainerPath, vimPath, cdrPath, configFilePath, vimrc)
 
 					return nil
 				},
@@ -248,6 +265,53 @@ func main() {
 						} else {
 							// output オプションが指定されていない場合、標準出力へ出力する
 							fmt.Print(devcontainerVimJson)
+						}
+					}
+
+					return nil
+				},
+			},
+			{
+				Name:            "vimrc",
+				Usage:           "devcontainer.vim's vimrc information.",
+				UsageText:       "devcontainer.vim vimrc [OPTIONS...]",
+				HideHelp:        false,
+				SkipFlagParsing: false,
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    FLAG_NAME_GENERATE,
+						Aliases: []string{"g"},
+						Value:   false,
+						Usage:   "regenerate vimrc file.",
+					},
+					&cli.BoolFlag{
+						Name:    FLAG_NAME_OPEN,
+						Aliases: []string{"o"},
+						Value:   false,
+						Usage:   "open and display vimrc.",
+					},
+				},
+				Action: func(cCtx *cli.Context) error {
+					// 何かしらオプションでない引数を渡されたらヘルプを出力して終了
+					if cCtx.NumFlags() == 0 || cCtx.Args().Present() {
+						cli.ShowSubcommandHelpAndExit(cCtx, 0)
+					}
+
+					// generate フラグがセットされていたら vimrc の再生成を行う
+					if cCtx.Bool(FLAG_NAME_GENERATE) {
+						err := os.WriteFile(vimrc, []byte(additionalVimrc), 0666)
+						if err != nil {
+							panic(err)
+						}
+						fmt.Printf("Generated additional vimrc to: %s\n", vimrc)
+					}
+
+					if cCtx.Bool(FLAG_NAME_OPEN) {
+						err := util.OpenFileWithDefaultApp(vimrc)
+						if err != nil {
+							fmt.Printf("Failed open vimrc you need manual open: %s\n", vimrc)
+						} else {
+							fmt.Printf("Open vimrc: %s\n", vimrc)
 						}
 					}
 
