@@ -67,7 +67,7 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	}
 	fmt.Printf(" done.\n")
 
-	// TODO: Vim 関連ファイルの転送(`SendToTcp.vim` と、追加の `vimrc`)
+	// Vim 関連ファイルの転送(`SendToTcp.vim` と、追加の `vimrc`)
 	sendToTcp, err := tools.CreateSendToTcp(configDirForDocker, port)
 	if err != nil {
 		panic(err)
