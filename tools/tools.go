@@ -131,7 +131,7 @@ func InstallRunTools(installDir string) (string, string, error) {
 func InstallStartTools(installDir string) (string, string, string, error) {
 	vimPath, err := VIM.Install(installDir, false)
 	if err != nil {
-		return vimPath, "",  "", err
+		return vimPath, "", "", err
 	}
 	devcontainerPath, err := DEVCONTAINER.Install(installDir, false)
 	if err != nil {
@@ -161,4 +161,3 @@ func InstallDownTools(installDir string) (string, error) {
 	devcontainerPath, err := DEVCONTAINER.Install(installDir, false)
 	return devcontainerPath, err
 }
-

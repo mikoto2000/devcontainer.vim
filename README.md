@@ -12,7 +12,7 @@ NAME:
    devcontainer.vim - devcontainer for vim.
 
 USAGE:
-   devcontainer.vim [global options] command [command options]
+   devcontainer.vim [global options] command [command options] 
 
 VERSION:
    0.8.0
@@ -24,6 +24,7 @@ COMMANDS:
    down       Stop and remove devcontainers.
    config     devcontainer.vim's config information.
    vimrc      devcontainer.vim's vimrc information.
+   runargs    run subcommand's default arguments.
    tool       Management tools
    help, h    Shows a list of commands or help for one command
 
@@ -194,6 +195,27 @@ vnoremap <silent> "*y y:call SendToCdr('"')<CR>
 
 ```sh
 devcontainer.vim vimrc -g
+```
+
+
+### run サブコマンドの引数のカスタマイズ
+
+`devcontainer.vim runargs -o` で、 run サブコマンドへ暗黙的に設定される引数設定ファイルが開きます。
+
+このファイルを更新することで、暗黙的に適用させたい引数が指定できます。
+
+デフォルトでは、以下の内容になっています。
+(カレントディレクトリを `/work` へマウントし、ワーキングディレクトリも同じ場所へ設定)
+好みに応じて修正してください。
+
+```
+-v "$(pwd):/work" -v "$HOME/.vim:/root/.vim" --workdir /work
+```
+
+また、デフォルトに戻したい場合には、 `-g` オプションで runargs を再生成してください。
+
+```sh
+devcontainer.vim runargs -g
 ```
 
 
