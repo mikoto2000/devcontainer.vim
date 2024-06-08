@@ -274,9 +274,10 @@ devcontainer.vim runargs -g
         3. `devcontainer.vim` 起動時に「1.」のプログラムを実行
             - 多重起動防止のために既にプログラムが実行済みかどうかを確認する必要がある
             - 終了時にも、「他の `devcontainer.vim` が存在するか」を確認して終了させるか判定
-- [ ] : v0.9.0
-    - [ ] : run サブコマンドのデフォルト引数を自分で指定できるようにする
-        - [ ] : `<os.UserConfigDir>/devcontainer.vim/runargs` にデフォルトで付与したい引数を記載する
+- [x] : v0.9.0
+    - [x] : run サブコマンドのデフォルト引数を自分で指定できるようにする
+        - [x] : `<os.UserConfigDir>/devcontainer.vim/runargs` にデフォルトで付与したい引数を記載する
+        - ※ sh にパスの通った Linux のみで有効。(Windows PowerShell でシェル変数の展開が上手くできないため)
 - [ ] : v0.10.0
     - [ ] : キャッシュクリアコマンド
     - [ ] : アンインストールコマンド
