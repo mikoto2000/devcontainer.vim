@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/mikoto2000/devcontainer.vim/tools"
@@ -17,12 +18,17 @@ const CONTAINER_COMMAND = "docker"
 var DOCKER_RUN_ARGS_PREFIX = []string{"run", "-d", "--rm"}
 var DOCKER_RUN_ARGS_SUFFIX = []string{"sh", "-c", "trap \"exit 0\" TERM; sleep infinity & wait"}
 
-func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker string, vimrc string) {
+func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker string, vimrc string, defaultRunargs []string) {
 	vimFileName := filepath.Base(vimFilePath)
 
 	// バックグラウンドでコンテナを起動
 	// `docker run -d --rm os.Args[1:] sh -c "sleep infinity"`
-	dockerRunArgs := append(DOCKER_RUN_ARGS_PREFIX, args...)
+	dockerRunArgs := DOCKER_RUN_ARGS_PREFIX
+	// windows でなければ、 runargs を使用する
+	if runtime.GOOS != "windows" {
+		dockerRunArgs = append(dockerRunArgs, defaultRunargs...)
+	}
+	dockerRunArgs = append(dockerRunArgs, args...)
 	dockerRunArgs = append(dockerRunArgs, DOCKER_RUN_ARGS_SUFFIX...)
 	fmt.Printf("run container: `%s \"%s\"`\n", CONTAINER_COMMAND, strings.Join(dockerRunArgs, "\" \""))
 	dockerRunCommand := exec.Command(CONTAINER_COMMAND, dockerRunArgs...)

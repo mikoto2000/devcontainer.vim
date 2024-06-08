@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/anmitsu/go-shlex"
 	"github.com/urfave/cli/v2"
 
 	"github.com/mikoto2000/devcontainer.vim/devcontainer"
@@ -38,6 +39,8 @@ var notice string
 //go:embed devcontainer.vim.template.json
 var devcontainerVimJsonTemplate string
 
+const runargsContent = "-v \"$(pwd):/work\" -v \"$HOME/.vim:/root/.vim\" --workdir /work"
+
 //go:embed vimrc.template.vim
 var additionalVimrc string
 
@@ -62,15 +65,25 @@ func main() {
 	appCacheDir, binDir, configDirForDocker, configDirForDevcontainer := util.CreateCacheDirectory(os.UserCacheDir, APP_NAME)
 
 	// vimrc ファイルの出力先を組み立て
-	vimrc := filepath.Join(appConfigDir, "vimrc")
-
 	// vimrc を出力(既に存在するなら何もしない)
+	vimrc := filepath.Join(appConfigDir, "vimrc")
 	if !util.IsExists(vimrc) {
-		err := os.WriteFile(vimrc, []byte(additionalVimrc), 0666)
+		err := util.CreateFileWithContents(vimrc, additionalVimrc, 0666)
 		if err != nil {
 			panic(err)
 		}
 		fmt.Printf("Generated additional vimrc to: %s\n", vimrc)
+	}
+
+	// runargs ファイルの出力先を組み立て
+	// runargs を出力(既に存在するなら何もしない)
+	runargs := filepath.Join(appConfigDir, "runargs")
+	if !util.IsExists(runargs) {
+		err := util.CreateFileWithContents(runargs, runargsContent, 0666)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("Generated additional runargs to: %s\n", runargs)
 	}
 
 	devcontainerVimArgProcess := (&cli.App{
@@ -122,8 +135,30 @@ func main() {
 						panic(err)
 					}
 
-					// コンテナ起動
-					docker.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker, vimrc)
+					// デフォルト引数取得
+					defaultRunargsBytes, err := os.ReadFile(runargs)
+					if err != nil {
+						panic(err)
+					}
+					defaultRunargsString := string(defaultRunargsBytes)
+
+					if runtime.GOOS == "windows" {
+						// コンテナ起動
+						// windows はシェル変数展開が上手くいかないので runargs を使用しない
+						docker.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker, vimrc, []string{})
+					} else {
+						// デフォルト引数内のシェル変数を展開
+						extractedDofaultRunargsString, err := util.ExtractShellVariables(defaultRunargsString)
+						if err != nil {
+							panic(err)
+						}
+
+						// 展開したものを配列へ分割
+						defaultRunargs, err := shlex.Split(extractedDofaultRunargsString, true)
+
+						// コンテナ起動
+						docker.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker, vimrc, defaultRunargs)
+					}
 
 					return nil
 				},
@@ -312,6 +347,53 @@ func main() {
 							fmt.Printf("Failed open vimrc you need manual open: %s\n", vimrc)
 						} else {
 							fmt.Printf("Open vimrc: %s\n", vimrc)
+						}
+					}
+
+					return nil
+				},
+			},
+			{
+				Name:            "runargs",
+				Usage:           "run subcommand's default arguments.",
+				UsageText:       "devcontainer.vim runargs [OPTIONS...]",
+				HideHelp:        false,
+				SkipFlagParsing: false,
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    FLAG_NAME_GENERATE,
+						Aliases: []string{"g"},
+						Value:   false,
+						Usage:   "regenerate runargs file.",
+					},
+					&cli.BoolFlag{
+						Name:    FLAG_NAME_OPEN,
+						Aliases: []string{"o"},
+						Value:   false,
+						Usage:   "open and display runargs.",
+					},
+				},
+				Action: func(cCtx *cli.Context) error {
+					// 何かしらオプションでない引数を渡されたらヘルプを出力して終了
+					if cCtx.NumFlags() == 0 || cCtx.Args().Present() {
+						cli.ShowSubcommandHelpAndExit(cCtx, 0)
+					}
+
+					// generate フラグがセットされていたら runargs の再生成を行う
+					if cCtx.Bool(FLAG_NAME_GENERATE) {
+						err := os.WriteFile(runargs, []byte(runargsContent), 0666)
+						if err != nil {
+							panic(err)
+						}
+						fmt.Printf("Generated additional runargs to: %s\n", runargs)
+					}
+
+					if cCtx.Bool(FLAG_NAME_OPEN) {
+						err := util.OpenFileWithDefaultApp(runargs)
+						if err != nil {
+							fmt.Printf("Failed open runargs you need manual open: %s\n", runargs)
+						} else {
+							fmt.Printf("Open runargs: %s\n", runargs)
 						}
 					}
 

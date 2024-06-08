@@ -3,6 +3,7 @@ package util
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -28,7 +29,7 @@ func IsExistsCommand(command string) bool {
 type GetDirFunc func() (string, error)
 
 // devcontainer.vim が使用するコンフィグディレクトリを作成し、返却する。
-func CreateConfigDirectory(pathFunc GetDirFunc, dirName string) (string) {
+func CreateConfigDirectory(pathFunc GetDirFunc, dirName string) string {
 	var baseDir, err = pathFunc()
 	if err != nil {
 		panic(err)
@@ -197,16 +198,40 @@ func IsWsl() bool {
 
 // 関連付けられたアプリケーションで開く
 func OpenFileWithDefaultApp(filePath string) error {
-    var cmd *exec.Cmd
+	var cmd *exec.Cmd
 
-    switch runtime.GOOS {
-    case "darwin":
-        cmd = exec.Command("open", filePath) // macOS
-    case "windows":
-        cmd = exec.Command("cmd", "/c", "start", "", filePath) // Windows
-    default:
-        cmd = exec.Command("xdg-open", filePath) // Linux
-    }
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.Command("open", filePath) // macOS
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", "", filePath) // Windows
+	default:
+		cmd = exec.Command("xdg-open", filePath) // Linux
+	}
 
-    return cmd.Run()
+	return cmd.Run()
+}
+
+func CreateFileWithContents(file string, content string, permission fs.FileMode) error {
+	err := os.WriteFile(file, []byte(content), permission)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// 文字列中のシェル変数を展開して返却する
+func ExtractShellVariables(str string) (string, error) {
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		panic("ExtractShellVariables no support windows.")
+	} else {
+		cmd = exec.Command("sh", "-c", "echo "+str)
+	}
+
+	extractedStrBytes, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+	return string(extractedStrBytes), nil
 }
