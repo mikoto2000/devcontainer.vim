@@ -30,7 +30,7 @@ var DEVCONTAINER Tool = Tool{
 		}
 		return downloadUrl.String()
 	},
-	installFunc: func(downloadUrl string, installDir string, fileName string, override bool) (string, error) {
-		return simpleInstall(downloadUrl, installDir, fileName, override)
+	installFunc: func(downloadUrl string, filePath string) (string, error) {
+		return simpleInstall(downloadUrl, filePath)
 	},
 }

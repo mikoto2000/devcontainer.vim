@@ -16,24 +16,30 @@ import (
 type Tool struct {
 	FileName             string
 	CalculateDownloadUrl func() string
-	installFunc          func(downloadUrl string, installDir string, name string, override bool) (string, error)
+	installFunc          func(downloadUrl string, filePath string) (string, error)
 }
 
 // ツールのインストールを実行
 func (t Tool) Install(installDir string, override bool) (string, error) {
-	return t.installFunc(t.CalculateDownloadUrl(), installDir, t.FileName, override)
+
+	// ツールの配置先組み立て
+	filePath := filepath.Join(installDir, t.FileName)
+
+	if util.IsExists(filePath) && !override {
+		fmt.Printf("%s aleady exist, use this.\n", filePath)
+		return filePath, nil
+	} else {
+		return t.installFunc(t.CalculateDownloadUrl(), filePath)
+	}
 }
 
 // 単純なファイル配置でインストールが完了するもののインストール処理。
 //
 // downloadUrl からファイルをダウンロードし、 installDir に fileName とう名前で配置する。
-func simpleInstall(downloadUrl string, installDir string, fileName string, override bool) (string, error) {
-
-	// ツールの配置先組み立て
-	filePath := filepath.Join(installDir, fileName)
+func simpleInstall(downloadUrl string, filePath string) (string, error) {
 
 	// ツールのダウンロード
-	err := download(downloadUrl, filePath, override)
+	err := download(downloadUrl, filePath)
 	if err != nil {
 		return filePath, err
 	}
@@ -73,42 +79,38 @@ var VIM Tool = Tool{
 		}
 		return downloadUrl.String()
 	},
-	installFunc: func(downloadUrl string, installDir string, fileName string, override bool) (string, error) {
-		return simpleInstall(downloadUrl, installDir, fileName, override)
+	installFunc: func(downloadUrl string, filePath string) (string, error) {
+		return simpleInstall(downloadUrl, filePath)
 	},
 }
 
 // ファイルダウンロード処理。
 //
 // downloadUrl からファイルをダウンロードし、 destPath へ配置する。
-func download(downloadUrl string, destPath string, override bool) error {
-	if util.IsExists(destPath) && !override {
-		fmt.Printf("%s aleady exist, use this.\n", filepath.Base(destPath))
-	} else {
-		fmt.Printf("Download %s from %s ...", filepath.Base(destPath), downloadUrl)
+func download(downloadUrl string, destPath string) error {
+	fmt.Printf("Download %s from %s ...", filepath.Base(destPath), downloadUrl)
 
-		// HTTP GETリクエストを送信
-		resp, err := http.Get(downloadUrl)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-
-		// ファイルを作成
-		out, err := os.Create(destPath)
-		if err != nil {
-			return err
-		}
-		defer out.Close()
-
-		// レスポンスの内容をファイルに書き込み
-		_, err = io.Copy(out, resp.Body)
-		if err != nil {
-			return err
-		}
-
-		fmt.Printf(" done.\n")
+	// HTTP GETリクエストを送信
+	resp, err := http.Get(downloadUrl)
+	if err != nil {
+		return err
 	}
+	defer resp.Body.Close()
+
+	// ファイルを作成
+	out, err := os.Create(destPath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// レスポンスの内容をファイルに書き込み
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf(" done.\n")
 
 	return nil
 }
