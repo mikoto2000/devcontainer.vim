@@ -39,7 +39,7 @@ var notice string
 //go:embed devcontainer.vim.template.json
 var devcontainerVimJsonTemplate string
 
-const runargsContent = "-v \"$(pwd):/work\" -v \"$HOME/.vim:/root/.vim\" --workdir /work"
+const runargsContent = "-v \"$(pwd):/work\" -v \"$HOME/.vim:/root/.vim\" -v \"$HOME/.gitconfig:/root/.gitconfig\" -v \"$HOME/.ssh:/root/.ssh\" --workdir /work"
 
 //go:embed vimrc.template.vim
 var additionalVimrc string
