@@ -342,12 +342,8 @@ func main() {
 					}
 
 					if cCtx.Bool(FLAG_NAME_OPEN) {
-						err := util.OpenFileWithDefaultApp(vimrc)
-						if err != nil {
-							fmt.Printf("Failed open vimrc you need manual open: %s\n", vimrc)
-						} else {
-							fmt.Printf("Open vimrc: %s\n", vimrc)
-						}
+						util.OpenFileWithDefaultApp(vimrc)
+						fmt.Printf("%s\n", vimrc)
 					}
 
 					return nil
@@ -389,12 +385,8 @@ func main() {
 					}
 
 					if cCtx.Bool(FLAG_NAME_OPEN) {
-						err := util.OpenFileWithDefaultApp(runargs)
-						if err != nil {
-							fmt.Printf("Failed open runargs you need manual open: %s\n", runargs)
-						} else {
-							fmt.Printf("Open runargs: %s\n", runargs)
-						}
+						util.OpenFileWithDefaultApp(runargs)
+						fmt.Printf("%s\n", runargs)
 					}
 
 					return nil
