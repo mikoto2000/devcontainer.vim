@@ -106,7 +106,15 @@ func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath str
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	dockerVimArgs := []string{"exec", "--container-id", containerId, "--workspace-folder", workspaceFolder, "/" + vimFileName, "--appimage-extract-and-run", "-S", "/SendToTcp.vim", "-S", "/vimrc"}
+	dockerVimArgs := []string{
+		"exec",
+		"--container-id",
+		containerId,
+		"--workspace-folder",
+		workspaceFolder,
+		"sh",
+		"-c",
+		"/" + vimFileName + "--appimage-extract; ./squashfs-root/AppRun -S /SendToTcp.vim -S /vimrc"}
 	fmt.Printf("Start vim: `%s \"%s\"`\n", devcontainerPath, strings.Join(dockerVimArgs, "\" \""))
 	dockerExec := exec.CommandContext(ctx, devcontainerPath, dockerVimArgs...)
 	dockerExec.Stdin = os.Stdin
