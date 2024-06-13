@@ -114,7 +114,7 @@ func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath str
 		workspaceFolder,
 		"sh",
 		"-c",
-		"/" + vimFileName + "--appimage-extract; ./squashfs-root/AppRun -S /SendToTcp.vim -S /vimrc"}
+		"cd ~; /" + vimFileName + " --appimage-extract; cd -; ~/squashfs-root/AppRun -S /SendToTcp.vim -S /vimrc"}
 	fmt.Printf("Start vim: `%s \"%s\"`\n", devcontainerPath, strings.Join(dockerVimArgs, "\" \""))
 	dockerExec := exec.CommandContext(ctx, devcontainerPath, dockerVimArgs...)
 	dockerExec.Stdin = os.Stdin
