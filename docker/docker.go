@@ -103,7 +103,7 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 		containerId,
 		"sh",
 		"-c",
-		"cd ~; /" + vimFileName + " --appimage-extract; cd -; ~/squashfs-root/AppRun -S /SendToTcp.vim -S /vimrc",
+		"cd ~; /" + vimFileName + " --appimage-extract > /dev/null; cd -; ~/squashfs-root/AppRun -S /SendToTcp.vim -S /vimrc",
 	}
 	fmt.Printf("Start vim: `%s \"%s\"`\n", CONTAINER_COMMAND, strings.Join(dockerVimArgs, "\" \""))
 	dockerExec := exec.CommandContext(ctx, CONTAINER_COMMAND, dockerVimArgs...)
