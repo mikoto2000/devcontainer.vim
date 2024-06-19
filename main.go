@@ -19,16 +19,12 @@ import (
 
 var version string
 
-const FLAG_NAME_LICENSE = "license"
-const FLAG_NAME_HELP_LONG = "help"
-const FLAG_NAME_HELP_SHORT = "h"
-const FLAG_NAME_VERSION_LONG = "version"
-const SPLIT_ARG_MARK = "--"
+const flagNameLicense = "license"
 
-const FLAG_NAME_GENERATE = "generate"
-const FLAG_NAME_HOME = "home"
-const FLAG_NAME_OUTPUT = "output"
-const FLAG_NAME_OPEN = "open"
+const flagNameGenerate = "generate"
+const flagNameHome = "home"
+const flagNameOutput = "output"
+const flagNameOpen = "open"
 
 //go:embed LICENSE
 var license string
@@ -37,14 +33,14 @@ var license string
 var notice string
 
 //go:embed devcontainer.vim.template.json
-var devcontainerVimJsonTemplate string
+var devcontainerVimJSONTemplate string
 
 const runargsContent = "-v \"$(pwd):/work\" -v \"$HOME/.vim:/root/.vim\" -v \"$HOME/.gitconfig:/root/.gitconfig\" -v \"$HOME/.ssh:/root/.ssh\" --workdir /work"
 
 //go:embed vimrc.template.vim
 var additionalVimrc string
 
-const APP_NAME = "devcontainer.vim"
+const appName = "devcontainer.vim"
 
 func main() {
 	// Windows でも `${ localEnv:HOME }` でホームディレクトリの指定ができるように、
@@ -61,8 +57,8 @@ func main() {
 	//    `os.UserConfigDir` + `devcontainer.vim`
 	// 2. ユーザーキャッシュ用ディレクトリ
 	//    `os.UserCacheDir` + `devcontainer.vim`
-	appConfigDir := util.CreateConfigDirectory(os.UserConfigDir, APP_NAME)
-	appCacheDir, binDir, configDirForDocker, configDirForDevcontainer := util.CreateCacheDirectory(os.UserCacheDir, APP_NAME)
+	appConfigDir := util.CreateConfigDirectory(os.UserConfigDir, appName)
+	appCacheDir, binDir, configDirForDocker, configDirForDevcontainer := util.CreateCacheDirectory(os.UserCacheDir, appName)
 
 	// vimrc ファイルの出力先を組み立て
 	// vimrc を出力(既に存在するなら何もしない)
@@ -93,7 +89,7 @@ func main() {
 		UseShortOptionHandling: true,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
-				Name:               FLAG_NAME_LICENSE,
+				Name:               flagNameLicense,
 				Aliases:            []string{"l"},
 				Value:              false,
 				DisableDefaultText: true,
@@ -102,7 +98,7 @@ func main() {
 		},
 		Action: func(cCtx *cli.Context) error {
 			// ライセンスフラグが立っていればライセンスを表示して終
-			if cCtx.Bool(FLAG_NAME_LICENSE) {
+			if cCtx.Bool(flagNameLicense) {
 				fmt.Println(license)
 				fmt.Println()
 				fmt.Println(notice)
@@ -255,19 +251,19 @@ func main() {
 				SkipFlagParsing: false,
 				Flags: []cli.Flag{
 					&cli.BoolFlag{
-						Name:    FLAG_NAME_GENERATE,
+						Name:    flagNameGenerate,
 						Aliases: []string{"g"},
 						Value:   false,
 						Usage:   "generate sample config file.",
 					},
 					&cli.StringFlag{
-						Name:    FLAG_NAME_HOME,
+						Name:    flagNameHome,
 						Aliases: []string{},
 						Value:   "/home/vscode",
 						Usage:   "generate sample config's home directory.",
 					},
 					&cli.StringFlag{
-						Name:    FLAG_NAME_OUTPUT,
+						Name:    flagNameOutput,
 						Aliases: []string{"o"},
 						Value:   ".devcontainer/devcontainer.vim.json",
 						Usage:   "generate sample config output file path.",
@@ -280,14 +276,14 @@ func main() {
 					}
 
 					// generate フラグがセットされていたら設定ファイルのひな形を出力する
-					if cCtx.Bool(FLAG_NAME_GENERATE) {
+					if cCtx.Bool(flagNameGenerate) {
 
 						// home オプションで指定された値を利用して、バインド先を置換
-						devcontainerVimJson := strings.Replace(devcontainerVimJsonTemplate, "{{ remoteEnv:HOME }}", cCtx.String(FLAG_NAME_HOME), -1)
+						devcontainerVimJSON := strings.Replace(devcontainerVimJSONTemplate, "{{ remoteEnv:HOME }}", cCtx.String(flagNameHome), -1)
 
-						if cCtx.IsSet(FLAG_NAME_OUTPUT) {
+						if cCtx.IsSet(flagNameOutput) {
 							// output オプションが指定されている場合、指定されたパスへ出力する
-							configFilePath := cCtx.String(FLAG_NAME_OUTPUT)
+							configFilePath := cCtx.String(flagNameOutput)
 
 							// 生成先ディレクトリを作成
 							err := os.MkdirAll(filepath.Dir(configFilePath), 0766)
@@ -296,13 +292,13 @@ func main() {
 							}
 
 							// 設定ファイルサンプルを出力
-							err = os.WriteFile(configFilePath, []byte(devcontainerVimJson), 0666)
+							err = os.WriteFile(configFilePath, []byte(devcontainerVimJSON), 0666)
 							if err != nil {
 								panic(err)
 							}
 						} else {
 							// output オプションが指定されていない場合、標準出力へ出力する
-							fmt.Print(devcontainerVimJson)
+							fmt.Print(devcontainerVimJSON)
 						}
 					}
 
@@ -317,13 +313,13 @@ func main() {
 				SkipFlagParsing: false,
 				Flags: []cli.Flag{
 					&cli.BoolFlag{
-						Name:    FLAG_NAME_GENERATE,
+						Name:    flagNameGenerate,
 						Aliases: []string{"g"},
 						Value:   false,
 						Usage:   "regenerate vimrc file.",
 					},
 					&cli.BoolFlag{
-						Name:    FLAG_NAME_OPEN,
+						Name:    flagNameOpen,
 						Aliases: []string{"o"},
 						Value:   false,
 						Usage:   "open and display vimrc.",
@@ -336,7 +332,7 @@ func main() {
 					}
 
 					// generate フラグがセットされていたら vimrc の再生成を行う
-					if cCtx.Bool(FLAG_NAME_GENERATE) {
+					if cCtx.Bool(flagNameGenerate) {
 						err := os.WriteFile(vimrc, []byte(additionalVimrc), 0666)
 						if err != nil {
 							panic(err)
@@ -344,7 +340,7 @@ func main() {
 						fmt.Printf("Generated additional vimrc to: %s\n", vimrc)
 					}
 
-					if cCtx.Bool(FLAG_NAME_OPEN) {
+					if cCtx.Bool(flagNameOpen) {
 						util.OpenFileWithDefaultApp(vimrc)
 						fmt.Printf("%s\n", vimrc)
 					}
@@ -360,13 +356,13 @@ func main() {
 				SkipFlagParsing: false,
 				Flags: []cli.Flag{
 					&cli.BoolFlag{
-						Name:    FLAG_NAME_GENERATE,
+						Name:    flagNameGenerate,
 						Aliases: []string{"g"},
 						Value:   false,
 						Usage:   "regenerate runargs file.",
 					},
 					&cli.BoolFlag{
-						Name:    FLAG_NAME_OPEN,
+						Name:    flagNameOpen,
 						Aliases: []string{"o"},
 						Value:   false,
 						Usage:   "open and display runargs.",
@@ -379,7 +375,7 @@ func main() {
 					}
 
 					// generate フラグがセットされていたら runargs の再生成を行う
-					if cCtx.Bool(FLAG_NAME_GENERATE) {
+					if cCtx.Bool(flagNameGenerate) {
 						err := os.WriteFile(runargs, []byte(runargsContent), 0666)
 						if err != nil {
 							panic(err)
@@ -387,7 +383,7 @@ func main() {
 						fmt.Printf("Generated additional runargs to: %s\n", runargs)
 					}
 
-					if cCtx.Bool(FLAG_NAME_OPEN) {
+					if cCtx.Bool(flagNameOpen) {
 						util.OpenFileWithDefaultApp(runargs)
 						fmt.Printf("%s\n", runargs)
 					}
@@ -455,7 +451,7 @@ func main() {
 						},
 					},
 					{
-						Name:            "clipboard-data-receiver",
+						Name:            tools.CdrFileName,
 						Usage:           "Management clipboard-data-receiver",
 						UsageText:       "devcontainer.vim tool clipboard-data-receiver SUB_COMMAND",
 						HideHelp:        false,

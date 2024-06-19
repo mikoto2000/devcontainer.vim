@@ -16,8 +16,8 @@ WATCH_SRC := ./main.go \
 						 ./devcontainer/upCommandResult.go \
 						 ./docker/docker.go \
 						 ./docker/dockerPsResult.go \
-						 ./dockerCompose/dockerCompose.go \
-						 ./dockerCompose/dockerComposePsResult.go \
+						 ./dockercompose/dockerCompose.go \
+						 ./dockercompose/dockerComposePsResult.go \
 						 ./tools/tools.go \
 						 ./tools/devcontainer.go \
 						 ./tools/devcontainer_nowindows.go \
@@ -46,6 +46,10 @@ build/${LINUX_BINARY_NAME}: ${WATCH_SRC}
 build-darwin: build/${DARWIN_BINARY_NAME}
 build/${DARWIN_BINARY_NAME}: ${WATCH_SRC}
 	GOOS=darwin GOARCH=${GOARCH} go build -ldflags=${LD_FLAGS} -trimpath -o build/${DARWIN_BINARY_NAME}
+
+.PHONY: lint
+lint:
+	staticcheck -checks inherit,ST1003,ST1016 ./...
 
 .PHONY: fmt
 fmt:

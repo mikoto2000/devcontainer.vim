@@ -14,14 +14,14 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/util"
 )
 
-const CDR_FILE_NAME = "clipboard-data-receiver"
-const CDR_FILE_NAME_FOR_WINDOWS = "clipboard-data-receiver.exe"
+const CdrFileName = "clipboard-data-receiver"
+const cdrFileNameForWindows = "clipboard-data-receiver.exe"
 
 // clipboard-data-receiver のダウンロード URL
-const DOWNLOAD_URL_CDR_PATTERN = "https://github.com/mikoto2000/clipboard-data-receiver/releases/download/{{ .TagName }}/clipboard-data-receiver.linux-amd64"
-const DOWNLOAD_URL_CDR_PATTERN_FOR_WINDOWS = "https://github.com/mikoto2000/clipboard-data-receiver/releases/download/{{ .TagName }}/clipboard-data-receiver.windows-amd64.exe"
+const downloadURLCdrPattern = "https://github.com/mikoto2000/clipboard-data-receiver/releases/download/{{ .TagName }}/clipboard-data-receiver.linux-amd64"
+const downloadURLCdrPatternForWindows = "https://github.com/mikoto2000/clipboard-data-receiver/releases/download/{{ .TagName }}/clipboard-data-receiver.windows-amd64.exe"
 
-const VIM_SCRIPT_TEMPLATE_SEND_TO_CDR = `function! SendToCdr(register) abort
+const vimScriptTemplateSendToCdr = `function! SendToCdr(register) abort
   let text = getreg(a:register)
   let l:channelToCdr = ch_open("host.docker.internal:{{ .Port }}", {"mode": "raw"})
   call ch_sendraw(channelToCdr, l:text, {})
@@ -37,11 +37,11 @@ var CDR Tool = func() Tool {
 	var tmpl *template.Template
 	var err error
 	if util.IsWsl() {
-		cdrFileName = CDR_FILE_NAME_FOR_WINDOWS
-		tmpl, err = template.New("ducp").Parse(DOWNLOAD_URL_CDR_PATTERN_FOR_WINDOWS)
+		cdrFileName = cdrFileNameForWindows
+		tmpl, err = template.New("ducp").Parse(downloadURLCdrPatternForWindows)
 	} else {
-		cdrFileName = CDR_FILE_NAME
-		tmpl, err = template.New("ducp").Parse(DOWNLOAD_URL_CDR_PATTERN)
+		cdrFileName = CdrFileName
+		tmpl, err = template.New("ducp").Parse(downloadURLCdrPattern)
 	}
 	if err != nil {
 		panic(err)
@@ -50,22 +50,22 @@ var CDR Tool = func() Tool {
 	// 実際に使用する cdr の構造体を返却
 	return Tool{
 		FileName: cdrFileName,
-		CalculateDownloadUrl: func() string {
+		CalculateDownloadURL: func() string {
 			latestTagName, err := util.GetLatestReleaseFromGitHub("mikoto2000", "clipboard-data-receiver")
 			if err != nil {
 				panic(err)
 			}
 
 			tmplParams := map[string]string{"TagName": latestTagName}
-			var downloadUrl strings.Builder
-			err = tmpl.Execute(&downloadUrl, tmplParams)
+			var downloadURL strings.Builder
+			err = tmpl.Execute(&downloadURL, tmplParams)
 			if err != nil {
 				panic(err)
 			}
-			return downloadUrl.String()
+			return downloadURL.String()
 		},
-		installFunc: func(downloadUrl string, filePath string) (string, error) {
-			return simpleInstall(downloadUrl, filePath)
+		installFunc: func(downloadURL string, filePath string) (string, error) {
+			return simpleInstall(downloadURL, filePath)
 		},
 	}
 }()
@@ -189,27 +189,27 @@ func KillCdr(pid int) {
 
 }
 
-func CreateSendToTcp(configDir string, port int) (string, error) {
+func CreateSendToTCP(configDir string, port int) (string, error) {
 	// SendToTcp.vim の文字列を組み立て
-	tmpl, err := template.New("SendToTcp").Parse(VIM_SCRIPT_TEMPLATE_SEND_TO_CDR)
+	tmpl, err := template.New("SendToTcp").Parse(vimScriptTemplateSendToCdr)
 	if err != nil {
 		return "", nil
 	}
 
 	tmplParams := map[string]int{"Port": port}
-	var sendToTcpString strings.Builder
-	err = tmpl.Execute(&sendToTcpString, tmplParams)
+	var sendToTCPString strings.Builder
+	err = tmpl.Execute(&sendToTCPString, tmplParams)
 	if err != nil {
 		return "", nil
 	}
 
 	// ファイルに出力
-	sendToTcp := filepath.Join(configDir, "SendToTcp.vim")
-	err = os.WriteFile(sendToTcp, []byte(sendToTcpString.String()), 0666)
+	sendToTCP := filepath.Join(configDir, "SendToTcp.vim")
+	err = os.WriteFile(sendToTCP, []byte(sendToTCPString.String()), 0666)
 	if err != nil {
-		return sendToTcp, nil
+		return sendToTCP, nil
 	}
 
 	// 作成したファイルを返却
-	return sendToTcp, nil
+	return sendToTCP, nil
 }

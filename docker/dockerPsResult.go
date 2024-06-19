@@ -11,16 +11,16 @@ import (
 //	{
 //	}
 type PsCommandResult struct {
-	Id string `json:"ID"`
+	ID string `json:"ID"`
 }
 
-func GetId(psCommandResult string) (string, error) {
+func GetID(psCommandResult string) (string, error) {
 	result, err := UnmarshalPsCommandResult([]byte(psCommandResult))
 	if err != nil {
 		return "", err
 	}
 
-	return result.Id, nil
+	return result.ID, nil
 }
 
 func UnmarshalPsCommandResult(data []byte) (PsCommandResult, error) {

@@ -15,8 +15,8 @@ import (
 // ツール情報
 type Tool struct {
 	FileName             string
-	CalculateDownloadUrl func() string
-	installFunc          func(downloadUrl string, filePath string) (string, error)
+	CalculateDownloadURL func() string
+	installFunc          func(downloadURL string, filePath string) (string, error)
 }
 
 // ツールのインストールを実行
@@ -29,17 +29,17 @@ func (t Tool) Install(installDir string, override bool) (string, error) {
 		fmt.Printf("%s aleady exist, use this.\n", filePath)
 		return filePath, nil
 	} else {
-		return t.installFunc(t.CalculateDownloadUrl(), filePath)
+		return t.installFunc(t.CalculateDownloadURL(), filePath)
 	}
 }
 
 // 単純なファイル配置でインストールが完了するもののインストール処理。
 //
-// downloadUrl からファイルをダウンロードし、 installDir に fileName とう名前で配置する。
-func simpleInstall(downloadUrl string, filePath string) (string, error) {
+// downloadURL からファイルをダウンロードし、 installDir に fileName とう名前で配置する。
+func simpleInstall(downloadURL string, filePath string) (string, error) {
 
 	// ツールのダウンロード
-	err := download(downloadUrl, filePath)
+	err := download(downloadURL, filePath)
 	if err != nil {
 		return filePath, err
 	}
@@ -54,44 +54,44 @@ func simpleInstall(downloadUrl string, filePath string) (string, error) {
 }
 
 // Vim のダウンロード URL
-const VIM_DOWNLOAD_URL_PATTERN = "https://github.com/vim/vim-appimage/releases/download/{{ .TagName }}/Vim-{{ .TagName }}.glibc2.29-x86_64.AppImage"
+const vimDownloadURLPattern = "https://github.com/vim/vim-appimage/releases/download/{{ .TagName }}/Vim-{{ .TagName }}.glibc2.29-x8664.AppImage"
 
 // Vim のツール情報
 var VIM Tool = Tool{
 	FileName: "vim",
-	CalculateDownloadUrl: func() string {
+	CalculateDownloadURL: func() string {
 		latestTagName, err := util.GetLatestReleaseFromGitHub("vim", "vim-appimage")
 		if err != nil {
 			panic(err)
 		}
 
 		pattern := "pattern"
-		tmpl, err := template.New(pattern).Parse(VIM_DOWNLOAD_URL_PATTERN)
+		tmpl, err := template.New(pattern).Parse(vimDownloadURLPattern)
 		if err != nil {
 			panic(err)
 		}
 
 		tmplParams := map[string]string{"TagName": latestTagName}
-		var downloadUrl strings.Builder
-		err = tmpl.Execute(&downloadUrl, tmplParams)
+		var downloadURL strings.Builder
+		err = tmpl.Execute(&downloadURL, tmplParams)
 		if err != nil {
 			panic(err)
 		}
-		return downloadUrl.String()
+		return downloadURL.String()
 	},
-	installFunc: func(downloadUrl string, filePath string) (string, error) {
-		return simpleInstall(downloadUrl, filePath)
+	installFunc: func(downloadURL string, filePath string) (string, error) {
+		return simpleInstall(downloadURL, filePath)
 	},
 }
 
 // ファイルダウンロード処理。
 //
-// downloadUrl からファイルをダウンロードし、 destPath へ配置する。
-func download(downloadUrl string, destPath string) error {
-	fmt.Printf("Download %s from %s ...", filepath.Base(destPath), downloadUrl)
+// downloadURL からファイルをダウンロードし、 destPath へ配置する。
+func download(downloadURL string, destPath string) error {
+	fmt.Printf("Download %s from %s ...", filepath.Base(destPath), downloadURL)
 
 	// HTTP GETリクエストを送信
-	resp, err := http.Get(downloadUrl)
+	resp, err := http.Get(downloadURL)
 	if err != nil {
 		return err
 	}

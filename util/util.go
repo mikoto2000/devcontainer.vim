@@ -97,48 +97,48 @@ func AddExecutePermission(filePath string) error {
 func readAndMergeConfig(baseConfigPath string, additionalConfigPath string) ([]byte, error) {
 
 	// 設定ファイル読み込み
-	parsedBaseJsonContentBytes, err := os.ReadFile(baseConfigPath)
+	parsedBaseJSONContentBytes, err := os.ReadFile(baseConfigPath)
 	if err != nil {
 		return nil, err
 	}
 
 	// 設定ファイルを JWCC としてパースし、標準 JSON へ変換
-	parsedBaseJson, err := hujson.Parse(parsedBaseJsonContentBytes)
+	parsedBaseJSON, err := hujson.Parse(parsedBaseJSONContentBytes)
 	if err != nil {
 		return nil, err
 	}
-	parsedBaseJson.Standardize()
+	parsedBaseJSON.Standardize()
 
 	// 標準 JSON を gabs を使って再パース
-	parsedBaseJsonGrabContainer, err := gabs.ParseJSON(parsedBaseJson.Pack())
+	parsedBaseJSONGrabContainer, err := gabs.ParseJSON(parsedBaseJSON.Pack())
 	if err != nil {
 		return nil, err
 	}
 
 	// devcontainer.vim 用追加設定ファイル読み込み
-	parsedAdditionalJsonContentBytes, err := os.ReadFile(additionalConfigPath)
+	parsedAdditionalJSONContentBytes, err := os.ReadFile(additionalConfigPath)
 	if err != nil {
 		return nil, err
 	}
 
 	// devcontainer.vim 用追加設定ファイルを JWCC としてパースし、標準 JSON へ変換
-	parsedAdditionalJson, err := hujson.Parse(parsedAdditionalJsonContentBytes)
+	parsedAdditionalJSON, err := hujson.Parse(parsedAdditionalJSONContentBytes)
 	if err != nil {
 		return nil, err
 	}
-	parsedAdditionalJson.Standardize()
+	parsedAdditionalJSON.Standardize()
 
 	// 標準 JSON を gabs を使って再パース
-	parsedAdditionalJsonGrabContainer, err := gabs.ParseJSON(parsedAdditionalJson.Pack())
+	parsedAdditionalJSONGrabContainer, err := gabs.ParseJSON(parsedAdditionalJSON.Pack())
 	if err != nil {
 		return nil, err
 	}
 
 	// gabs を使って JSON をマージ
-	parsedBaseJsonGrabContainer.Merge(parsedAdditionalJsonGrabContainer)
+	parsedBaseJSONGrabContainer.Merge(parsedAdditionalJSONGrabContainer)
 
 	// 設定ファイルの内容を返却
-	return parsedBaseJsonGrabContainer.Bytes(), nil
+	return parsedBaseJSONGrabContainer.Bytes(), nil
 }
 
 // configFilePath と additionalConfigFilePath の JSON をマージし、

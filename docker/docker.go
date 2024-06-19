@@ -13,38 +13,38 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/tools"
 )
 
-const CONTAINER_COMMAND = "docker"
+const containerCommand = "docker"
 
-var DOCKER_RUN_ARGS_PREFIX = []string{"run", "-d", "--rm"}
-var DOCKER_RUN_ARGS_SUFFIX = []string{"sh", "-c", "trap \"exit 0\" TERM; sleep infinity & wait"}
+var dockerRunArgsPrefix = []string{"run", "-d", "--rm"}
+var dockerRunArgsSuffix = []string{"sh", "-c", "trap \"exit 0\" TERM; sleep infinity & wait"}
 
 func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker string, vimrc string, defaultRunargs []string) {
 	vimFileName := filepath.Base(vimFilePath)
 
 	// バックグラウンドでコンテナを起動
 	// `docker run -d --rm os.Args[1:] sh -c "sleep infinity"`
-	dockerRunArgs := DOCKER_RUN_ARGS_PREFIX
+	dockerRunArgs := dockerRunArgsPrefix
 	// windows でなければ、 runargs を使用する
 	if runtime.GOOS != "windows" {
 		dockerRunArgs = append(dockerRunArgs, defaultRunargs...)
 	}
 	dockerRunArgs = append(dockerRunArgs, args...)
-	dockerRunArgs = append(dockerRunArgs, DOCKER_RUN_ARGS_SUFFIX...)
-	fmt.Printf("run container: `%s \"%s\"`\n", CONTAINER_COMMAND, strings.Join(dockerRunArgs, "\" \""))
-	dockerRunCommand := exec.Command(CONTAINER_COMMAND, dockerRunArgs...)
-	containerIdRaw, err := dockerRunCommand.CombinedOutput()
-	containerId := string(containerIdRaw)
+	dockerRunArgs = append(dockerRunArgs, dockerRunArgsSuffix...)
+	fmt.Printf("run container: `%s \"%s\"`\n", containerCommand, strings.Join(dockerRunArgs, "\" \""))
+	dockerRunCommand := exec.Command(containerCommand, dockerRunArgs...)
+	containerIDRaw, err := dockerRunCommand.CombinedOutput()
+	containerID := string(containerIDRaw)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Container start error.")
-		fmt.Fprintln(os.Stderr, string(containerId))
+		fmt.Fprintln(os.Stderr, string(containerID))
 		panic(err)
 	}
-	containerId = strings.ReplaceAll(containerId, "\n", "")
-	containerId = strings.ReplaceAll(containerId, "\r", "")
-	fmt.Printf("Container started. id: %s\n", containerId)
+	containerID = strings.ReplaceAll(containerID, "\n", "")
+	containerID = strings.ReplaceAll(containerID, "\r", "")
+	fmt.Printf("Container started. id: %s\n", containerID)
 
 	// clipboard-data-receiver を起動
-	configDirForCdr := filepath.Join(configDirForDocker, containerId)
+	configDirForCdr := filepath.Join(configDirForDocker, containerID)
 	err = os.MkdirAll(configDirForCdr, 0744)
 	if err != nil {
 		panic(err)
@@ -57,15 +57,15 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 
 	// コンテナへ appimage を転送して実行権限を追加
 	// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
-	err = Cp("AppImage", vimFilePath, containerId, "/")
+	err = Cp("AppImage", vimFilePath, containerID, "/")
 	if err != nil {
 		panic(err)
 	}
 
 	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> chmod +x /Vim-AppImage`
-	dockerChownArgs := []string{"exec", containerId, "sh", "-c", "chmod +x /" + vimFileName}
-	fmt.Printf("Chown AppImage: `%s \"%s\"` ...", CONTAINER_COMMAND, strings.Join(dockerChownArgs, "\" \""))
-	chmodResult, err := exec.Command(CONTAINER_COMMAND, dockerChownArgs...).CombinedOutput()
+	dockerChownArgs := []string{"exec", containerID, "sh", "-c", "chmod +x /" + vimFileName}
+	fmt.Printf("Chown AppImage: `%s \"%s\"` ...", containerCommand, strings.Join(dockerChownArgs, "\" \""))
+	chmodResult, err := exec.Command(containerCommand, dockerChownArgs...).CombinedOutput()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "chmod error.")
 		fmt.Fprintln(os.Stderr, string(chmodResult))
@@ -74,19 +74,19 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	fmt.Printf(" done.\n")
 
 	// Vim 関連ファイルの転送(`SendToTcp.vim` と、追加の `vimrc`)
-	sendToTcp, err := tools.CreateSendToTcp(configDirForDocker, port)
+	sendToTCP, err := tools.CreateSendToTCP(configDirForDocker, port)
 	if err != nil {
 		panic(err)
 	}
 
 	// コンテナへ SendToTcp.vim を転送
-	err = Cp("SendToTcp.vim", sendToTcp, containerId, "/")
+	err = Cp("SendToTcp.vim", sendToTCP, containerID, "/")
 	if err != nil {
 		panic(err)
 	}
 
 	// コンテナへ vimrc を転送
-	err = Cp("vimrc", vimrc, containerId, "/")
+	err = Cp("vimrc", vimrc, containerID, "/")
 	if err != nil {
 		panic(err)
 	}
@@ -100,13 +100,13 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	dockerVimArgs := []string{
 		"exec",
 		"-it",
-		containerId,
+		containerID,
 		"sh",
 		"-c",
 		"cd ~; /" + vimFileName + " --appimage-extract > /dev/null; cd -; ~/squashfs-root/AppRun -S /SendToTcp.vim -S /vimrc",
 	}
-	fmt.Printf("Start vim: `%s \"%s\"`\n", CONTAINER_COMMAND, strings.Join(dockerVimArgs, "\" \""))
-	dockerExec := exec.CommandContext(ctx, CONTAINER_COMMAND, dockerVimArgs...)
+	fmt.Printf("Start vim: `%s \"%s\"`\n", containerCommand, strings.Join(dockerVimArgs, "\" \""))
+	dockerExec := exec.CommandContext(ctx, containerCommand, dockerVimArgs...)
 	dockerExec.Stdin = os.Stdin
 	dockerExec.Stdout = os.Stdout
 	dockerExec.Stderr = os.Stderr
@@ -120,8 +120,8 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 
 	// コンテナ停止
 	// `docker stop <dockerrun 時に標準出力に表示される CONTAINER ID>`
-	fmt.Printf("Stop container(Async) %s.\n", containerId)
-	err = exec.Command(CONTAINER_COMMAND, "stop", containerId).Start()
+	fmt.Printf("Stop container(Async) %s.\n", containerID)
+	err = exec.Command(containerCommand, "stop", containerID).Start()
 	if err != nil {
 		panic(err)
 	}
@@ -135,7 +135,7 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 }
 
 // workspaceFolder で指定したディレクトリに対応するコンテナのコンテナ ID を返却する
-func GetContainerIdFromWorkspaceFolder(workspaceFolder string) (string, error) {
+func GetContainerIDFromWorkspaceFolder(workspaceFolder string) (string, error) {
 
 	// `devcontainer.local_folder=${workspaceFolder}` が含まれている行を探す
 
@@ -149,7 +149,7 @@ func GetContainerIdFromWorkspaceFolder(workspaceFolder string) (string, error) {
 		return "", err
 	}
 
-	id, err := GetId(psResult)
+	id, err := GetID(psResult)
 	if err != nil {
 		return "", err
 	}
@@ -164,17 +164,17 @@ func Ps(filter string) (string, error) {
 	return string(stdout), err
 }
 
-// `docker rm -f ${CONTAINER_ID}` コマンドを実行する。
-func Rm(containerId string) error {
-	dockerRmCommand := exec.Command("docker", "rm", "-f", containerId)
+// `docker rm -f ${containerID}` コマンドを実行する。
+func Rm(containerID string) error {
+	dockerRmCommand := exec.Command("docker", "rm", "-f", containerID)
 	err := dockerRmCommand.Start()
 	return err
 }
 
-func Cp(tagForLog string, from string, containerId string, to string) error {
-	dockerCpArgs := []string{"cp", from, containerId + ":" + to}
-	fmt.Printf("Copy %s: `%s \"%s\"` ...", tagForLog, CONTAINER_COMMAND, strings.Join(dockerCpArgs, "\" \""))
-	copyResult, err := exec.Command(CONTAINER_COMMAND, dockerCpArgs...).CombinedOutput()
+func Cp(tagForLog string, from string, containerID string, to string) error {
+	dockerCpArgs := []string{"cp", from, containerID + ":" + to}
+	fmt.Printf("Copy %s: `%s \"%s\"` ...", tagForLog, containerCommand, strings.Join(dockerCpArgs, "\" \""))
+	copyResult, err := exec.Command(containerCommand, dockerCpArgs...).CombinedOutput()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "AppImage copy error.")
 		fmt.Fprintln(os.Stderr, string(copyResult))

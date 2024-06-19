@@ -11,14 +11,14 @@ import (
 	"strings"
 
 	"github.com/mikoto2000/devcontainer.vim/docker"
-	"github.com/mikoto2000/devcontainer.vim/dockerCompose"
+	"github.com/mikoto2000/devcontainer.vim/dockercompose"
 	"github.com/mikoto2000/devcontainer.vim/tools"
 	"github.com/mikoto2000/devcontainer.vim/util"
 )
 
-const CONTAINER_COMMAND = "docker"
+const containerCommand = "docker"
 
-var DEVCONTAINRE_ARGS_PREFIX = []string{"up"}
+var devcontainreArgsPrefix = []string{"up"}
 
 // devcontainer でコンテナを立ち上げ、 Vim を転送し、実行する。
 // 既存実装の都合上、configFilePath から configDirForDevcontainer を抽出している
@@ -33,7 +33,7 @@ func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath str
 	// 末尾以外のものはそのまま `devcontainer up` への引数として渡す
 	userArgs := args[0 : len(args)-1]
 	userArgs = append(userArgs, "--override-config", configFilePath, "--workspace-folder", workspaceFolder)
-	devcontainerArgs := append(DEVCONTAINRE_ARGS_PREFIX, userArgs...)
+	devcontainerArgs := append(devcontainreArgsPrefix, userArgs...)
 	fmt.Printf("run container: `%s \"%s\"`\n", devcontainerPath, strings.Join(devcontainerArgs, "\" \""))
 	dockerRunCommand := exec.Command(devcontainerPath, devcontainerArgs...)
 	dockerRunCommand.Stderr = os.Stderr
@@ -60,10 +60,10 @@ func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath str
 
 	// コンテナへ appimage を転送して実行権限を追加
 	// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
-	containerId := upCommandResult.ContainerId
-	dockerCpArgs := []string{"cp", vimFilePath, containerId + ":/"}
-	fmt.Printf("Copy AppImage: `%s \"%s\"` ...", CONTAINER_COMMAND, strings.Join(dockerCpArgs, "\" \""))
-	copyResult, err := exec.Command(CONTAINER_COMMAND, dockerCpArgs...).CombinedOutput()
+	containerID := upCommandResult.ContainerID
+	dockerCpArgs := []string{"cp", vimFilePath, containerID + ":/"}
+	fmt.Printf("Copy AppImage: `%s \"%s\"` ...", containerCommand, strings.Join(dockerCpArgs, "\" \""))
+	copyResult, err := exec.Command(containerCommand, dockerCpArgs...).CombinedOutput()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "AppImage copy error.")
 		fmt.Fprintln(os.Stderr, string(copyResult))
@@ -72,9 +72,9 @@ func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath str
 	fmt.Printf(" done.\n")
 
 	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> chmod +x /Vim-AppImage`
-	dockerChownArgs := []string{"exec", "--user", "root", containerId, "sh", "-c", "chmod +x /" + vimFileName}
-	fmt.Printf("Chown AppImage: `%s \"%s\"` ...", CONTAINER_COMMAND, strings.Join(dockerChownArgs, "\" \""))
-	chmodResult, err := exec.Command(CONTAINER_COMMAND, dockerChownArgs...).CombinedOutput()
+	dockerChownArgs := []string{"exec", "--user", "root", containerID, "sh", "-c", "chmod +x /" + vimFileName}
+	fmt.Printf("Chown AppImage: `%s \"%s\"` ...", containerCommand, strings.Join(dockerChownArgs, "\" \""))
+	chmodResult, err := exec.Command(containerCommand, dockerChownArgs...).CombinedOutput()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "chmod error.")
 		fmt.Fprintln(os.Stderr, string(chmodResult))
@@ -83,19 +83,19 @@ func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath str
 	fmt.Printf(" done.\n")
 
 	// Vim 関連ファイルの転送(`SendToTcp.vim` と、追加の `vimrc`)
-	sendToTcp, err := tools.CreateSendToTcp(configDirForDevcontainer, port)
+	sendToTCP, err := tools.CreateSendToTCP(configDirForDevcontainer, port)
 	if err != nil {
 		panic(err)
 	}
 
 	// コンテナへ SendToTcp.vim を転送
-	err = docker.Cp("SendToTcp.vim", sendToTcp, containerId, "/")
+	err = docker.Cp("SendToTcp.vim", sendToTCP, containerID, "/")
 	if err != nil {
 		panic(err)
 	}
 
 	// コンテナへ vimrc を転送
-	err = docker.Cp("vimrc", vimrc, containerId, "/")
+	err = docker.Cp("vimrc", vimrc, containerID, "/")
 	if err != nil {
 		panic(err)
 	}
@@ -109,7 +109,7 @@ func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath str
 	dockerVimArgs := []string{
 		"exec",
 		"--container-id",
-		containerId,
+		containerID,
 		"--workspace-folder",
 		workspaceFolder,
 		"sh",
@@ -151,7 +151,7 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 	if strings.Contains(stdout, "dockerComposeFile") {
 
 		// docker compose ps コマンドで compose の情報取得
-		dockerComposePsResultString, err := dockerCompose.Ps(workspaceFolder)
+		dockerComposePsResultString, err := dockercompose.Ps(workspaceFolder)
 		if err != nil {
 			panic(err)
 		}
@@ -164,14 +164,14 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 		dockerComposePsResultFirstItemString := strings.Split(dockerComposePsResultString, "\n")[0]
 
 		// docker compose ps コマンドの結果からプロジェクト名を取得
-		projectName, err := dockerCompose.GetProjectName(dockerComposePsResultFirstItemString)
+		projectName, err := dockercompose.GetProjectName(dockerComposePsResultFirstItemString)
 		if err != nil {
 			panic(err)
 		}
 
 		// プロジェクト名を使って docker compose down を実行
 		fmt.Printf("Run `docker compose -p %s down`(Async)\n", projectName)
-		err = dockerCompose.Down(projectName)
+		err = dockercompose.Down(projectName)
 		if err != nil {
 			panic(err)
 		}
@@ -181,14 +181,14 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 		configDir = util.GetConfigDir(configDirForDevcontainer, workspaceFolder)
 	} else {
 		// ワークスペースに対応するコンテナを探して ID を取得する
-		containerId, err := docker.GetContainerIdFromWorkspaceFolder(workspaceFolder)
+		containerID, err := docker.GetContainerIDFromWorkspaceFolder(workspaceFolder)
 		if err != nil {
 			panic(err)
 		}
 
 		// 取得したコンテナに対して rm を行う
-		fmt.Printf("Run `docker rm -f %s down`(Async)\n", containerId)
-		err = docker.Rm(containerId)
+		fmt.Printf("Run `docker rm -f %s down`(Async)\n", containerID)
+		err = docker.Rm(containerID)
 		if err != nil {
 			panic(err)
 		}
