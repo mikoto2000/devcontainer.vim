@@ -49,6 +49,7 @@ build/${DARWIN_BINARY_NAME}: ${WATCH_SRC}
 
 .PHONY: lint
 lint:
+	go install honnef.co/go/tools/cmd/staticcheck@latest
 	staticcheck -checks inherit,ST1003,ST1016 ./...
 
 .PHONY: fmt
