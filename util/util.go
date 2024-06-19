@@ -20,10 +20,7 @@ const configDirName = "config"
 // パスが通っている場合 true を返却し、通っていない場合 false を返却する。
 func IsExistsCommand(command string) bool {
 	_, err := exec.LookPath(command)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 type GetDirFunc func() (string, error)

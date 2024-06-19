@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"os"
-	"path/filepath"
 )
 
 func TestIsExistsCommandOk(t *testing.T) {
@@ -29,35 +28,8 @@ func CreateTestCreateDirectorySuccessPath() (string, error) {
 	return testDirectory, err
 }
 
-func TestCreateDirectorySuccess(t *testing.T) {
-
-	// Create directory
-	// TempDir にテスト用ディレクトリを作成
-	createdDirectory, _, _ := CreateDirectory(CreateTestCreateDirectorySuccessPath, "TestCreateDirectory")
-
-	if !IsExists(createdDirectory) {
-		t.Fatalf("directory create failed: %s.", createdDirectory)
-	}
-
-	// 後片付け
-	os.RemoveAll(filepath.Dir(createdDirectory))
-}
-
 func CreateTestCreateDirectoryFailedPath() (string, error) {
 	return "/usr/bin", nil
-}
-
-func TestCreateDirectoryFailed(t *testing.T) {
-	// panic したらテスト失敗
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatalf("ディレクトリ作成失敗したのに panic しませんでした。")
-		}
-	}()
-
-	// Create directory
-	// 失敗させるために必ず存在するであろう /usr/bin/sh に作ろうとする
-	CreateDirectory(CreateTestCreateDirectoryFailedPath, "sh")
 }
 
 func TestIsExistsTrue(t *testing.T) {

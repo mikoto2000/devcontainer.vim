@@ -145,6 +145,9 @@ func GetContainerIdFromWorkspaceFolder(workspaceFolder string) (string, error) {
 	}
 
 	psResult, err := Ps("label=devcontainer.local_folder=" + workspaceFilderAbs)
+	if err != nil {
+		return "", err
+	}
 
 	id, err := GetId(psResult)
 	if err != nil {

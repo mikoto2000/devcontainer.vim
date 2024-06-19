@@ -155,6 +155,9 @@ func main() {
 
 						// 展開したものを配列へ分割
 						defaultRunargs, err := shlex.Split(extractedDofaultRunargsString, true)
+						if err != nil {
+							panic(err)
+						}
 
 						// コンテナ起動
 						docker.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker, vimrc, defaultRunargs)

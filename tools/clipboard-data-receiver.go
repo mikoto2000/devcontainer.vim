@@ -142,6 +142,10 @@ func runCdrForWsl(cdrPath string, pidFile string, portFile string) (int, int, er
 		}
 
 		pid, err = strconv.Atoi(string(pidFileContentBytes))
+		if err != nil {
+			return 0, 0, err
+		}
+
 		break
 	}
 
@@ -156,6 +160,10 @@ func runCdrForWsl(cdrPath string, pidFile string, portFile string) (int, int, er
 		}
 
 		port, err = strconv.Atoi(string(portFileContentBytes))
+		if err != nil {
+			return 0, 0, err
+		}
+
 		break
 	}
 
