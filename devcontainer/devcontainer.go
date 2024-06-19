@@ -2,6 +2,7 @@ package devcontainer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -225,7 +226,11 @@ func GetConfigurationFilePath(devcontainerFilePath string, workspaceFolder strin
 
 func ReadConfiguration(devcontainerFilePath string, readConfiguration ...string) (string, error) {
 	args := append([]string{"read-configuration"}, readConfiguration...)
-	return Execute(devcontainerFilePath, args...)
+	result, err := Execute(devcontainerFilePath, args...)
+	if err != nil {
+		return "", errors.New("`devcontainer read-configuration` に失敗しました。`.devcontainer.json が存在することと、 docker エンジンが起動していることを確認してください。")
+	}
+	return result, err
 }
 
 func Templates(devcontainerFilePath string, templatesArgs ...string) (string, error) {

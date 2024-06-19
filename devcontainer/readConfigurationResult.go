@@ -2,6 +2,7 @@ package devcontainer
 
 import (
 	"encoding/json"
+	"errors"
 )
 
 // `devcontainers read-configuration` コマンドの実行結果スキーマ
@@ -41,7 +42,7 @@ type ConfigFilePath struct {
 func GetConfigFilePath(readConfigurationCommandResult string) (string, error) {
 	result, err := UnmarshalReadConfigurationCommandResult([]byte(readConfigurationCommandResult))
 	if err != nil {
-		return "", err
+		return "", errors.New("`devcontainer read-configuration` の出力パースに失敗しました。`.devcontainer.json が存在することと、 docker エンジンが起動していることを確認してください。")
 	}
 
 	return result.Configuration.ConfigFilePath.FsPath, nil
