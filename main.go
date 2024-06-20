@@ -194,7 +194,9 @@ func main() {
 							indexFileName := "devcontainer-index.json"
 							indexFile := filepath.Join(appCacheDir, indexFileName)
 							if !util.IsExists(indexFile) {
+								fmt.Println("Download template index ... ")
 								oras.Pull("ghcr.io/devcontainers/index", "latest", appCacheDir)
+								fmt.Println("done.")
 							}
 
 							var indexRoot IndexRoot
@@ -234,9 +236,6 @@ func main() {
 							}
 
 							selectedItem := availableTemplateItems[i]
-
-							fmt.Printf("Selected Item ID: %s\n", selectedItem.ID)
-							fmt.Printf("Selected Item Version: %s\n", selectedItem.Version)
 
 							// devcontainer の template サブコマンド実行
 
