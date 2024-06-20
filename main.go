@@ -478,6 +478,35 @@ func main() {
 					},
 				},
 			},
+			{
+				Name:            "clean",
+				Usage:           "clean workspace cache files.",
+				UsageText:       "devcontainer.vim clean",
+				Action: func(cCtx *cli.Context) error {
+
+					// 実行確認
+					var input string
+					fmt.Printf("全ワークスペースのキャッシュを削除しますか？ [y/N] > ");
+					fmt.Scan(&input);
+					input = strings.TrimSpace(input);
+					input = strings.ToLower(input);
+					if input == "n" || input == "no" {
+						return nil;
+					}
+
+					// 削除処理
+					err := os.RemoveAll(configDirForDocker);
+					if err != nil {
+						panic(err);
+					}
+					err = os.RemoveAll(configDirForDevcontainer);
+					if err != nil {
+						panic(err);
+					}
+
+					return nil
+				},
+			},
 		},
 	})
 
