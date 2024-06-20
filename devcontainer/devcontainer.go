@@ -291,13 +291,13 @@ func ReadConfiguration(devcontainerFilePath string, readConfiguration ...string)
 	return result, err
 }
 
-func Templates(devcontainerFilePath string, templatesArgs ...string) (string, error) {
+func Templates(
+	devcontainerFilePath string,
+	workspaceFolder string,
+	templateId string) (string, error) {
 	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
-	workspaceFolder := templatesArgs[len(templatesArgs)-1]
-	otherArgs := templatesArgs[:len(templatesArgs)-1]
 
-	args := append([]string{"templates"}, otherArgs...)
-	args = append(args, "--workspace-folder", workspaceFolder)
+	args := []string{"templates", "apply", "--template-id", templateId, "--workspace-folder", workspaceFolder}
 	return ExecuteCombineOutput(devcontainerFilePath, args...)
 }
 
