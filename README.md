@@ -21,11 +21,13 @@ COMMANDS:
    run        Run container use `docker run`
    templates  Run `devcontainer templates`
    start      Run `devcontainer up` and `devcontainer exec`
+   stop       Stop devcontainers.
    down       Stop and remove devcontainers.
    config     devcontainer.vim's config information.
    vimrc      devcontainer.vim's vimrc information.
    runargs    run subcommand's default arguments.
    tool       Management tools
+   clean      clean workspace cache files.
    help, h    Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
@@ -67,7 +69,13 @@ devcontainer.vim start --mount "type=bind,source=$HOME/.vim,target=/root/.vim" .
 
 #### 環境の停止
 
-TODO:
+`stop` サブコマンドで環境の停止ができる。
+
+```sh
+devcontainer.vim stop .
+```
+
+再開したい場合は、もう一度 `start` サブコマンドを実行する。
 
 
 #### 環境の削除
@@ -278,12 +286,10 @@ devcontainer.vim runargs -g
     - [x] : run サブコマンドのデフォルト引数を自分で指定できるようにする
         - [x] : `<os.UserConfigDir>/devcontainer.vim/runargs` にデフォルトで付与したい引数を記載する
         - ※ sh にパスの通った Linux のみで有効。(Windows PowerShell でシェル変数の展開が上手くできないため)
-- [ ] : v0.10.0
-    - [ ] : キャッシュクリアコマンド
-    - [ ] : アンインストールコマンド
+- [x] : v0.10.0
+    - [x] : キャッシュクリアコマンド
+    - [x] : stop コマンドの実装
 - [ ] : v0.11.0
-    - [ ] : stop コマンドの実装
-- [ ] : v0.12.0
     - [ ] : テンプレートリスト出力機能
         - `devcontainer.vim templates apply` に渡す `--template-id` として使える ID の一覧を出力
 
