@@ -13,6 +13,7 @@ import (
 
 	"github.com/mikoto2000/devcontainer.vim/devcontainer"
 	"github.com/mikoto2000/devcontainer.vim/docker"
+	"github.com/mikoto2000/devcontainer.vim/oras"
 	"github.com/mikoto2000/devcontainer.vim/tools"
 	"github.com/mikoto2000/devcontainer.vim/util"
 )
@@ -528,6 +529,27 @@ func main() {
 					}
 
 					return nil
+				},
+			},
+			{
+				Name:            "index",
+				Usage:           "Management index file",
+				UsageText:       "devcontainer.vim index SUB_COMMAND",
+				HideHelp:        false,
+				SkipFlagParsing: false,
+				Subcommands: []*cli.Command{
+					{
+						Name:            "update",
+						Usage:           "Download newly index file",
+						UsageText:       "devcontainer.vim index update",
+						Action: func(cCtx *cli.Context) error {
+
+							// devcontainer のダウンロード
+							oras.Pull("ghcr.io/devcontainers/index", "latest", appCacheDir)
+
+							return nil
+						},
+					},
 				},
 			},
 		},
