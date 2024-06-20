@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,13 +10,29 @@ import (
 	"strings"
 
 	"github.com/anmitsu/go-shlex"
+	"github.com/manifoldco/promptui"
 	"github.com/urfave/cli/v2"
 
 	"github.com/mikoto2000/devcontainer.vim/devcontainer"
 	"github.com/mikoto2000/devcontainer.vim/docker"
+	"github.com/mikoto2000/devcontainer.vim/oras"
 	"github.com/mikoto2000/devcontainer.vim/tools"
 	"github.com/mikoto2000/devcontainer.vim/util"
 )
+
+type IndexRoot struct {
+	Collections []Collection `json:"collections"`
+}
+
+type Collection struct {
+	Templates []AvailableTemplateItem `json:"templates"`
+}
+
+type AvailableTemplateItem struct {
+	ID      string `json:"id"`
+	Version string `json:"version"`
+	Name    string `json:"name"`
+}
 
 var version string
 
@@ -163,25 +180,88 @@ func main() {
 				},
 			},
 			{
-				Name:            "templates",
-				Usage:           "Run `devcontainer templates`",
-				UsageText:       "devcontainer.vim templates [DEVCONTAINER_OPTIONS...] WORKSPACE_FOLDER",
-				HideHelp:        true,
-				SkipFlagParsing: true,
-				Action: func(cCtx *cli.Context) error {
-					// devcontainer の template サブコマンド実行
+				Name:      "templates",
+				Usage:     "Run `devcontainer templates`",
+				UsageText: "devcontainer.vim templates [DEVCONTAINER_OPTIONS...] WORKSPACE_FOLDER",
+				Subcommands: []*cli.Command{
+					{
+						Name:      "apply",
+						Usage:     "Apply template.",
+						UsageText: "devcontainer.vim templates apply WORKSPACE_FOLDER",
+						Action: func(cCtx *cli.Context) error {
 
-					// 必要なファイルのダウンロード
-					devcontainerFilePath, err := tools.InstallTemplatesTools(binDir)
-					if err != nil {
-						panic(err)
-					}
+							// Features の一覧をダウンロード
+							indexFileName := "devcontainer-index.json"
+							indexFile := filepath.Join(appCacheDir, indexFileName)
+							if !util.IsExists(indexFile) {
+								fmt.Println("Download template index ... ")
+								oras.Pull("ghcr.io/devcontainers/index", "latest", appCacheDir)
+								fmt.Println("done.")
+							}
 
-					// devcontainer を用いたコンテナ立ち上げ
-					output, _ := devcontainer.Templates(devcontainerFilePath, cCtx.Args().Slice()...)
-					fmt.Println(output)
+							var indexRoot IndexRoot
+							jsonFile := filepath.Join(appCacheDir, indexFileName)
+							jsonData, err := os.ReadFile(jsonFile)
+							err = json.Unmarshal([]byte(jsonData), &indexRoot)
+							if err != nil {
+								panic(err)
+							}
 
-					return nil
+							var availableTemplateItems []AvailableTemplateItem
+							for _, collection := range indexRoot.Collections {
+								availableTemplateItems = append(availableTemplateItems, collection.Templates...)
+							}
+
+							names := []string{}
+							for _, item := range availableTemplateItems {
+								names = append(names, item.Name)
+							}
+
+							prompt := promptui.Select{
+								Label:             "Select Template",
+								Items:             names,
+								StartInSearchMode: true,
+								Searcher: func(input string, index int) bool {
+									item := names[index]
+									name := strings.Replace(strings.ToLower(item), " ", "", -1)
+									input = strings.Replace(strings.ToLower(input), " ", "", -1)
+
+									return strings.Contains(name, input)
+								},
+							}
+
+							i, _, err := prompt.Run()
+							if err != nil {
+								panic(err)
+							}
+
+							selectedItem := availableTemplateItems[i]
+
+							// devcontainer の template サブコマンド実行
+
+							// 必要なファイルのダウンロード
+							devcontainerFilePath, err := tools.InstallTemplatesTools(binDir)
+							if err != nil {
+								panic(err)
+							}
+
+							// コマンドライン引数の末尾は `--workspace-folder` の値として使う
+							args := cCtx.Args().Slice()
+							workspaceFolder := args[len(args)-1]
+
+							templateId := selectedItem.ID + ":" + selectedItem.Version
+
+							// devcontainer を用いたコンテナ立ち上げ
+							output, _ := devcontainer.Templates(
+								devcontainerFilePath,
+								workspaceFolder,
+								templateId)
+
+							fmt.Println(output)
+
+							return nil
+						},
+					},
 				},
 			},
 			{
@@ -528,6 +608,27 @@ func main() {
 					}
 
 					return nil
+				},
+			},
+			{
+				Name:            "index",
+				Usage:           "Management index file",
+				UsageText:       "devcontainer.vim index SUB_COMMAND",
+				HideHelp:        false,
+				SkipFlagParsing: false,
+				Subcommands: []*cli.Command{
+					{
+						Name:      "update",
+						Usage:     "Download newly index file",
+						UsageText: "devcontainer.vim index update",
+						Action: func(cCtx *cli.Context) error {
+
+							// Features の一覧をダウンロード
+							oras.Pull("ghcr.io/devcontainers/index", "latest", appCacheDir)
+
+							return nil
+						},
+					},
 				},
 			},
 		},
