@@ -134,6 +134,64 @@ func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath str
 	// コンテナ停止は別途 down コマンドで行う
 }
 
+func Stop(args []string, devcontainerPath string, configDirForDevcontainer string) {
+
+	// `devcontainer read-configuration` で docker compose の利用判定
+
+	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
+	workspaceFolder := args[len(args)-1]
+	stdout, _ := ReadConfiguration(devcontainerPath, "--workspace-folder", workspaceFolder)
+	if stdout == "" {
+		fmt.Printf("This directory is not a workspace for devcontainer: %s\n", workspaceFolder)
+		os.Exit(0)
+	}
+
+	// `dockerComposeFile` が含まれているかを確認する
+	// 含まれているなら docker compose によるコンテナ構築がされている
+	if strings.Contains(stdout, "dockerComposeFile") {
+
+		// docker compose ps コマンドで compose の情報取得
+		dockerComposePsResultString, err := dockercompose.Ps(workspaceFolder)
+		if err != nil {
+			panic(err)
+		}
+		if dockerComposePsResultString == "" {
+			fmt.Println("devcontainer already downed.")
+			os.Exit(0)
+		}
+
+		// 必要なのは最初の 1 行だけなので、最初の 1 行のみを取得
+		dockerComposePsResultFirstItemString := strings.Split(dockerComposePsResultString, "\n")[0]
+
+		// docker compose ps コマンドの結果からプロジェクト名を取得
+		projectName, err := dockercompose.GetProjectName(dockerComposePsResultFirstItemString)
+		if err != nil {
+			panic(err)
+		}
+
+		// プロジェクト名を使って docker compose down を実行
+		fmt.Printf("Run `docker compose -p %s stop`(Async)\n", projectName)
+		err = dockercompose.Stop(projectName)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		// ワークスペースに対応するコンテナを探して ID を取得する
+		containerID, err := docker.GetContainerIDFromWorkspaceFolder(workspaceFolder)
+		if err != nil {
+			panic(err)
+		}
+
+		// 取得したコンテナに対して stop を行う
+		fmt.Printf("Run `docker stop -f %s stop`(Async)\n", containerID)
+		err = docker.Stop(containerID)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+}
+
 func Down(args []string, devcontainerPath string, configDirForDevcontainer string) {
 
 	// `devcontainer read-configuration` で docker compose の利用判定

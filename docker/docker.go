@@ -164,6 +164,13 @@ func Ps(filter string) (string, error) {
 	return string(stdout), err
 }
 
+// `docker stop -f ${containerID}` コマンドを実行する。
+func Stop(containerID string) error {
+	dockerStopCommand := exec.Command("docker", "stop", containerID)
+	err := dockerStopCommand.Start()
+	return err
+}
+
 // `docker rm -f ${containerID}` コマンドを実行する。
 func Rm(containerID string) error {
 	dockerRmCommand := exec.Command("docker", "rm", "-f", containerID)

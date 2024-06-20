@@ -158,6 +158,12 @@ func InstallTemplatesTools(installDir string) (string, error) {
 	return devcontainerPath, err
 }
 
+// Stop サブコマンド用のツールインストール
+func InstallStopTools(installDir string) (string, error) {
+	devcontainerPath, err := DEVCONTAINER.Install(installDir, false)
+	return devcontainerPath, err
+}
+
 // Down サブコマンド用のツールインストール
 func InstallDownTools(installDir string) (string, error) {
 	devcontainerPath, err := DEVCONTAINER.Install(installDir, false)

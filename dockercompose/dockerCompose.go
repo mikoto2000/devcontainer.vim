@@ -34,6 +34,12 @@ func Ps(workspaceFolder string) (string, error) {
 	return string(stdout), err
 }
 
+// `docker compose -p ${projectName} stop` を実行する。
+func Stop(projectName string) error {
+	dockerComposeStopCommand := exec.Command("docker", "compose", "-p", projectName, "stop")
+	return dockerComposeStopCommand.Start()
+}
+
 // `docker compose -p ${projectName} down` を実行する。
 func Down(projectName string) error {
 	dockerComposeDownCommand := exec.Command("docker", "compose", "-p", projectName, "down")
