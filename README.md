@@ -28,6 +28,7 @@ COMMANDS:
    runargs    run subcommand's default arguments.
    tool       Management tools
    clean      clean workspace cache files.
+   index      Management index file
    help, h    Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
@@ -104,26 +105,20 @@ devcontainer.vim tool devcontainer download
 
 `devcontainer.vim templates apply` サブコマンドを使用することで、 devcontainers が提供しているテンプレートから `devcontainer.json` を生成できる。
 
-また、利用可能なテンプレート ID, フィーチャー ID は以下ページで確認できる。
-
-- [Available Dev Container Templates](https://containers.dev/templates)
-- [Available Dev Container Features](https://containers.dev/features)
-
-[2. Using the Dev Container CLI - templates/README.md at main · devcontainers/templates](https://github.com/devcontainers/templates/blob/main/README.md#2-using-the-dev-container-cli) も参照。
-
-`go` のテンプレートを用いて `devcontainer.json` を生成する場合の例:
+`Go` のテンプレートを用いて `devcontainer.json` を生成する場合の例:
 
 ```sh
-devcontainer.vim templates apply --template-id ghcr.io/devcontainers/templates/go:4.0.0 .
+$ devcontainer.vim templates apply .
+Search: Go
+? Select Template: 
+  ▸ Go
+    Go & PostgreSQL
+    Node.js & Mongo DB
+    Hugo & pnpm
 ```
 
-`go` のテンプレートを用い、 feature として `Docker in Docker` を指定した `devcontainer.json` を生成する場合の例:
-
-```sh
-/workspaces/devcontainer.vim/build/devcontainer.vim-linux-amd64 templates apply \
-    --template-id ghcr.io/devcontainers/templates/go:4.0.0 \
-    --features '[{ "id": "ghcr.io/devcontainers/features/docker-in-docker:2"}]' .
-```
+`devcontainer.vim templates apply` を実行すると、テンプレート名の一覧が表示されるので、
+キー入力で名前をインクリメンタル検索し、上下キーでカーソルを移動・エンターキーでテンプレートを決定できる。
 
 
 ## Customize:
@@ -289,8 +284,8 @@ devcontainer.vim runargs -g
 - [x] : v0.10.0
     - [x] : キャッシュクリアコマンド
     - [x] : stop コマンドの実装
-- [ ] : v0.11.0
-    - [ ] : テンプレートリスト出力機能
+- [x] : v0.11.0
+    - [x] : テンプレートリスト出力機能
         - `devcontainer.vim templates apply` に渡す `--template-id` として使える ID の一覧を出力
 
 
