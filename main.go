@@ -499,6 +499,32 @@ func main() {
 							},
 						},
 					},
+					{
+						Name:            "oras",
+						Usage:           "Management oras",
+						UsageText:       "devcontainer.vim tool oras SUB_COMMAND",
+						HideHelp:        false,
+						SkipFlagParsing: false,
+						Subcommands: []*cli.Command{
+							{
+								Name:            "download",
+								Usage:           "Download newly oras",
+								UsageText:       "devcontainer.vim tool oras download",
+								HideHelp:        false,
+								SkipFlagParsing: false,
+								Action: func(cCtx *cli.Context) error {
+
+									// oras のダウンロード
+									_, err := tools.ORAS.Install(binDir, true)
+									if err != nil {
+										panic(err)
+									}
+
+									return nil
+								},
+							},
+						},
+					},
 				},
 			},
 			{
