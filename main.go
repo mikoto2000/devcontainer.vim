@@ -486,7 +486,7 @@ func main() {
 
 					// 実行確認
 					var input string
-					fmt.Printf("全ワークスペースのキャッシュを削除しますか？ [y/N] > ");
+					fmt.Printf("全ワークスペースのキャッシュを削除しますか？ [y/n] > ");
 					fmt.Scan(&input);
 					input = strings.TrimSpace(input);
 					input = strings.ToLower(input);
