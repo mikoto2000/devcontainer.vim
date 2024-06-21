@@ -249,13 +249,13 @@ func main() {
 							args := cCtx.Args().Slice()
 							workspaceFolder := args[len(args)-1]
 
-							templateId := selectedItem.ID + ":" + selectedItem.Version
+							templateID := selectedItem.ID + ":" + selectedItem.Version
 
 							// devcontainer を用いたコンテナ立ち上げ
 							output, _ := devcontainer.Templates(
 								devcontainerFilePath,
 								workspaceFolder,
-								templateId)
+								templateID)
 
 							fmt.Println(output)
 

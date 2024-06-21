@@ -11,6 +11,7 @@ LD_FLAGS := "-s -w -X main.version=${VERSION}"
 DEST := ./build
 
 WATCH_SRC := ./main.go \
+						 ./devcontainer/DevcontainerJson.go \
 						 ./devcontainer/devcontainer.go \
 						 ./devcontainer/readConfigurationResult.go \
 						 ./devcontainer/upCommandResult.go \
