@@ -96,40 +96,26 @@ func AddExecutePermission(filePath string) error {
 // baseConfigPath で指定した JSON に additionalConfigPath で指定した JSON をマージし、その結果を返却する
 func readAndMergeConfig(baseConfigPath string, additionalConfigPath string) ([]byte, error) {
 
-	// 設定ファイル読み込み
-	parsedBaseJSONContentBytes, err := os.ReadFile(baseConfigPath)
-	if err != nil {
-		return nil, err
-	}
-
 	// 設定ファイルを JWCC としてパースし、標準 JSON へ変換
-	parsedBaseJSON, err := hujson.Parse(parsedBaseJSONContentBytes)
+	parsedBaseJSON, err := ParseJwcc(baseConfigPath)
 	if err != nil {
 		return nil, err
 	}
-	parsedBaseJSON.Standardize()
 
 	// 標準 JSON を gabs を使って再パース
-	parsedBaseJSONGrabContainer, err := gabs.ParseJSON(parsedBaseJSON.Pack())
+	parsedBaseJSONGrabContainer, err := gabs.ParseJSON(parsedBaseJSON)
 	if err != nil {
 		return nil, err
 	}
 
 	// devcontainer.vim 用追加設定ファイル読み込み
-	parsedAdditionalJSONContentBytes, err := os.ReadFile(additionalConfigPath)
+	parsedAdditionalJSON, err := ParseJwcc(additionalConfigPath)
 	if err != nil {
 		return nil, err
 	}
-
-	// devcontainer.vim 用追加設定ファイルを JWCC としてパースし、標準 JSON へ変換
-	parsedAdditionalJSON, err := hujson.Parse(parsedAdditionalJSONContentBytes)
-	if err != nil {
-		return nil, err
-	}
-	parsedAdditionalJSON.Standardize()
 
 	// 標準 JSON を gabs を使って再パース
-	parsedAdditionalJSONGrabContainer, err := gabs.ParseJSON(parsedAdditionalJSON.Pack())
+	parsedAdditionalJSONGrabContainer, err := gabs.ParseJSON(parsedAdditionalJSON)
 	if err != nil {
 		return nil, err
 	}
@@ -139,6 +125,25 @@ func readAndMergeConfig(baseConfigPath string, additionalConfigPath string) ([]b
 
 	// 設定ファイルの内容を返却
 	return parsedBaseJSONGrabContainer.Bytes(), nil
+}
+
+// JWCC を標準 JSON に変換し、 []byte として返却
+func ParseJwcc(jwccPath string) ([]byte, error) {
+	// JWCC ファイル読み込み
+	jwccContentBytes, err := os.ReadFile(jwccPath)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	// JWCC をパースし、標準 JSON へ変換
+	parsedJSON, err := hujson.Parse(jwccContentBytes)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	parsedJSON.Standardize()
+
+	return parsedJSON.Pack(), nil
 }
 
 // configFilePath と additionalConfigFilePath の JSON をマージし、

@@ -325,13 +325,13 @@ func findDockerComposeFileDir() (string, error) {
 
 	// devcontainer.json 読み込み
 	// fmt.Printf("devcontainerJSONPath directory: %s\n", devcontainerJSONPath)
-	devcontainerJSONString, err := os.ReadFile(devcontainerJSONPath)
+	devcontainerJSONBytes, err := util.ParseJwcc(devcontainerJSONPath)
 	if err != nil {
 		panic(err)
 	}
 
 	// docker-compose.yaml の格納ディレクトリを組み立て
-	devcontainerJSON, err := UnmarshalDevcontainerJSON(devcontainerJSONString)
+	devcontainerJSON, err := UnmarshalDevcontainerJSON(devcontainerJSONBytes)
 	if err != nil {
 		return "", err
 	}
