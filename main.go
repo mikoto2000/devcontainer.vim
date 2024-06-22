@@ -202,7 +202,10 @@ func main() {
 							var indexRoot IndexRoot
 							jsonFile := filepath.Join(appCacheDir, indexFileName)
 							jsonData, err := os.ReadFile(jsonFile)
-							err = json.Unmarshal([]byte(jsonData), &indexRoot)
+							if err != nil {
+								panic(err)
+							}
+							err = json.Unmarshal(jsonData, &indexRoot)
 							if err != nil {
 								panic(err)
 							}

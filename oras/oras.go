@@ -18,6 +18,9 @@ func Pull(id string, tagName string, destDir string) error {
 
 	// メモリストアの作成
 	dst, err := file.New(destDir)
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
 
 	_, err = oras.Copy(ctx, src, tagName, dst, tagName, oras.DefaultCopyOptions)

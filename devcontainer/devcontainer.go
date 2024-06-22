@@ -227,6 +227,19 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 	var configDir string
 	if strings.Contains(stdout, "dockerComposeFile") {
 
+		// docker-compose.yaml の格納ディレクトリを探す
+		dockerComposeFileDir, err := findDockerComposeFileDir()
+		if err != nil {
+			panic(err)
+		}
+
+		// カレントディレクトリを記録して dockerComposeFileDir へ移動
+		currentDir, err := os.Getwd()
+		if err != nil {
+			panic(err)
+		}
+		os.Chdir(dockerComposeFileDir)
+
 		// docker compose ps コマンドで compose の情報取得
 		dockerComposePsResultString, err := dockercompose.Ps(workspaceFolder)
 		if err != nil {
@@ -245,19 +258,6 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 		if err != nil {
 			panic(err)
 		}
-
-		// docker-compose.yaml の格納ディレクトリを探す
-		dockerComposeFileDir, err := findDockerComposeFileDir()
-		if err != nil {
-			panic(err)
-		}
-
-		// カレントディレクトリを記録して dockerComposeFileDir へ移動
-		currentDir, err := os.Getwd()
-		if err != nil {
-			panic(err)
-		}
-		os.Chdir(dockerComposeFileDir)
 
 		// プロジェクト名を使って docker compose down を実行
 		fmt.Printf("Run `docker compose -p %s down`(Async)\n", projectName)
@@ -324,6 +324,7 @@ func findDockerComposeFileDir() (string, error) {
 	}
 
 	// devcontainer.json 読み込み
+	// fmt.Printf("devcontainerJSONPath directory: %s\n", devcontainerJSONPath)
 	devcontainerJSONString, err := os.ReadFile(devcontainerJSONPath)
 	if err != nil {
 		panic(err)
@@ -337,6 +338,7 @@ func findDockerComposeFileDir() (string, error) {
 	dockerComposeFilePath := filepath.Join(devcontainerJSONDir, devcontainerJSON.DockerComposeFile[0])
 	dockerComposeFileDir := filepath.Dir(dockerComposeFilePath)
 
+	// fmt.Printf("dockerComposeFileDir directory: %s\n", dockerComposeFileDir)
 	return dockerComposeFileDir, nil
 }
 
