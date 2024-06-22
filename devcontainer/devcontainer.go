@@ -24,6 +24,7 @@ var devcontainreArgsPrefix = []string{"up"}
 // devcontainer でコンテナを立ち上げ、 Vim を転送し、実行する。
 // 既存実装の都合上、configFilePath から configDirForDevcontainer を抽出している
 func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath string, cdrPath, configFilePath string, vimrc string) {
+
 	vimFileName := filepath.Base(vimFilePath)
 
 	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
@@ -335,7 +336,19 @@ func findDockerComposeFileDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	dockerComposeFilePath := filepath.Join(devcontainerJSONDir, devcontainerJSON.DockerComposeFile[0])
+
+	// string, []string を判別しながら docker-compose.yaml の場所を取得
+	iDockerComposeFile := devcontainerJSON.DockerComposeFile
+	var dockerComposeFilePath string
+	switch v := iDockerComposeFile.(type) {
+	case string:
+		dockerComposeFilePath = v
+	case []interface{}:
+		vv := v[0].(string)
+		dockerComposeFilePath = filepath.Join(devcontainerJSONDir, vv)
+	default:
+		return "", errors.New("unknown type")
+	}
 	dockerComposeFileDir := filepath.Dir(dockerComposeFilePath)
 
 	// fmt.Printf("dockerComposeFileDir directory: %s\n", dockerComposeFileDir)

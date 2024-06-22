@@ -6,7 +6,7 @@ import (
 
 // devcontainer.json のスキーマ(の一部)
 type DevcontainerJSON struct {
-	DockerComposeFile []string `json:"dockerComposeFile"`
+	DockerComposeFile interface{} `json:"dockerComposeFile"`
 }
 
 func UnmarshalDevcontainerJSON(data []byte) (DevcontainerJSON, error) {
