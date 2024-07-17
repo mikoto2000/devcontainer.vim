@@ -7,6 +7,7 @@
     // "DISPLAY": "${localEnv:DISPLAY}",
     // "WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",
     // "XDG_RUNTIME_DIR": "${localEnv:XDG_RUNTIME_DIR}",
+    // "PULSE_SERVER": "${localEnv:PULSE_SERVER}",
   },
   // devcontainer/cli はまだ forwardPorts に対応していないため、
   // 必要に応じて forwardPorts の定義を appPort に転記する。
