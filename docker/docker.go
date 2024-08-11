@@ -63,7 +63,7 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	}
 
 	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> chmod +x /Vim-AppImage`
-	dockerChownArgs := []string{"exec", containerID, "sh", "-c", "chmod +x /" + vimFileName}
+	dockerChownArgs := []string{"exec", "--user", "root", containerID, "sh", "-c", "chmod +x /" + vimFileName}
 	fmt.Printf("Chown AppImage: `%s \"%s\"` ...", containerCommand, strings.Join(dockerChownArgs, "\" \""))
 	chmodResult, err := exec.Command(containerCommand, dockerChownArgs...).CombinedOutput()
 	if err != nil {
