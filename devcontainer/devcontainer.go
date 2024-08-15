@@ -351,8 +351,8 @@ func findDockerComposeFileDir() (string, error) {
 	}
 	dockerComposeFileDir := filepath.Dir(dockerComposeFilePath)
 
-	// fmt.Printf("dockerComposeFileDir directory: %s\n", dockerComposeFileDir)
-	return dockerComposeFileDir, nil
+	fmt.Printf("dockerComposeFileDir directory: %s\n", dockerComposeFileDir)
+	return filepath.Join(devcontainerJSONDir, dockerComposeFileDir), nil
 }
 
 func GetConfigurationFilePath(devcontainerFilePath string, workspaceFolder string) (string, error) {
