@@ -84,6 +84,25 @@ var VIM Tool = Tool{
 	},
 }
 
+// 進捗表示用構造体
+type ProgressWriter struct {
+	Total   int64
+	Current int64
+}
+
+func (p *ProgressWriter) Write(data []byte) (int, error) {
+	n := len(data)
+	p.Current += int64(n)
+
+	percentage := float64(p.Current) / float64(p.Total) * 100.0
+	fmt.Printf("%6.2f%%", percentage)
+
+	// カーソルを 7 文字戻す
+	fmt.Printf("\033[7D")
+
+	return n, nil
+}
+
 // ファイルダウンロード処理。
 //
 // downloadURL からファイルをダウンロードし、 destPath へ配置する。
@@ -97,6 +116,8 @@ func download(downloadURL string, destPath string) error {
 	}
 	defer resp.Body.Close()
 
+	size := resp.ContentLength
+
 	// ファイルを作成
 	out, err := os.Create(destPath)
 	if err != nil {
@@ -104,13 +125,17 @@ func download(downloadURL string, destPath string) error {
 	}
 	defer out.Close()
 
+	progress := &ProgressWriter{
+		Total: size,
+	}
+
 	// レスポンスの内容をファイルに書き込み
-	_, err = io.Copy(out, resp.Body)
+	_, err = io.Copy(out, io.TeeReader(resp.Body, progress))
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf(" done.\n")
+	fmt.Printf(" done. \n")
 
 	return nil
 }
