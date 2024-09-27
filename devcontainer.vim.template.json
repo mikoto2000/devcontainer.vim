@@ -13,7 +13,8 @@
   },
   // devcontainer/cli はまだ forwardPorts に対応していないため、
   // 必要に応じて forwardPorts の定義を appPort に転記する。
-  // "appPort" [
+  // ※ コンテナ側で Listen する際は、 `127.0.0.1` **ではなく** `0.0.0.0` で Listen すること。
+  // "appPort": [
   // ],
   "mounts": [
     {
