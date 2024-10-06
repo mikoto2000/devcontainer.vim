@@ -5,6 +5,7 @@
     "LESSCHARSET": "utf-8",
     "SHELL": "bash",
     "TERM": "xterm-256color",
+    "HISTCONTROL": "erasedups",
     // If use WSLG
     // "DISPLAY": "${localEnv:DISPLAY}",
     // "WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",
