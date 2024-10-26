@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"text/template"
 
@@ -218,10 +219,23 @@ func SelfUpdate() error {
 	if err != nil {
 		return err
 	}
-	err = download(downloadURL, executablePath)
+
+	// Rename the current binary to avoid "text file busy" error
+	tempPath := executablePath + ".old"
+	err = os.Rename(executablePath, tempPath)
 	if err != nil {
 		return err
 	}
+
+	err = download(downloadURL, executablePath)
+	if err != nil {
+		// Restore the original binary if download fails
+		os.Rename(tempPath, executablePath)
+		return err
+	}
+
+	// Remove the old binary
+	os.Remove(tempPath)
 
 	fmt.Println("devcontainer.vim has been updated to the latest version.")
 	return nil
