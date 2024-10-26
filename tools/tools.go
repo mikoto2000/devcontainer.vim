@@ -227,7 +227,7 @@ func SelfUpdate() error {
 		return err
 	}
 
-	err = download(downloadURL, executablePath)
+	_, err = simpleInstall(downloadURL, executablePath)
 	if err != nil {
 		// Restore the original binary if download fails
 		os.Rename(tempPath, executablePath)
