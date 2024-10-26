@@ -34,6 +34,7 @@ COMMANDS:
    tool       Management tools
    clean      clean workspace cache files.
    index      Management index file
+   self-update Update devcontainer.vim itself
    help, h    Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
@@ -105,6 +106,13 @@ devcontainer.vim tool vim download
 devcontainer.vim tool devcontainer download
 ```
 
+#### devcontainer.vim 自身のアップデート
+
+`self-update` サブコマンドを使用して、 `devcontainer.vim` 自身を最新バージョンに更新できます。
+
+```sh
+devcontainer.vim self-update
+```
 
 ### テンプレートをもとに `devcontainer.json` を作成する
 

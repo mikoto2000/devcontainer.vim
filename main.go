@@ -193,7 +193,7 @@ func main() {
 							// Features の一覧をダウンロード
 							indexFileName := "devcontainer-index.json"
 							indexFile := filepath.Join(appCacheDir, indexFileName)
-							if !util.IsExists(indexFile) {
+							if (!util.IsExists(indexFile)) {
 								fmt.Println("Download template index ... ")
 								oras.Pull("ghcr.io/devcontainers/index", "latest", appCacheDir)
 								fmt.Println("done.")
@@ -632,6 +632,41 @@ func main() {
 							return nil
 						},
 					},
+				},
+			},
+			{
+				Name:      "self-update",
+				Usage:     "Update devcontainer.vim itself",
+				UsageText: "devcontainer.vim self-update",
+				Action: func(cCtx *cli.Context) error {
+					// Get the latest release tag name from GitHub
+					latestTagName, err := util.GetLatestReleaseFromGitHub("mikoto2000", "devcontainer.vim")
+					if err != nil {
+						panic(err)
+					}
+
+					// Construct the download URL for the latest release
+					var downloadURL string
+					if runtime.GOOS == "windows" {
+						downloadURL = fmt.Sprintf("https://github.com/mikoto2000/devcontainer.vim/releases/download/%s/devcontainer.vim-windows-amd64.exe", latestTagName)
+					} else if runtime.GOOS == "darwin" {
+						downloadURL = fmt.Sprintf("https://github.com/mikoto2000/devcontainer.vim/releases/download/%s/devcontainer.vim-darwin-amd64", latestTagName)
+					} else {
+						downloadURL = fmt.Sprintf("https://github.com/mikoto2000/devcontainer.vim/releases/download/%s/devcontainer.vim-linux-amd64", latestTagName)
+					}
+
+					// Download the latest release
+					executablePath, err := os.Executable()
+					if err != nil {
+						panic(err)
+					}
+					err = tools.DownloadFile(downloadURL, executablePath)
+					if err != nil {
+						panic(err)
+					}
+
+					fmt.Println("devcontainer.vim has been updated to the latest version.")
+					return nil
 				},
 			},
 		},
