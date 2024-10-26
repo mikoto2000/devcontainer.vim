@@ -23,19 +23,19 @@ VERSION:
    1.0.11
 
 COMMANDS:
-   run        Run container use `docker run`
-   templates  Run `devcontainer templates`
-   start      Run `devcontainer up` and `devcontainer exec`
-   stop       Stop devcontainers.
-   down       Stop and remove devcontainers.
-   config     devcontainer.vim's config information.
-   vimrc      devcontainer.vim's vimrc information.
-   runargs    run subcommand's default arguments.
-   tool       Management tools
-   clean      clean workspace cache files.
-   index      Management index file
-   self-update Update devcontainer.vim itself
-   help, h    Shows a list of commands or help for one command
+   run          Run container use `docker run`
+   templates    Run `devcontainer templates`
+   start        Run `devcontainer up` and `devcontainer exec`
+   stop         Stop devcontainers.
+   down         Stop and remove devcontainers.
+   config       devcontainer.vim's config information.
+   vimrc        devcontainer.vim's vimrc information.
+   runargs      run subcommand's default arguments.
+   tool         Management tools
+   clean        clean workspace cache files.
+   index        Management index file
+   self-update  Update devcontainer.vim itself
+   help, h      Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --license, -l  show licensesa.
