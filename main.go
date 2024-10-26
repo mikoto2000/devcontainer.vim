@@ -80,7 +80,7 @@ func main() {
 	// vimrc ファイルの出力先を組み立て
 	// vimrc を出力(既に存在するなら何もしない)
 	vimrc := filepath.Join(appConfigDir, "vimrc")
-	if !util.IsExists(vimrc) {
+	if (!util.IsExists(vimrc)) {
 		err := util.CreateFileWithContents(vimrc, additionalVimrc, 0666)
 		if err != nil {
 			panic(err)
@@ -91,7 +91,7 @@ func main() {
 	// runargs ファイルの出力先を組み立て
 	// runargs を出力(既に存在するなら何もしない)
 	runargs := filepath.Join(appConfigDir, "runargs")
-	if !util.IsExists(runargs) {
+	if (!util.IsExists(runargs)) {
 		err := util.CreateFileWithContents(runargs, runargsContent, 0666)
 		if err != nil {
 			panic(err)
@@ -639,33 +639,10 @@ func main() {
 				Usage:     "Update devcontainer.vim itself",
 				UsageText: "devcontainer.vim self-update",
 				Action: func(cCtx *cli.Context) error {
-					// Get the latest release tag name from GitHub
-					latestTagName, err := util.GetLatestReleaseFromGitHub("mikoto2000", "devcontainer.vim")
+					err := tools.SelfUpdate()
 					if err != nil {
 						panic(err)
 					}
-
-					// Construct the download URL for the latest release
-					var downloadURL string
-					if runtime.GOOS == "windows" {
-						downloadURL = fmt.Sprintf("https://github.com/mikoto2000/devcontainer.vim/releases/download/%s/devcontainer.vim-windows-amd64.exe", latestTagName)
-					} else if runtime.GOOS == "darwin" {
-						downloadURL = fmt.Sprintf("https://github.com/mikoto2000/devcontainer.vim/releases/download/%s/devcontainer.vim-darwin-amd64", latestTagName)
-					} else {
-						downloadURL = fmt.Sprintf("https://github.com/mikoto2000/devcontainer.vim/releases/download/%s/devcontainer.vim-linux-amd64", latestTagName)
-					}
-
-					// Download the latest release
-					executablePath, err := os.Executable()
-					if err != nil {
-						panic(err)
-					}
-					err = tools.DownloadFile(downloadURL, executablePath)
-					if err != nil {
-						panic(err)
-					}
-
-					fmt.Println("devcontainer.vim has been updated to the latest version.")
 					return nil
 				},
 			},

@@ -194,3 +194,35 @@ func InstallDownTools(installDir string) (string, error) {
 	devcontainerPath, err := DEVCONTAINER.Install(installDir, false)
 	return devcontainerPath, err
 }
+
+// SelfUpdate downloads the latest release of devcontainer.vim from GitHub and replaces the current binary
+func SelfUpdate() error {
+	// Get the latest release tag name from GitHub
+	latestTagName, err := util.GetLatestReleaseFromGitHub("mikoto2000", "devcontainer.vim")
+	if err != nil {
+		return err
+	}
+
+	// Construct the download URL for the latest release
+	var downloadURL string
+	if runtime.GOOS == "windows" {
+		downloadURL = fmt.Sprintf("https://github.com/mikoto2000/devcontainer.vim/releases/download/%s/devcontainer.vim-windows-amd64.exe", latestTagName)
+	} else if runtime.GOOS == "darwin" {
+		downloadURL = fmt.Sprintf("https://github.com/mikoto2000/devcontainer.vim/releases/download/%s/devcontainer.vim-darwin-amd64", latestTagName)
+	} else {
+		downloadURL = fmt.Sprintf("https://github.com/mikoto2000/devcontainer.vim/releases/download/%s/devcontainer.vim-linux-amd64", latestTagName)
+	}
+
+	// Download the latest release
+	executablePath, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	err = download(downloadURL, executablePath)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("devcontainer.vim has been updated to the latest version.")
+	return nil
+}
