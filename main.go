@@ -80,7 +80,7 @@ func main() {
 	// vimrc ファイルの出力先を組み立て
 	// vimrc を出力(既に存在するなら何もしない)
 	vimrc := filepath.Join(appConfigDir, "vimrc")
-	if !util.IsExists(vimrc) {
+	if (!util.IsExists(vimrc)) {
 		err := util.CreateFileWithContents(vimrc, additionalVimrc, 0666)
 		if err != nil {
 			panic(err)
@@ -91,7 +91,7 @@ func main() {
 	// runargs ファイルの出力先を組み立て
 	// runargs を出力(既に存在するなら何もしない)
 	runargs := filepath.Join(appConfigDir, "runargs")
-	if !util.IsExists(runargs) {
+	if (!util.IsExists(runargs)) {
 		err := util.CreateFileWithContents(runargs, runargsContent, 0666)
 		if err != nil {
 			panic(err)
@@ -193,7 +193,7 @@ func main() {
 							// Features の一覧をダウンロード
 							indexFileName := "devcontainer-index.json"
 							indexFile := filepath.Join(appCacheDir, indexFileName)
-							if !util.IsExists(indexFile) {
+							if (!util.IsExists(indexFile)) {
 								fmt.Println("Download template index ... ")
 								oras.Pull("ghcr.io/devcontainers/index", "latest", appCacheDir)
 								fmt.Println("done.")
@@ -632,6 +632,18 @@ func main() {
 							return nil
 						},
 					},
+				},
+			},
+			{
+				Name:      "self-update",
+				Usage:     "Update devcontainer.vim itself",
+				UsageText: "devcontainer.vim self-update",
+				Action: func(cCtx *cli.Context) error {
+					err := tools.SelfUpdate()
+					if err != nil {
+						panic(err)
+					}
+					return nil
 				},
 			},
 		},
