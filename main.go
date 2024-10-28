@@ -99,11 +99,17 @@ func main() {
 		fmt.Printf("Generated additional runargs to: %s\n", runargs)
 	}
 
+	// Check if COMP_LINE environment variable is set
+	if os.Getenv("COMP_LINE") != "" {
+		completeSubcommands()
+		return
+	}
+
 	devcontainerVimArgProcess := (&cli.App{
 		Name:                   "devcontainer.vim",
 		Usage:                  "devcontainer for vim.",
 		Version:                version,
-		UseShortOptionHandling: true,
+			UseShortOptionHandling: true,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:               flagNameLicense,
@@ -646,6 +652,25 @@ func main() {
 					return nil
 				},
 			},
+			{
+				Name:      "completion",
+				Usage:     "Generate completion script",
+				UsageText: "devcontainer.vim completion [bash|zsh|fish]",
+				Action: func(cCtx *cli.Context) error {
+					shell := cCtx.Args().First()
+					switch shell {
+					case "bash":
+						fmt.Println(cli.BashCompletionScript)
+					case "zsh":
+						fmt.Println(cli.ZshCompletionScript)
+					case "fish":
+						fmt.Println(cli.FishCompletionScript)
+					default:
+						fmt.Println("Unsupported shell. Please use bash, zsh, or fish.")
+					}
+					return nil
+				},
+			},
 		},
 	})
 
@@ -676,4 +701,52 @@ func createConfigFile(devcontainerPath string, workspaceFolder string, configDir
 	fmt.Printf("Use configuration file: `%s`", mergedConfigFilePath)
 
 	return mergedConfigFilePath, err
+}
+
+// completeSubcommands handles subcommand completion
+func completeSubcommands() {
+	app := cli.NewApp()
+	app.Commands = []*cli.Command{
+		{
+			Name: "run",
+		},
+		{
+			Name: "templates",
+		},
+		{
+			Name: "start",
+		},
+		{
+			Name: "stop",
+		},
+		{
+			Name: "down",
+		},
+		{
+			Name: "config",
+		},
+		{
+			Name: "vimrc",
+		},
+		{
+			Name: "runargs",
+		},
+		{
+			Name: "tool",
+		},
+		{
+			Name: "clean",
+		},
+		{
+			Name: "index",
+		},
+		{
+			Name: "self-update",
+		},
+		{
+			Name: "completion",
+		},
+	}
+
+	app.Run(os.Args)
 }

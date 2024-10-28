@@ -30,3 +30,22 @@ docker run -it --rm -v "$(pwd):/work" --workdir /work --name devcontainer.vim go
 go mod init github.com/mikoto2000/devcontainer.vim
 ```
 
+## Generate and Use Completion Scripts
+
+### Bash
+
+```sh
+source <(devcontainer.vim completion bash)
+```
+
+### Zsh
+
+```sh
+source <(devcontainer.vim completion zsh)
+```
+
+### Fish
+
+```sh
+devcontainer.vim completion fish | source
+```

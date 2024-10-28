@@ -35,6 +35,7 @@ COMMANDS:
    clean        clean workspace cache files.
    index        Management index file
    self-update  Update devcontainer.vim itself
+   completion   Generate completion script
    help, h      Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
@@ -133,6 +134,38 @@ Search: Go
 `devcontainer.vim templates apply` を実行すると、テンプレート名の一覧が表示されるので、
 キー入力で名前をインクリメンタル検索し、上下キーでカーソルを移動・エンターキーでテンプレートを決定できる。
 
+
+### サブコマンド補完機能の追加
+
+`devcontainer.vim` には、サブコマンド補完機能が追加されました。これにより、シェルでのコマンド入力がより簡単になります。
+
+#### 補完スクリプトの生成
+
+以下のコマンドを使用して、補完スクリプトを生成できます。
+
+```sh
+devcontainer.vim completion [bash|zsh|fish]
+```
+
+生成されたスクリプトをシェルの設定ファイルに追加することで、補完機能を有効にできます。
+
+#### Bash の場合
+
+```sh
+source <(devcontainer.vim completion bash)
+```
+
+#### Zsh の場合
+
+```sh
+source <(devcontainer.vim completion zsh)
+```
+
+#### Fish の場合
+
+```sh
+devcontainer.vim completion fish | source
+```
 
 ## Customize:
 
