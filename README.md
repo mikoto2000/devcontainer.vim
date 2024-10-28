@@ -23,19 +23,20 @@ VERSION:
    1.1.0
 
 COMMANDS:
-   run          Run container use `docker run`
-   templates    Run `devcontainer templates`
-   start        Run `devcontainer up` and `devcontainer exec`
-   stop         Stop devcontainers.
-   down         Stop and remove devcontainers.
-   config       devcontainer.vim's config information.
-   vimrc        devcontainer.vim's vimrc information.
-   runargs      run subcommand's default arguments.
-   tool         Management tools
-   clean        clean workspace cache files.
-   index        Management index file
-   self-update  Update devcontainer.vim itself
-   help, h      Shows a list of commands or help for one command
+   run                 Run container use `docker run`
+   templates           Run `devcontainer templates`
+   start               Run `devcontainer up` and `devcontainer exec`
+   stop                Stop devcontainers.
+   down                Stop and remove devcontainers.
+   config              devcontainer.vim's config information.
+   vimrc               devcontainer.vim's vimrc information.
+   runargs             run subcommand's default arguments.
+   tool                Management tools
+   clean               clean workspace cache files.
+   index               Management index file
+   self-update         Update devcontainer.vim itself
+   bash-complete-func  Show bash complete func
+   help, h             Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --license, -l  show licensesa.
@@ -132,6 +133,15 @@ Search: Go
 
 `devcontainer.vim templates apply` を実行すると、テンプレート名の一覧が表示されるので、
 キー入力で名前をインクリメンタル検索し、上下キーでカーソルを移動・エンターキーでテンプレートを決定できる。
+
+
+## サブコマンドの補完
+
+`devcontainer.vim` にパスを通し、 `.bashrc` などに以下コードを追加することで、サブコマンドの補完が有効になります。
+
+```sh
+eval "$(devcontainer.vim bash-complete-func)"
+```
 
 
 ## Customize:

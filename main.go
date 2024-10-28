@@ -49,6 +49,9 @@ var license string
 //go:embed NOTICE
 var notice string
 
+//go:embed bash_complete_func.bash
+var bash_complete_func string
+
 //go:embed devcontainer.vim.template.json
 var devcontainerVimJSONTemplate string
 
@@ -643,6 +646,15 @@ func main() {
 					if err != nil {
 						panic(err)
 					}
+					return nil
+				},
+			},
+			{
+				Name:      "bash-complete-func",
+				Usage:     "Show bash complete func",
+				UsageText: "devcontainer.vim bash-complete-func",
+				Action: func(cCtx *cli.Context) error {
+					fmt.Printf(bash_complete_func);
 					return nil
 				},
 			},
