@@ -23,7 +23,7 @@ var devcontainreArgsPrefix = []string{"up"}
 
 // devcontainer でコンテナを立ち上げ、 Vim を転送し、実行する。
 // 既存実装の都合上、configFilePath から configDirForDevcontainer を抽出している
-func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath string, cdrPath, configFilePath string, vimrc string) {
+func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath string, cdrPath, configFilePath string, vimrc string) error {
 
 	vimFileName := filepath.Base(vimFilePath)
 
@@ -43,12 +43,12 @@ func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath str
 	stdout, err := dockerRunCommand.Output()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Container start error.")
-		panic(err)
+		return err
 	}
 
 	upCommandResult, err := UnmarshalUpCommandResult(stdout)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	fmt.Printf("finished devcontainer up: %s\n", upCommandResult)
 
@@ -56,7 +56,7 @@ func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath str
 	configDirForDevcontainer := filepath.Dir(configFilePath)
 	pid, port, err := tools.RunCdr(cdrPath, configDirForDevcontainer)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
 
@@ -69,7 +69,7 @@ func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath str
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "AppImage copy error.")
 		fmt.Fprintln(os.Stderr, string(copyResult))
-		panic(err)
+		return err
 	}
 	fmt.Printf(" done.\n")
 
@@ -80,26 +80,26 @@ func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath str
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "chmod error.")
 		fmt.Fprintln(os.Stderr, string(chmodResult))
-		panic(err)
+		return err
 	}
 	fmt.Printf(" done.\n")
 
 	// Vim 関連ファイルの転送(`SendToTcp.vim` と、追加の `vimrc`)
 	sendToTCP, err := tools.CreateSendToTCP(configDirForDevcontainer, port)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// コンテナへ SendToTcp.vim を転送
 	err = docker.Cp("SendToTcp.vim", sendToTCP, containerID, "/")
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// コンテナへ vimrc を転送
 	err = docker.Cp("vimrc", vimrc, containerID, "/")
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// コンテナへ接続
@@ -129,13 +129,14 @@ func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath str
 
 	err = dockerExec.Run()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// コンテナ停止は別途 down コマンドで行う
+	return nil
 }
 
-func Stop(args []string, devcontainerPath string, configDirForDevcontainer string) {
+func Stop(args []string, devcontainerPath string, configDirForDevcontainer string) error {
 
 	// `devcontainer read-configuration` で docker compose の利用判定
 
@@ -144,7 +145,7 @@ func Stop(args []string, devcontainerPath string, configDirForDevcontainer strin
 	stdout, _ := ReadConfiguration(devcontainerPath, "--workspace-folder", workspaceFolder)
 	if stdout == "" {
 		fmt.Printf("This directory is not a workspace for devcontainer: %s\n", workspaceFolder)
-		os.Exit(0)
+		return nil
 	}
 
 	// `dockerComposeFile` が含まれているかを確認する
@@ -154,11 +155,11 @@ func Stop(args []string, devcontainerPath string, configDirForDevcontainer strin
 		// docker compose ps コマンドで compose の情報取得
 		dockerComposePsResultString, err := dockercompose.Ps(workspaceFolder)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		if dockerComposePsResultString == "" {
 			fmt.Println("devcontainer already downed.")
-			os.Exit(0)
+			return nil
 		}
 
 		// 必要なのは最初の 1 行だけなので、最初の 1 行のみを取得
@@ -167,7 +168,7 @@ func Stop(args []string, devcontainerPath string, configDirForDevcontainer strin
 		// docker compose ps コマンドの結果からプロジェクト名を取得
 		projectName, err := dockercompose.GetProjectName(dockerComposePsResultFirstItemString)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		// プロジェクト名を使って docker compose stop を実行
@@ -176,19 +177,19 @@ func Stop(args []string, devcontainerPath string, configDirForDevcontainer strin
 		// docker-compose.yaml の格納ディレクトリを探す
 		dockerComposeFileDir, err := findDockerComposeFileDir()
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		// カレントディレクトリを記録して dockerComposeFileDir へ移動
 		currentDir, err := os.Getwd()
 		if err != nil {
-			panic(err)
+			return err
 		}
 		os.Chdir(dockerComposeFileDir)
 
 		err = dockercompose.Stop(projectName)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		// 元のカレントディレクトリへ戻る
@@ -198,20 +199,20 @@ func Stop(args []string, devcontainerPath string, configDirForDevcontainer strin
 		// ワークスペースに対応するコンテナを探して ID を取得する
 		containerID, err := docker.GetContainerIDFromWorkspaceFolder(workspaceFolder)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		// 取得したコンテナに対して stop を行う
 		fmt.Printf("Run `docker stop -f %s stop`(Async)\n", containerID)
 		err = docker.Stop(containerID)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
-
+	return nil
 }
 
-func Down(args []string, devcontainerPath string, configDirForDevcontainer string) {
+func Down(args []string, devcontainerPath string, configDirForDevcontainer string) error {
 
 	// `devcontainer read-configuration` で docker compose の利用判定
 
@@ -220,7 +221,7 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 	stdout, _ := ReadConfiguration(devcontainerPath, "--workspace-folder", workspaceFolder)
 	if stdout == "" {
 		fmt.Printf("This directory is not a workspace for devcontainer: %s\n", workspaceFolder)
-		os.Exit(0)
+		return nil
 	}
 
 	// `dockerComposeFile` が含まれているかを確認する
@@ -231,13 +232,13 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 		// docker-compose.yaml の格納ディレクトリを探す
 		dockerComposeFileDir, err := findDockerComposeFileDir()
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		// カレントディレクトリを記録して dockerComposeFileDir へ移動
 		currentDir, err := os.Getwd()
 		if err != nil {
-			panic(err)
+			return err
 		}
 		_, devcontainerJSONDir := findJSONInfo()
 
@@ -246,11 +247,11 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 		// docker compose ps コマンドで compose の情報取得
 		dockerComposePsResultString, err := dockercompose.Ps(workspaceFolder)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		if dockerComposePsResultString == "" {
 			fmt.Println("devcontainer already downed.")
-			os.Exit(0)
+			return nil
 		}
 
 		// 必要なのは最初の 1 行だけなので、最初の 1 行のみを取得
@@ -259,14 +260,14 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 		// docker compose ps コマンドの結果からプロジェクト名を取得
 		projectName, err := dockercompose.GetProjectName(dockerComposePsResultFirstItemString)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		// プロジェクト名を使って docker compose down を実行
 		fmt.Printf("Run `docker compose -p %s down`(Async)\n", projectName)
 		err = dockercompose.Down(projectName)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		// 元のカレントディレクトリへ戻る
@@ -279,14 +280,14 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 		// ワークスペースに対応するコンテナを探して ID を取得する
 		containerID, err := docker.GetContainerIDFromWorkspaceFolder(workspaceFolder)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		// 取得したコンテナに対して rm を行う
 		fmt.Printf("Run `docker rm -f %s down`(Async)\n", containerID)
 		err = docker.Rm(containerID)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		// pid ファイル参照のために、
@@ -299,19 +300,20 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 	fmt.Printf("Read PID file: %s\n", pidFile)
 	pidStringBytes, err := os.ReadFile(pidFile)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	pid, err := strconv.Atoi(string(pidStringBytes))
 	if err != nil {
-		panic(err)
+		return err
 	}
 	fmt.Printf("clipboard-data-receiver PID: %d\n", pid)
 	tools.KillCdr(pid)
 
 	err = os.RemoveAll(configDir)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
 // devcontainer.json の場所・ディレクトリを差がして返却する
@@ -338,7 +340,7 @@ func findDockerComposeFileDir() (string, error) {
 	// fmt.Printf("devcontainerJSONPath directory: %s\n", devcontainerJSONPath)
 	devcontainerJSONBytes, err := util.ParseJwcc(devcontainerJSONPath)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	// docker-compose.yaml の格納ディレクトリを組み立て
