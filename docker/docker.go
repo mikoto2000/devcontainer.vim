@@ -2,6 +2,7 @@ package docker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -150,6 +151,9 @@ func GetContainerIDFromWorkspaceFolder(workspaceFolder string) (string, error) {
 	}
 
 	psResult, err := Ps("label=devcontainer.local_folder=" + workspaceFilderAbs)
+	if psResult == "" {
+		return "", errors.New("container not found.")
+	}
 	if err != nil {
 		return "", err
 	}
