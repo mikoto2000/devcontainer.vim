@@ -202,6 +202,29 @@ devcontainer.vim config -g --home /home/containerUser > .devcontainer/devcontain
 - `-o` : 生成した設定の出力先ファイルを指定(default: STDOUT)
 - `--home` : 設定テンプレート内のホームディレクトリのパス
 
+#### 追加のランタイムをコンテナへインストールする
+
+[denops.vim](https://github.com/vim-denops/denops.vim) や
+[coc.nvim](https://github.com/neoclide/coc.nvim) など
+別途ランタイムが必要なプラグインを使用している場合、
+`devcontainer.vim.json` の `features` にイメージ ID を追加することで、
+コンテナへランタイムをインストールできる。
+
+deno をコンテナにインストールする例:
+
+```json
+...(snip)
+  "features": {
+    "ghcr.io/devcontainers-community/features/deno:1": {}
+  }
+...(snip)
+```
+
+`features` に指定できるイメージは
+[Available Dev Container Features](https://containers.dev/features)
+で確認できる。
+
+
 ### Vim のカスタマイズ
 
 `devcontainer.vim vimrc -o` で、コンテナ上で実行する Vim に、追加で読み込ませるスクリプトが開きます。
