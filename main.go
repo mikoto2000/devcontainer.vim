@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -86,7 +87,8 @@ func main() {
 	if (!util.IsExists(vimrc)) {
 		err := util.CreateFileWithContents(vimrc, additionalVimrc, 0666)
 		if err != nil {
-			panic(err)
+			fmt.Fprintf(os.Stderr, "Error creating vimrc file: %v\n", err)
+			os.Exit(1)
 		}
 		fmt.Printf("Generated additional vimrc to: %s\n", vimrc)
 	}
@@ -97,7 +99,8 @@ func main() {
 	if (!util.IsExists(runargs)) {
 		err := util.CreateFileWithContents(runargs, runargsContent, 0666)
 		if err != nil {
-			panic(err)
+			fmt.Fprintf(os.Stderr, "Error creating runargs file: %v\n", err)
+			os.Exit(1)
 		}
 		fmt.Printf("Generated additional runargs to: %s\n", runargs)
 	}
@@ -315,14 +318,22 @@ func main() {
 					workspaceFolder := args[len(args)-1]
 					configFilePath, err := createConfigFile(devcontainerPath, workspaceFolder, configDirForDevcontainer)
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error creating config file: %v\n", err)
+						if errors.Is(err, os.ErrNotExist) {
+							fmt.Fprintf(os.Stderr, "Configuration file not found: %v\n", err)
+						} else {
+							fmt.Fprintf(os.Stderr, "Error creating config file: %v\n", err)
+						}
 						os.Exit(1)
 					}
 
 					// devcontainer を用いたコンテナ立ち上げ
 					err = devcontainer.ExecuteDevcontainer(args, devcontainerPath, vimPath, cdrPath, configFilePath, vimrc)
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error executing devcontainer: %v\n", err)
+						if errors.Is(err, os.ErrPermission) {
+							fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
+						} else {
+							fmt.Fprintf(os.Stderr, "Error executing devcontainer: %v\n", err)
+						}
 						os.Exit(1)
 					}
 
@@ -341,14 +352,22 @@ func main() {
 					// 必要なファイルのダウンロード
 					devcontainerPath, err := tools.InstallStopTools(binDir)
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error installing stop tools: %v\n", err)
+						if errors.Is(err, os.ErrNotExist) {
+							fmt.Fprintf(os.Stderr, "Configuration file not found: %v\n", err)
+						} else {
+							fmt.Fprintf(os.Stderr, "Error installing stop tools: %v\n", err)
+						}
 						os.Exit(1)
 					}
 
 					// devcontainer を用いたコンテナ終了
 					err = devcontainer.Stop(cCtx.Args().Slice(), devcontainerPath, configDirForDevcontainer)
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error stopping devcontainer: %v\n", err)
+						if errors.Is(err, os.ErrPermission) {
+							fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
+						} else {
+							fmt.Fprintf(os.Stderr, "Error stopping devcontainer: %v\n", err)
+						}
 						os.Exit(1)
 					}
 
@@ -369,14 +388,22 @@ func main() {
 					// 必要なファイルのダウンロード
 					devcontainerPath, err := tools.InstallDownTools(binDir)
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error installing down tools: %v\n", err)
+						if errors.Is(err, os.ErrNotExist) {
+							fmt.Fprintf(os.Stderr, "Configuration file not found: %v\n", err)
+						} else {
+							fmt.Fprintf(os.Stderr, "Error installing down tools: %v\n", err)
+						}
 						os.Exit(1)
 					}
 
 					// devcontainer を用いたコンテナ終了
 					err = devcontainer.Down(cCtx.Args().Slice(), devcontainerPath, configDirForDevcontainer)
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error downing devcontainer: %v\n", err)
+						if errors.Is(err, os.ErrPermission) {
+							fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
+						} else {
+							fmt.Fprintf(os.Stderr, "Error downing devcontainer: %v\n", err)
+						}
 						os.Exit(1)
 					}
 
@@ -389,7 +416,11 @@ func main() {
 					fmt.Printf("Remove configuration file: `%s`\n", configDir)
 					err = os.RemoveAll(configDir)
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error removing configuration file: %v\n", err)
+						if errors.Is(err, os.ErrPermission) {
+							fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
+						} else {
+							fmt.Fprintf(os.Stderr, "Error removing configuration file: %v\n", err)
+						}
 						os.Exit(1)
 					}
 
@@ -665,12 +696,20 @@ func main() {
 					// 削除処理
 					err := os.RemoveAll(configDirForDocker)
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error removing docker config directory: %v\n", err)
+						if errors.Is(err, os.ErrPermission) {
+							fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
+						} else {
+							fmt.Fprintf(os.Stderr, "Error removing docker config directory: %v\n", err)
+						}
 						os.Exit(1)
 					}
 					err = os.RemoveAll(configDirForDevcontainer)
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error removing devcontainer config directory: %v\n", err)
+						if errors.Is(err, os.ErrPermission) {
+							fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
+						} else {
+							fmt.Fprintf(os.Stderr, "Error removing devcontainer config directory: %v\n", err)
+						}
 						os.Exit(1)
 					}
 
@@ -693,7 +732,11 @@ func main() {
 							// Features の一覧をダウンロード
 							err := oras.Pull("ghcr.io/devcontainers/index", "latest", appCacheDir)
 							if err != nil {
-								fmt.Fprintf(os.Stderr, "Error updating index: %v\n", err)
+								if errors.Is(err, os.ErrNotExist) {
+									fmt.Fprintf(os.Stderr, "Index file not found: %v\n", err)
+								} else {
+									fmt.Fprintf(os.Stderr, "Error updating index: %v\n", err)
+								}
 								os.Exit(1)
 							}
 
@@ -709,7 +752,11 @@ func main() {
 				Action: func(cCtx *cli.Context) error {
 					err := tools.SelfUpdate()
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error updating devcontainer.vim: %v\n", err)
+						if errors.Is(err, os.ErrPermission) {
+							fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
+						} else {
+							fmt.Fprintf(os.Stderr, "Error updating devcontainer.vim: %v\n", err)
+						}
 						os.Exit(1)
 					}
 					return nil
@@ -730,7 +777,11 @@ func main() {
 	// アプリ実行
 	err := devcontainerVimArgProcess.Run(os.Args)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error running devcontainer.vim: %v\n", err)
+		if errors.Is(err, os.ErrPermission) {
+			fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
+		} else {
+			fmt.Fprintf(os.Stderr, "Error running devcontainer.vim: %v\n", err)
+		}
 		os.Exit(1)
 	}
 }
@@ -742,6 +793,9 @@ func createConfigFile(devcontainerPath string, workspaceFolder string, configDir
 	// devcontainer の設定ファイルパス取得
 	configFilePath, err := devcontainer.GetConfigurationFilePath(devcontainerPath, workspaceFolder)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return "", fmt.Errorf("configuration file not found: %w", err)
+		}
 		return "", err
 	}
 
@@ -752,6 +806,9 @@ func createConfigFile(devcontainerPath string, workspaceFolder string, configDir
 	// 設定管理フォルダに JSON を配置
 	mergedConfigFilePath, err := util.CreateConfigFileForDevcontainer(configDirForDevcontainer, workspaceFolder, configFilePath, additionalConfigurationFilePath)
 	if err != nil {
+		if errors.Is(err, os.ErrPermission) {
+			return "", fmt.Errorf("permission error: %w", err)
+		}
 		return "", err
 	}
 
