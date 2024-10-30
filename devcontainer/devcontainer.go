@@ -21,6 +21,14 @@ const containerCommand = "docker"
 
 var devcontainreArgsPrefix = []string{"up"}
 
+type UnknownTypeError struct {
+	msg string
+}
+
+func (e *UnknownTypeError) Error() string {
+	return e.msg
+}
+
 // devcontainer でコンテナを立ち上げ、 Vim を転送し、実行する。
 // 既存実装の都合上、configFilePath から configDirForDevcontainer を抽出している
 func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath string, cdrPath, configFilePath string, vimrc string) error {
@@ -359,7 +367,7 @@ func findDockerComposeFileDir() (string, error) {
 		vv := v[0].(string)
 		dockerComposeFilePath = filepath.Join(devcontainerJSONDir, vv)
 	default:
-		return "", errors.New("unknown type")
+		return "", &UnknownTypeError{msg: "unknown type"}
 	}
 	dockerComposeFileDir := filepath.Dir(dockerComposeFilePath)
 

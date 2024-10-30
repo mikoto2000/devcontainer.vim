@@ -2,7 +2,6 @@ package docker
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -18,6 +17,30 @@ const containerCommand = "docker"
 
 var dockerRunArgsPrefix = []string{"run", "-d", "--rm"}
 var dockerRunArgsSuffix = []string{"sh", "-c", "trap \"exit 0\" TERM; sleep infinity & wait"}
+
+type ContainerStartError struct {
+	msg string
+}
+
+func (e *ContainerStartError) Error() string {
+	return e.msg
+}
+
+type ChmodError struct {
+	msg string
+}
+
+func (e *ChmodError) Error() string {
+	return e.msg
+}
+
+type ContainerNotFoundError struct {
+	msg string
+}
+
+func (e *ContainerNotFoundError) Error() string {
+	return e.msg
+}
 
 func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker string, vimrc string, defaultRunargs []string) error {
 	vimFileName := filepath.Base(vimFilePath)
@@ -38,7 +61,7 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Container start error.")
 		fmt.Fprintln(os.Stderr, string(containerID))
-		return err
+		return &ContainerStartError{msg: "Container start error."}
 	}
 	containerID = strings.ReplaceAll(containerID, "\n", "")
 	containerID = strings.ReplaceAll(containerID, "\r", "")
@@ -70,7 +93,7 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "chmod error.")
 		fmt.Fprintln(os.Stderr, string(chmodResult))
-		return err
+		return &ChmodError{msg: "chmod error."}
 	}
 	fmt.Printf(" done.\n")
 
@@ -152,7 +175,7 @@ func GetContainerIDFromWorkspaceFolder(workspaceFolder string) (string, error) {
 
 	psResult, err := Ps("label=devcontainer.local_folder=" + workspaceFilderAbs)
 	if psResult == "" {
-		return "", errors.New("container not found.")
+		return "", &ContainerNotFoundError{msg: "container not found."}
 	}
 	if err != nil {
 		return "", err
