@@ -618,7 +618,7 @@ func main() {
 			},
 			{
 				Name:            "index",
-				Usage:           "Management index file",
+				Usage:           "Management dev container template index file",
 				UsageText:       "devcontainer.vim index SUB_COMMAND",
 				HideHelp:        false,
 				SkipFlagParsing: false,

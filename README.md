@@ -10,6 +10,27 @@ VSCode 向けに作成された `devcontainer.json` に追加する形で Vim �
 - [？「えっ！1分でGo言語の環境構築を！？」 devcontainer.vim「できらぁ！」 - YouTube](https://www.youtube.com/shorts/v0h6AfRIyvs)
 
 
+## Features:
+
+- 開発用コンテナを立ち上げ、そこに Vim を転送し、起動する
+    - `devcontainre.json` が無いプロジェクトで、ワンショットで開発用コンテナを立ち上げる
+        - docker に渡す引数のカスタマイズができる
+    - `devcontainer.json` が無いプロジェクトに、`devcontainer.json` のテンプレートを追加できる
+    - `devcontainer.json` があるプロジェクトで、開発用コンテナを開始・停止・削除できる
+    - `devcontainer.json` とは別に、 `devcontainer.vim.json` を記述することで
+      開発用コンテナに `devcontainer.vim` 用の設定を追加できる
+    - 開発用コンテナで起動する Vim に追加で設定する vimrc を定義できる
+- `vim`, `devcontainer`, `clipboard-data-receiver` など、使用するツールのアップデートができる
+- セルフアップデートができる
+
+
+## Requirements:
+
+以下コマンドがインストール済みで、PATH が通っていること。
+
+- docker
+
+
 ## Usage:
 
 ```
@@ -33,7 +54,7 @@ COMMANDS:
    runargs             run subcommand's default arguments.
    tool                Management tools
    clean               clean workspace cache files.
-   index               Management index file
+   index               Management dev container templates index file
    self-update         Update devcontainer.vim itself
    bash-complete-func  Show bash complete func
    help, h             Shows a list of commands or help for one command
@@ -266,73 +287,6 @@ devcontainer.vim vimrc -g
 ```sh
 devcontainer.vim runargs -g
 ```
-
-
-## Requirements:
-
-以下コマンドがインストール済みで、PATH が通っていること。
-
-- docker
-
-
-## Features:
-
-- [x] : v0.1.0
-    - [x] : docker run 対応
-        - [x] : コンテナの起動
-        - [x] : AppImage 版 Vim のダウンロードとコンテナへの転送
-    - [x] : `devcontainer.vim` への引数と `docker` への引数を指定できるようにする
-        - [x] : `run` コマンドとして実現
-- [x] : v0.2.0
-    - [x] : `devcontainer.json` の `composeContainer` 対応
-        - [x] : dockerComposeFile
-        - [x] : service
-        - [x] : workspaceFolder
-        - [x] : remoteUser
-- [x] : v0.3.0
-    - [x] : `devcontainer.json` の `nonComposeBase` 対応
-- [x] : v0.4.0
-    - [x] : down コマンドの実装
-        - [x] : `composeContainer` と `nonComposeBase` の判定
-            - [x] : `devcontainer read-configuration` の結果に `dockerComposeFile` が含まれているかで判定
-        - [x] : `composeContainer` の場合
-            - `docker compose ps --format json` して `Project` の値を取得し、 `docker compose -p ${PROJECT_NAME} down` する
-        - [x] : `nonComposeBase` の場合
-            - `docker ps --format json` して `Labels` 内に `devcontainer.local_folder=xxx` が含まれており、 `xxx` が現在のディレクトリと一致するものを探し、そいつの ID で `docker rm -f ${CONTAINER_ID}` する
-- [x] : v0.5.0
-    - [x] : devcontainer.vim のみが利用する設定に関する仕組みを追加
-        - [x] : `devcontainer.json` と `devcontainer.vim.json` をマージしてからコンテナを起動する
-        - [x] : キャッシュディレクトリ内の構造整理
-    - [x] : `devcontainer.vim.json` の設定例出力機能
-        - [x] : 標準出力
-        - [x] : ファイルパス指定( `-o` オプション)
-    - [x] : Windows 向けに環境変数をセット
-        - `USERPROFILE` -> `HOME`
-    - [x] : config コマンドの実装
-    - [x] : リリーススクリプト・リリースワークフローを作る
-- [x] : v0.6.0
-    - [x] : `devcontainer up` の出力を表示する
-    - [x] : `devcontainer templates apply` コマンドを使えるようにする
-- [x] : v0.7.0
-    - [x] : Vim アップデートコマンドを追加
-- [x] : v0.8.0
-    - [x] : クリップボード転送機能追加
-        1. TCP でテキストを待ち受け、受信したテキストをクリップボードへ反映するプログラムを作る
-        2. TCP ソケット通信する関数、ヤンク処理時にテキスト送信をするマッピングを実装したスクリプトを作る
-            - `docker cp` で `/SendToTcp.vim` にコピーし、 `-c "source /SendToTcp.vim` する
-        3. `devcontainer.vim` 起動時に「1.」のプログラムを実行
-            - 多重起動防止のために既にプログラムが実行済みかどうかを確認する必要がある
-            - 終了時にも、「他の `devcontainer.vim` が存在するか」を確認して終了させるか判定
-- [x] : v0.9.0
-    - [x] : run サブコマンドのデフォルト引数を自分で指定できるようにする
-        - [x] : `<os.UserConfigDir>/devcontainer.vim/runargs` にデフォルトで付与したい引数を記載する
-        - ※ sh にパスの通った Linux のみで有効。(Windows PowerShell でシェル変数の展開が上手くできないため)
-- [x] : v0.10.0
-    - [x] : キャッシュクリアコマンド
-    - [x] : stop コマンドの実装
-- [x] : v0.11.0
-    - [x] : テンプレートリスト出力機能
-        - `devcontainer.vim templates apply` に渡す `--template-id` として使える ID の一覧を出力
 
 
 ## Limitation:
