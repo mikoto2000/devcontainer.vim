@@ -20,6 +20,8 @@ VSCode 向けに作成された `devcontainer.json` に追加する形で Vim �
     - `devcontainer.json` とは別に、 `devcontainer.vim.json` を記述することで
       開発用コンテナに `devcontainer.vim` 用の設定を追加できる
     - 開発用コンテナで起動する Vim に追加で設定する vimrc を定義できる
+- 開発用コンテナ上の Vim でヤンクした文字列を、ホスト PC のクリップボードへ貼り付けられる
+- 開発用コンテナ内で使用するしたいツールを、開発用コンテナに転送して使用可能にする
 - `vim`, `devcontainer`, `clipboard-data-receiver` など、使用するツールのアップデートができる
 - セルフアップデートができる
 
