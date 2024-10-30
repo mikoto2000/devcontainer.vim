@@ -170,44 +170,47 @@ func runCdrForWsl(cdrPath string, pidFile string, portFile string) (int, int, er
 	return pid, port, nil
 }
 
-func KillCdr(pid int) {
+func KillCdr(pid int) error {
 	if util.IsWsl() {
 		commandString := fmt.Sprintf("Stop-Process -Id %d -Force", pid)
 		fmt.Printf("Stop clipboard-data-receiver: %s\n", commandString)
 		cdrRunCommand := exec.Command("powershell.exe", "-Command", commandString)
 		err := cdrRunCommand.Start()
 		if err != nil {
-			panic(err)
+			return err
 		}
 	} else {
 		process, err := os.FindProcess(pid)
 		if err != nil {
-			panic(err)
+			return err
 		}
-		process.Kill()
+		err = process.Kill()
+		if err != nil {
+			return err
+		}
 	}
-
+	return nil
 }
 
 func CreateSendToTCP(configDir string, port int) (string, error) {
 	// SendToTcp.vim の文字列を組み立て
 	tmpl, err := template.New("SendToTcp").Parse(vimScriptTemplateSendToCdr)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	tmplParams := map[string]int{"Port": port}
 	var sendToTCPString strings.Builder
 	err = tmpl.Execute(&sendToTCPString, tmplParams)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	// ファイルに出力
 	sendToTCP := filepath.Join(configDir, "SendToTcp.vim")
 	err = os.WriteFile(sendToTCP, []byte(sendToTCPString.String()), 0666)
 	if err != nil {
-		return sendToTCP, nil
+		return "", err
 	}
 
 	// 作成したファイルを返却

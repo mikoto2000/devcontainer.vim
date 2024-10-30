@@ -148,35 +148,47 @@ func main() {
 					// 必要なファイルのダウンロード
 					vimPath, cdrPath, err := tools.InstallRunTools(binDir)
 					if err != nil {
-						panic(err)
+						fmt.Fprintf(os.Stderr, "Error installing run tools: %v\n", err)
+						os.Exit(1)
 					}
 
 					// デフォルト引数取得
 					defaultRunargsBytes, err := os.ReadFile(runargs)
 					if err != nil {
-						panic(err)
+						fmt.Fprintf(os.Stderr, "Error reading runargs: %v\n", err)
+						os.Exit(1)
 					}
 					defaultRunargsString := string(defaultRunargsBytes)
 
 					if runtime.GOOS == "windows" {
 						// コンテナ起動
 						// windows はシェル変数展開が上手くいかないので runargs を使用しない
-						docker.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker, vimrc, []string{})
+						err = docker.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker, vimrc, []string{})
+						if err != nil {
+							fmt.Fprintf(os.Stderr, "Error running docker: %v\n", err)
+							os.Exit(1)
+						}
 					} else {
 						// デフォルト引数内のシェル変数を展開
 						extractedDofaultRunargsString, err := util.ExtractShellVariables(defaultRunargsString)
 						if err != nil {
-							panic(err)
+							fmt.Fprintf(os.Stderr, "Error extracting shell variables: %v\n", err)
+							os.Exit(1)
 						}
 
 						// 展開したものを配列へ分割
 						defaultRunargs, err := shlex.Split(extractedDofaultRunargsString, true)
 						if err != nil {
-							panic(err)
+							fmt.Fprintf(os.Stderr, "Error splitting runargs: %v\n", err)
+							os.Exit(1)
 						}
 
 						// コンテナ起動
-						docker.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker, vimrc, defaultRunargs)
+						err = docker.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker, vimrc, defaultRunargs)
+						if err != nil {
+							fmt.Fprintf(os.Stderr, "Error running docker: %v\n", err)
+							os.Exit(1)
+						}
 					}
 
 					return nil
@@ -198,7 +210,11 @@ func main() {
 							indexFile := filepath.Join(appCacheDir, indexFileName)
 							if (!util.IsExists(indexFile)) {
 								fmt.Println("Download template index ... ")
-								oras.Pull("ghcr.io/devcontainers/index", "latest", appCacheDir)
+								err := oras.Pull("ghcr.io/devcontainers/index", "latest", appCacheDir)
+								if err != nil {
+									fmt.Fprintf(os.Stderr, "Error downloading template index: %v\n", err)
+									os.Exit(1)
+								}
 								fmt.Println("done.")
 							}
 
@@ -206,11 +222,13 @@ func main() {
 							jsonFile := filepath.Join(appCacheDir, indexFileName)
 							jsonData, err := os.ReadFile(jsonFile)
 							if err != nil {
-								panic(err)
+								fmt.Fprintf(os.Stderr, "Error reading template index: %v\n", err)
+								os.Exit(1)
 							}
 							err = json.Unmarshal(jsonData, &indexRoot)
 							if err != nil {
-								panic(err)
+								fmt.Fprintf(os.Stderr, "Error unmarshalling template index: %v\n", err)
+								os.Exit(1)
 							}
 
 							var availableTemplateItems []AvailableTemplateItem
@@ -238,7 +256,8 @@ func main() {
 
 							i, _, err := prompt.Run()
 							if err != nil {
-								panic(err)
+								fmt.Fprintf(os.Stderr, "Error running prompt: %v\n", err)
+								os.Exit(1)
 							}
 
 							selectedItem := availableTemplateItems[i]
@@ -248,7 +267,8 @@ func main() {
 							// 必要なファイルのダウンロード
 							devcontainerFilePath, err := tools.InstallTemplatesTools(binDir)
 							if err != nil {
-								panic(err)
+								fmt.Fprintf(os.Stderr, "Error installing template tools: %v\n", err)
+								os.Exit(1)
 							}
 
 							// コマンドライン引数の末尾は `--workspace-folder` の値として使う
@@ -258,10 +278,14 @@ func main() {
 							templateID := selectedItem.ID + ":" + selectedItem.Version
 
 							// devcontainer を用いたコンテナ立ち上げ
-							output, _ := devcontainer.Templates(
+							output, err := devcontainer.Templates(
 								devcontainerFilePath,
 								workspaceFolder,
 								templateID)
+							if err != nil {
+								fmt.Fprintf(os.Stderr, "Error applying template: %v\n", err)
+								os.Exit(1)
+							}
 
 							fmt.Println(output)
 
@@ -282,7 +306,8 @@ func main() {
 					// 必要なファイルのダウンロード
 					vimPath, devcontainerPath, cdrPath, err := tools.InstallStartTools(binDir)
 					if err != nil {
-						panic(err)
+						fmt.Fprintf(os.Stderr, "Error installing start tools: %v\n", err)
+						os.Exit(1)
 					}
 
 					// コマンドライン引数の末尾は `--workspace-folder` の値として使う
@@ -290,11 +315,16 @@ func main() {
 					workspaceFolder := args[len(args)-1]
 					configFilePath, err := createConfigFile(devcontainerPath, workspaceFolder, configDirForDevcontainer)
 					if err != nil {
-						panic(err)
+						fmt.Fprintf(os.Stderr, "Error creating config file: %v\n", err)
+						os.Exit(1)
 					}
 
 					// devcontainer を用いたコンテナ立ち上げ
-					devcontainer.ExecuteDevcontainer(args, devcontainerPath, vimPath, cdrPath, configFilePath, vimrc)
+					err = devcontainer.ExecuteDevcontainer(args, devcontainerPath, vimPath, cdrPath, configFilePath, vimrc)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Error executing devcontainer: %v\n", err)
+						os.Exit(1)
+					}
 
 					return nil
 				},
@@ -311,11 +341,16 @@ func main() {
 					// 必要なファイルのダウンロード
 					devcontainerPath, err := tools.InstallStopTools(binDir)
 					if err != nil {
-						panic(err)
+						fmt.Fprintf(os.Stderr, "Error installing stop tools: %v\n", err)
+						os.Exit(1)
 					}
 
 					// devcontainer を用いたコンテナ終了
-					devcontainer.Stop(cCtx.Args().Slice(), devcontainerPath, configDirForDevcontainer)
+					err = devcontainer.Stop(cCtx.Args().Slice(), devcontainerPath, configDirForDevcontainer)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Error stopping devcontainer: %v\n", err)
+						os.Exit(1)
+					}
 
 					fmt.Printf("Stop containers\n")
 
@@ -334,11 +369,16 @@ func main() {
 					// 必要なファイルのダウンロード
 					devcontainerPath, err := tools.InstallDownTools(binDir)
 					if err != nil {
-						panic(err)
+						fmt.Fprintf(os.Stderr, "Error installing down tools: %v\n", err)
+						os.Exit(1)
 					}
 
 					// devcontainer を用いたコンテナ終了
-					devcontainer.Down(cCtx.Args().Slice(), devcontainerPath, configDirForDevcontainer)
+					err = devcontainer.Down(cCtx.Args().Slice(), devcontainerPath, configDirForDevcontainer)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Error downing devcontainer: %v\n", err)
+						os.Exit(1)
+					}
 
 					// 設定ファイルを削除
 					// コマンドライン引数の末尾は `--workspace-folder` の値として使う
@@ -347,7 +387,11 @@ func main() {
 					configDir := util.GetConfigDir(appCacheDir, workspaceFolder)
 
 					fmt.Printf("Remove configuration file: `%s`\n", configDir)
-					os.RemoveAll(configDir)
+					err = os.RemoveAll(configDir)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Error removing configuration file: %v\n", err)
+						os.Exit(1)
+					}
 
 					return nil
 				},
@@ -397,13 +441,15 @@ func main() {
 							// 生成先ディレクトリを作成
 							err := os.MkdirAll(filepath.Dir(configFilePath), 0766)
 							if err != nil {
-								panic(err)
+								fmt.Fprintf(os.Stderr, "Error creating output directory: %v\n", err)
+								os.Exit(1)
 							}
 
 							// 設定ファイルサンプルを出力
 							err = os.WriteFile(configFilePath, []byte(devcontainerVimJSON), 0666)
 							if err != nil {
-								panic(err)
+								fmt.Fprintf(os.Stderr, "Error writing config file: %v\n", err)
+								os.Exit(1)
 							}
 						} else {
 							// output オプションが指定されていない場合、標準出力へ出力する
@@ -444,13 +490,18 @@ func main() {
 					if cCtx.Bool(flagNameGenerate) {
 						err := os.WriteFile(vimrc, []byte(additionalVimrc), 0666)
 						if err != nil {
-							panic(err)
+							fmt.Fprintf(os.Stderr, "Error writing vimrc: %v\n", err)
+							os.Exit(1)
 						}
 						fmt.Printf("Generated additional vimrc to: %s\n", vimrc)
 					}
 
 					if cCtx.Bool(flagNameOpen) {
-						util.OpenFileWithDefaultApp(vimrc)
+						err := util.OpenFileWithDefaultApp(vimrc)
+						if err != nil {
+							fmt.Fprintf(os.Stderr, "Error opening vimrc: %v\n", err)
+							os.Exit(1)
+						}
 						fmt.Printf("%s\n", vimrc)
 					}
 
@@ -487,13 +538,18 @@ func main() {
 					if cCtx.Bool(flagNameGenerate) {
 						err := os.WriteFile(runargs, []byte(runargsContent), 0666)
 						if err != nil {
-							panic(err)
+							fmt.Fprintf(os.Stderr, "Error writing runargs: %v\n", err)
+							os.Exit(1)
 						}
 						fmt.Printf("Generated additional runargs to: %s\n", runargs)
 					}
 
 					if cCtx.Bool(flagNameOpen) {
-						util.OpenFileWithDefaultApp(runargs)
+						err := util.OpenFileWithDefaultApp(runargs)
+						if err != nil {
+							fmt.Fprintf(os.Stderr, "Error opening runargs: %v\n", err)
+							os.Exit(1)
+						}
 						fmt.Printf("%s\n", runargs)
 					}
 
@@ -525,7 +581,8 @@ func main() {
 									// Vim のダウンロード
 									_, err := tools.VIM.Install(binDir, true)
 									if err != nil {
-										panic(err)
+										fmt.Fprintf(os.Stderr, "Error installing vim: %v\n", err)
+										os.Exit(1)
 									}
 
 									return nil
@@ -551,7 +608,8 @@ func main() {
 									// devcontainer のダウンロード
 									_, err := tools.DEVCONTAINER.Install(binDir, true)
 									if err != nil {
-										panic(err)
+										fmt.Fprintf(os.Stderr, "Error installing devcontainer: %v\n", err)
+										os.Exit(1)
 									}
 
 									return nil
@@ -577,7 +635,8 @@ func main() {
 									// clipboard-data-receiver のダウンロード
 									_, err := tools.CDR.Install(binDir, true)
 									if err != nil {
-										panic(err)
+										fmt.Fprintf(os.Stderr, "Error installing clipboard-data-receiver: %v\n", err)
+										os.Exit(1)
 									}
 
 									return nil
@@ -606,11 +665,13 @@ func main() {
 					// 削除処理
 					err := os.RemoveAll(configDirForDocker)
 					if err != nil {
-						panic(err)
+						fmt.Fprintf(os.Stderr, "Error removing docker config directory: %v\n", err)
+						os.Exit(1)
 					}
 					err = os.RemoveAll(configDirForDevcontainer)
 					if err != nil {
-						panic(err)
+						fmt.Fprintf(os.Stderr, "Error removing devcontainer config directory: %v\n", err)
+						os.Exit(1)
 					}
 
 					return nil
@@ -630,7 +691,11 @@ func main() {
 						Action: func(cCtx *cli.Context) error {
 
 							// Features の一覧をダウンロード
-							oras.Pull("ghcr.io/devcontainers/index", "latest", appCacheDir)
+							err := oras.Pull("ghcr.io/devcontainers/index", "latest", appCacheDir)
+							if err != nil {
+								fmt.Fprintf(os.Stderr, "Error updating index: %v\n", err)
+								os.Exit(1)
+							}
 
 							return nil
 						},
@@ -644,7 +709,8 @@ func main() {
 				Action: func(cCtx *cli.Context) error {
 					err := tools.SelfUpdate()
 					if err != nil {
-						panic(err)
+						fmt.Fprintf(os.Stderr, "Error updating devcontainer.vim: %v\n", err)
+						os.Exit(1)
 					}
 					return nil
 				},
@@ -664,6 +730,7 @@ func main() {
 	// アプリ実行
 	err := devcontainerVimArgProcess.Run(os.Args)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error running devcontainer.vim: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -684,6 +751,9 @@ func createConfigFile(devcontainerPath string, workspaceFolder string, configDir
 
 	// 設定管理フォルダに JSON を配置
 	mergedConfigFilePath, err := util.CreateConfigFileForDevcontainer(configDirForDevcontainer, workspaceFolder, configFilePath, additionalConfigurationFilePath)
+	if err != nil {
+		return "", err
+	}
 
 	fmt.Printf("Use configuration file: `%s`", mergedConfigFilePath)
 
