@@ -50,11 +50,14 @@ func Ps(workspaceFolder string) (string, error) {
 	// ワークスペースまで移動
 	err = os.Chdir(workspaceFolder)
 	if err != nil {
-		return "", &PsCommandError{msg: "Failed to change to workspace directory"}
+		return "", &PsCommandError{msg: "ワークスペースへの移動に失敗しました。指定したディレクトリが存在するか・パーミッションが正しいかの確認をしてください。 "}
 	}
 
 	dockerComposePsCommand := exec.Command("docker", "compose", "ps", "--format", "json")
-	stdout, _ := dockerComposePsCommand.Output()
+	stdout, err := dockerComposePsCommand.Output()
+	if err != nil {
+		return "", &PsCommandError{msg: "docker compose ps コマンドの実行に失敗しました。docker がインストールされているか・docker エンジンが起動しているかの確認をしてください。 "}
+	}
 	return string(stdout), err
 }
 
@@ -63,7 +66,7 @@ func Stop(projectName string) error {
 	dockerComposeStopCommand := exec.Command("docker", "compose", "-p", projectName, "stop")
 	err := dockerComposeStopCommand.Start()
 	if err != nil {
-		return &StopCommandError{msg: "Failed to execute docker compose stop command"}
+		return &StopCommandError{msg: "docker compose stop コマンドの実行に失敗しました。docker がインストールされているか・docker エンジンが起動しているかの確認をしてください。 "}
 	}
 	return nil
 }
@@ -73,7 +76,7 @@ func Down(projectName string) error {
 	dockerComposeDownCommand := exec.Command("docker", "compose", "-p", projectName, "down")
 	err := dockerComposeDownCommand.Start()
 	if err != nil {
-		return &DownCommandError{msg: "Failed to execute docker compose down command"}
+		return &DownCommandError{msg: "docker compose down コマンドの実行に失敗しました。docker がインストールされているか・docker エンジンが起動しているかの確認をしてください。 "}
 	}
 	return nil
 }
