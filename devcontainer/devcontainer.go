@@ -367,7 +367,7 @@ func findDockerComposeFileDir() (string, error) {
 		vv := v[0].(string)
 		dockerComposeFilePath = filepath.Join(devcontainerJSONDir, vv)
 	default:
-		return "", &UnknownTypeError{msg: "unknown type"}
+		return "", &UnknownTypeError{msg: "docker compose file path の型が不正です。 GitHub に issue を立てていただけるとありがたいです。"}
 	}
 	dockerComposeFileDir := filepath.Dir(dockerComposeFilePath)
 
