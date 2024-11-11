@@ -250,6 +250,8 @@ deno をコンテナにインストールする例:
 
 ### Vim のカスタマイズ
 
+#### devcontainer.vim 上の Vim にのみ読み込まれる vimrc の作成
+
 `devcontainer.vim vimrc -o` で、コンテナ上で実行する Vim に、追加で読み込ませるスクリプトが開きます。
 
 このスクリプトを更新することで、コンテナ上の Vim のみに適用させたい設定ができます。
@@ -267,6 +269,17 @@ vnoremap <silent> "*y y:call SendToCdr('"')<CR>
 
 ```sh
 devcontainer.vim vimrc -g
+```
+
+#### devcontainer.vim 上の Vim でのみ実行したい Vim script
+
+devcontainer.vim 上で動く Vim には、 `g:devcontainer_vim` 変数が `v:true` で定義される。
+以下のように判定すれば、「devcontainer.vim 上で動く Vim のみで実行される Vim script」が記述できる。
+
+```vim
+if get(g:, "devcontainer_vim", v:false)
+  " Run only on devcontainer.vim
+endif
 ```
 
 
