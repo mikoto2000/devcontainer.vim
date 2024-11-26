@@ -1,3 +1,5 @@
+[日本語](README.md) / **English**
+
 # devcontainer.vim
 
 A tool for developing with Vim on a container. (Vim version of VSCode Dev Container)

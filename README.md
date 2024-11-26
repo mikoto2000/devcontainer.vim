@@ -1,3 +1,5 @@
+**日本語** / [English](README_en.md)
+
 # devcontainer.vim
 
 コンテナ上で Vim を使った開発をするためのツール。 (VSCode Dev Container の Vim 版)
@@ -154,8 +156,7 @@ Search: Go
     Hugo & pnpm
 ```
 
-`devcontainer.vim templates apply` を実行すると、テンプレート名の一覧が表示されるので、
-キー入力で名前をインクリメンタル検索し、上下キーでカーソルを移動・エンターキーでテンプレートを決定できる。
+`devcontainer.vim templates apply` を実行すると、テンプレート名の一覧が表示されるので、キー入力で名前をインクリメンタル検索し、上下キーでカーソルを移動・エンターキーでテンプレートを決定できる。
 
 
 ## サブコマンドの補完
@@ -227,11 +228,7 @@ devcontainer.vim config -g --home /home/containerUser > .devcontainer/devcontain
 
 #### 追加のランタイムをコンテナへインストールする
 
-[denops.vim](https://github.com/vim-denops/denops.vim) や
-[coc.nvim](https://github.com/neoclide/coc.nvim) など
-別途ランタイムが必要なプラグインを使用している場合、
-`devcontainer.vim.json` の `features` にイメージ ID を追加することで、
-コンテナへランタイムをインストールできる。
+[denops.vim](https://github.com/vim-denops/denops.vim) や [coc.nvim](https://github.com/neoclide/coc.nvim) など 別途ランタイムが必要なプラグインを使用している場合、 `devcontainer.vim.json` の `features` にイメージ ID を追加することで、コンテナへランタイムをインストールできる。
 
 deno をコンテナにインストールする例:
 
@@ -243,9 +240,7 @@ deno をコンテナにインストールする例:
 ...(snip)
 ```
 
-`features` に指定できるイメージは
-[Available Dev Container Features](https://containers.dev/features)
-で確認できる。
+`features` に指定できるイメージは [Available Dev Container Features](https://containers.dev/features) で確認できる。
 
 
 ### Vim のカスタマイズ
