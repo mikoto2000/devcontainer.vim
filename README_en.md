@@ -312,7 +312,7 @@ devcontainer.vim runargs -g
 
 - Only amd64 containers can be used
 - Not supported in Alpine-based containers
-
+- Operation has not been tested on macOS
 
 ## Install:
 
