@@ -71,15 +71,11 @@ func Start(args []string, devcontainerPath string, vimFilePath string, cdrPath, 
 	// コンテナへ appimage を転送して実行権限を追加
 	// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
 	containerID := upCommandResult.ContainerID
-	dockerCpArgs := []string{"cp", vimFilePath, containerID + ":/"}
-	fmt.Printf("Copy AppImage: `%s \"%s\"` ...", containerCommand, strings.Join(dockerCpArgs, "\" \""))
-	copyResult, err := exec.Command(containerCommand, dockerCpArgs...).CombinedOutput()
+
+	err = docker.Cp("vim", vimFilePath, containerID, "/")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "AppImage copy error.")
-		fmt.Fprintln(os.Stderr, string(copyResult))
 		return err
 	}
-	fmt.Printf(" done.\n")
 
 	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> chmod +x /Vim-AppImage`
 	dockerChownArgs := []string{"exec", "--user", "root", containerID, "sh", "-c", "chmod +x /" + vimFileName}
