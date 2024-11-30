@@ -31,7 +31,7 @@ func (e *UnknownTypeError) Error() string {
 
 // devcontainer でコンテナを立ち上げ、 Vim を転送し、実行する。
 // 既存実装の都合上、configFilePath から configDirForDevcontainer を抽出している
-func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath string, cdrPath, configFilePath string, vimrc string) error {
+func Start(args []string, devcontainerPath string, vimFilePath string, cdrPath, configFilePath string, vimrc string) error {
 
 	vimFileName := filepath.Base(vimFilePath)
 
