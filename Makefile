@@ -21,7 +21,8 @@ WATCH_SRC := ./main.go \
 						 ./dockercompose/dockerComposePsResult.go \
 						 ./tools/tools.go \
 						 ./tools/devcontainer.go \
-						 ./tools/devcontainer_nowindows.go \
+						 ./tools/devcontainer_darwin.go \
+						 ./tools/devcontainer_linux.go \
 						 ./tools/devcontainer_windows.go \
 						 ./tools/clipboard-data-receiver.go \
 						 ./util/util.go
