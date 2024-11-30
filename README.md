@@ -303,7 +303,7 @@ devcontainer.vim runargs -g
 
 - amd64 のコンテナしか使用できません
 - alpine 系のコンテナでは使用できません
-- macOS での動作検証はしていません
+- arm 系 macOS では動作しません
 
 
 ## Install:
