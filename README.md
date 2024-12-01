@@ -45,7 +45,7 @@ NAME:
    devcontainer.vim - devcontainer for vim.
 
 USAGE:
-   devcontainer.vim [global options] command [command options] 
+   devcontainer.vim [global options] command [command options]
 
 VERSION:
    2.0.1
@@ -61,13 +61,14 @@ COMMANDS:
    runargs             run subcommand's default arguments.
    tool                Management tools
    clean               clean workspace cache files.
-   index               Management dev container templates index file
+   index               Management dev container template index file
    self-update         Update devcontainer.vim itself
    bash-complete-func  Show bash complete func
    help, h             Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --license, -l  show licensesa.
+   --nvim         use NeoVim.
    --help, -h     show help
    --version, -v  print the version
 ```
@@ -259,8 +260,10 @@ deno をコンテナにインストールする例:
 好みに応じて修正してください。
 
 ```vimrc
-nnoremap <silent> "*yy yy:call SendToCdr('"')<CR>
-vnoremap <silent> "*y y:call SendToCdr('"')<CR>
+if !has("nvim")
+  nnoremap <silent> "*yy yy:call SendToCdr('"')<CR>
+  vnoremap <silent> "*y y:call SendToCdr('"')<CR>
+endif
 ```
 
 また、デフォルトに戻したい場合には、 `-g` オプションで vimrc を再生成してください。
@@ -301,12 +304,34 @@ endif
 devcontainer.vim runargs -g
 ```
 
+### NeoVim の利用
+
+「`--nvim` オプションを追加する」または、「`DEVCONTAINRE_VIM_TYPE` に `nvim` を設定する」
+と、 vim の代わりに nvim の AppImage を転送して起動します。
+
+
+## Migration:
+
+### 2.x.x to 3.x.x
+
+2.x.x で Vim を利用しており、 3.x.x から NeoVim を利用する場合、
+`devcontainer.vim vimrc -o` で表示される vimrc のマッピングを削除するか、
+以下のように `if !has("nvim")` でマッピングを囲むかの対応をしてください。
+
+```vim
+if !has("nvim")
+  nnoremap <silent> "*yy yy:call SendToCdr('"')<CR>
+  vnoremap <silent> "*y y:call SendToCdr('"')<CR>
+endif
+```
 
 ## Limitation:
 
 - Windows, Linux では、amd64 のコンテナしか使用できません
 - amd64 では、 alpine 系のコンテナでは使用できません
 - macOS では、arm64 のコンテナしか使用できません
+- NeoVim 利用時には、クリップボード連携が利用できません
+- macOS では、NeoVim を使用できません(代わりに Vim が起動します)
 
 
 ## Install:
