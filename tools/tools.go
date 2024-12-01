@@ -109,8 +109,14 @@ func download(downloadURL string, destPath string) error {
 }
 
 // run サブコマンド用のツールインストール
-func InstallRunTools(installDir string) (string, string, error) {
-	vimPath, err := VIM.Install(installDir, false)
+func InstallRunTools(installDir string, nvim bool) (string, string, error) {
+	var vimPath string
+	var err error
+	if !nvim {
+		vimPath, err = VIM.Install(installDir, false)
+	} else {
+		vimPath, err = NVIM.Install(installDir, false)
+	}
 	if err != nil {
 		return vimPath, "", err
 	}
@@ -123,8 +129,14 @@ func InstallRunTools(installDir string) (string, string, error) {
 
 // start サブコマンド用のツールインストール
 // 戻り値は、 vimPath, devcontainerPath, cdrPath, error
-func InstallStartTools(installDir string) (string, string, string, error) {
-	vimPath, err := VIM.Install(installDir, false)
+func InstallStartTools(installDir string, nvim bool) (string, string, string, error) {
+	var vimPath string
+	var err error
+	if !nvim {
+		vimPath, err = VIM.Install(installDir, false)
+	} else {
+		vimPath, err = NVIM.Install(installDir, false)
+	}
 	if err != nil {
 		return vimPath, "", "", err
 	}
