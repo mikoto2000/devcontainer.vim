@@ -37,6 +37,8 @@ type AvailableTemplateItem struct {
 
 var version string
 
+const envDevcontainerVimType = "DEVCONTAINER_VIM_TYPE"
+
 const flagNameLicense = "license"
 const flagNameNeoVim = "nvim"
 
@@ -158,7 +160,7 @@ func main() {
 					// 必要なファイルのダウンロード
 
 					nvim := false
-					if cCtx.Bool(flagNameNeoVim) {
+					if cCtx.Bool(flagNameNeoVim) || os.Getenv(envDevcontainerVimType) == "nvim" {
 						nvim = true
 					}
 					vimPath, cdrPath, err := tools.InstallRunTools(binDir, nvim)
@@ -320,7 +322,7 @@ func main() {
 
 					// 必要なファイルのダウンロード
 					nvim := false
-					if cCtx.Bool(flagNameNeoVim) {
+					if cCtx.Bool(flagNameNeoVim) || os.Getenv(envDevcontainerVimType) == "nvim" {
 						nvim = true
 					}
 					vimPath, devcontainerPath, cdrPath, err := tools.InstallStartTools(binDir, nvim)
