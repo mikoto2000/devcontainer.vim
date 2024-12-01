@@ -314,9 +314,7 @@ devcontainer.vim runargs -g
 
 ### 2.x.x to 3.x.x
 
-2.x.x で Vim を利用しており、 3.x.x から NeoVim を利用する場合、
-`devcontainer.vim vimrc -o` で表示される vimrc のマッピングを削除するか、
-以下のように `if !has("nvim")` でマッピングを囲むかの対応をしてください。
+devcontainer.vim 2.x.x で Vim を利用しており、devcontainer.vim 3.x.x から NeoVim を利用する場合、`devcontainer.vim vimrc -o` で表示される vimrc のマッピングを削除するか、以下のように `if !has("nvim")` でマッピングを囲むかの対応をしてください。
 
 ```vim
 if !has("nvim")

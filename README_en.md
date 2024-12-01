@@ -45,7 +45,7 @@ NAME:
    devcontainer.vim - devcontainer for vim.
 
 USAGE:
-   devcontainer.vim [global options] command [command options] 
+   devcontainer.vim [global options] command [command options]
 
 VERSION:
    2.0.1
@@ -61,13 +61,14 @@ COMMANDS:
    runargs             run subcommand's default arguments.
    tool                Management tools
    clean               clean workspace cache files.
-   index               Management dev container templates index file
+   index               Management dev container template index file
    self-update         Update devcontainer.vim itself
    bash-complete-func  Show bash complete func
    help, h             Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --license, -l  show licensesa.
+   --nvim         use NeoVim.
    --help, -h     show help
    --version, -v  print the version
 ```
@@ -266,8 +267,10 @@ Adjust as desired.
 The default is as follows:
 
 ```vimrc
-nnoremap <silent> "*yy yy:call SendToCdr('"')<CR>
-vnoremap <silent> "*y y:call SendToCdr('"')<CR>
+if !has("nvim")
+  nnoremap <silent> "*yy yy:call SendToCdr('"')<CR>
+  vnoremap <silent> "*y y:call SendToCdr('"')<CR>
+endif
 ```
 
 To revert to the default, regenerate vimrc with the `-g` option.
@@ -310,11 +313,32 @@ devcontainer.vim runargs -g
 ```
 
 
+### Using NeoVim
+
+Add the `--nvim` option or set `DEVCONTAINER_VIM_TYPE` to `nvim` to transfer and launch the nvim AppImage instead of vim
+
+
+## Migration:
+
+### 2.x.x to 3.x.x
+
+If you are using Vim with devcontainer.vim 2.x.x and will start using NeoVim with devcontainer.vim 3.x.x, you need either remove the vimrc mapping shown with `devcontainer.vim vimrc -o` or enclose the mapping with `if !has(“nvim”)` to enclose the mapping.
+
+```vim
+if !has("nvim")
+  nnoremap <silent> "*yy yy:call SendToCdr('"')<CR>
+  vnoremap <silent> "*y y:call SendToCdr('"')<CR>
+endif
+```
+
+
 ## Limitation:
 
 - On Windows and Linux, only amd64 containers can be used.
 - On amd64, alpine-based containers cannot be used.
 - On macOS, only arm64 containers can be used.
+- Clipboard integration is not available when using NeoVim.
+- macOS does not allow the use of NeoVim (Vim is launched instead).
 
 
 ## Install:
