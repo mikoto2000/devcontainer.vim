@@ -10,8 +10,7 @@ import (
 )
 
 // Vim のダウンロード URL
-// TODO: パターン化
-const vimDownloadURLPattern = "https://github.com/mikoto2000/vim-static/releases/download/v0.0.0/vim-9.1.0787-aarch64.tar.gz"
+const vimDownloadURLPattern = "https://github.com/mikoto2000/vim-static/releases/download/{{ .TagName }}/vim-{{ .TagName }}-aarch64.tar.gz"
 
 // Vim のツール情報
 var VIM Tool = Tool{
