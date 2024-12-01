@@ -657,8 +657,8 @@ func main() {
 						Subcommands: []*cli.Command{
 							{
 								Name:            "download",
-								Usage:           "Download newly devcontainer cli",
-								UsageText:       "devcontainer.vim tool devcontainer download",
+								Usage:           "Download newly clipboard-data-receiver cli",
+								UsageText:       "devcontainer.vim tool clipboard-data-receiver download",
 								HideHelp:        false,
 								SkipFlagParsing: false,
 								Action: func(cCtx *cli.Context) error {
