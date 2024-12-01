@@ -81,7 +81,7 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 
 	// コンテナへ appimage を転送して実行権限を追加
 	// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
-	err = Cp("AppImage", vimFilePath, containerID, "/")
+	err = Cp("vim", vimFilePath, containerID, "/")
 	if err != nil {
 		return err
 	}
@@ -121,14 +121,7 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	dockerVimArgs := []string{
-		"exec",
-		"-it",
-		containerID,
-		"sh",
-		"-c",
-		"cd ~; /" + vimFileName + " --appimage-extract > /dev/null; cd -; ~/squashfs-root/AppRun --cmd \"let g:devcontainer_vim = v:true\" -S /SendToTcp.vim -S /vimrc",
-	}
+	dockerVimArgs := DockerVimArgs(containerID, vimFileName)
 	fmt.Printf("Start vim: `%s \"%s\"`\n", containerCommand, strings.Join(dockerVimArgs, "\" \""))
 	dockerExec := exec.CommandContext(ctx, containerCommand, dockerVimArgs...)
 	dockerExec.Stdin = os.Stdin
