@@ -37,7 +37,10 @@ type AvailableTemplateItem struct {
 
 var version string
 
+const envDevcontainerVimType = "DEVCONTAINER_VIM_TYPE"
+
 const flagNameLicense = "license"
+const flagNameNeoVim = "nvim"
 
 const flagNameGenerate = "generate"
 const flagNameHome = "home"
@@ -84,7 +87,7 @@ func main() {
 	// vimrc ファイルの出力先を組み立て
 	// vimrc を出力(既に存在するなら何もしない)
 	vimrc := filepath.Join(appConfigDir, "vimrc")
-	if (!util.IsExists(vimrc)) {
+	if !util.IsExists(vimrc) {
 		err := util.CreateFileWithContents(vimrc, additionalVimrc, 0666)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating vimrc file: %v\n", err)
@@ -96,7 +99,7 @@ func main() {
 	// runargs ファイルの出力先を組み立て
 	// runargs を出力(既に存在するなら何もしない)
 	runargs := filepath.Join(appConfigDir, "runargs")
-	if (!util.IsExists(runargs)) {
+	if !util.IsExists(runargs) {
 		err := util.CreateFileWithContents(runargs, runargsContent, 0666)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating runargs file: %v\n", err)
@@ -117,6 +120,12 @@ func main() {
 				Value:              false,
 				DisableDefaultText: true,
 				Usage:              "show licensesa.",
+			},
+			&cli.BoolFlag{
+				Name:               flagNameNeoVim,
+				Value:              false,
+				DisableDefaultText: true,
+				Usage:              "use NeoVim.",
 			},
 		},
 		Action: func(cCtx *cli.Context) error {
@@ -149,7 +158,12 @@ func main() {
 					}
 
 					// 必要なファイルのダウンロード
-					vimPath, cdrPath, err := tools.InstallRunTools(binDir)
+
+					nvim := false
+					if cCtx.Bool(flagNameNeoVim) || os.Getenv(envDevcontainerVimType) == "nvim" {
+						nvim = true
+					}
+					vimPath, cdrPath, err := tools.InstallRunTools(binDir, nvim)
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "Error installing run tools: %v\n", err)
 						os.Exit(1)
@@ -211,7 +225,7 @@ func main() {
 							// Features の一覧をダウンロード
 							indexFileName := "devcontainer-index.json"
 							indexFile := filepath.Join(appCacheDir, indexFileName)
-							if (!util.IsExists(indexFile)) {
+							if !util.IsExists(indexFile) {
 								fmt.Println("Download template index ... ")
 								err := oras.Pull("ghcr.io/devcontainers/index", "latest", appCacheDir)
 								if err != nil {
@@ -307,7 +321,11 @@ func main() {
 					// devcontainer でコンテナを立てる
 
 					// 必要なファイルのダウンロード
-					vimPath, devcontainerPath, cdrPath, err := tools.InstallStartTools(binDir)
+					nvim := false
+					if cCtx.Bool(flagNameNeoVim) || os.Getenv(envDevcontainerVimType) == "nvim" {
+						nvim = true
+					}
+					vimPath, devcontainerPath, cdrPath, err := tools.InstallStartTools(binDir, nvim)
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "Error installing start tools: %v\n", err)
 						os.Exit(1)
@@ -622,6 +640,33 @@ func main() {
 						},
 					},
 					{
+						Name:            "nvim",
+						Usage:           "Management nvim",
+						UsageText:       "devcontainer.vim tool nvim SUB_COMMAND",
+						HideHelp:        false,
+						SkipFlagParsing: false,
+						Subcommands: []*cli.Command{
+							{
+								Name:            "download",
+								Usage:           "Download newly nvim",
+								UsageText:       "devcontainer.vim tool nvim download",
+								HideHelp:        false,
+								SkipFlagParsing: false,
+								Action: func(cCtx *cli.Context) error {
+
+									// NeoVim のダウンロード
+									_, err := tools.NVIM.Install(binDir, true)
+									if err != nil {
+										fmt.Fprintf(os.Stderr, "Error installing nvim: %v\n", err)
+										os.Exit(1)
+									}
+
+									return nil
+								},
+							},
+						},
+					},
+					{
 						Name:            "devcontainer",
 						Usage:           "Management devcontainer cli",
 						UsageText:       "devcontainer.vim tool devcontainer SUB_COMMAND",
@@ -767,7 +812,7 @@ func main() {
 				Usage:     "Show bash complete func",
 				UsageText: "devcontainer.vim bash-complete-func",
 				Action: func(cCtx *cli.Context) error {
-					fmt.Printf(bash_complete_func);
+					fmt.Printf(bash_complete_func)
 					return nil
 				},
 			},

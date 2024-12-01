@@ -23,12 +23,14 @@ const downloadURLCdrPattern = "https://github.com/mikoto2000/clipboard-data-rece
 const downloadURLCdrPatternForMac = "https://github.com/mikoto2000/clipboard-data-receiver/releases/download/{{ .TagName }}/clipboard-data-receiver.darwin-amd64"
 const downloadURLCdrPatternForWindows = "https://github.com/mikoto2000/clipboard-data-receiver/releases/download/{{ .TagName }}/clipboard-data-receiver.windows-amd64.exe"
 
-const vimScriptTemplateSendToCdr = `function! SendToCdr(register) abort
-  let text = getreg(a:register)
-  let l:channelToCdr = ch_open("host.docker.internal:{{ .Port }}", {"mode": "raw"})
-  call ch_sendraw(channelToCdr, l:text, {})
-  call ch_close(l:channelToCdr)
-endfunction`
+const vimScriptTemplateSendToCdr = `if !has("nvim")
+  function! SendToCdr(register) abort
+    let text = getreg(a:register)
+    let l:channelToCdr = ch_open("host.docker.internal:{{ .Port }}", {"mode": "raw"})
+    call ch_sendraw(channelToCdr, l:text, {})
+    call ch_close(l:channelToCdr)
+  endfunction
+endif`
 
 // clipboard-data-receiver のツール情報
 var CDR Tool = func() Tool {
