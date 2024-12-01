@@ -35,6 +35,9 @@ VSCode 向けに作成された `devcontainer.json` に追加する形で Vim �
 - docker
 
 
+ARM の場合、コンテナ内に `tar` コマンドが存在していること
+
+
 ## Usage:
 
 ```
@@ -301,9 +304,9 @@ devcontainer.vim runargs -g
 
 ## Limitation:
 
-- amd64 のコンテナしか使用できません
-- alpine 系のコンテナでは使用できません
-- arm 系 macOS では動作しません
+- Windows, Linux では、amd64 のコンテナしか使用できません
+- amd64 では、 alpine 系のコンテナでは使用できません
+- macOS では、arm64 のコンテナしか使用できません
 
 
 ## Install:

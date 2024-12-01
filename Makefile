@@ -1,8 +1,9 @@
 APP_NAME := devcontainer.vim
-GOARCH := amd64
-WINDOWS_BINARY_NAME := ${APP_NAME}-windows-${GOARCH}.exe
-LINUX_BINARY_NAME := ${APP_NAME}-linux-${GOARCH}
-DARWIN_BINARY_NAME := ${APP_NAME}-darwin-${GOARCH}
+GOARCH_AMD64 := amd64
+GOARCH_ARM64 := arm64
+WINDOWS_BINARY_NAME := ${APP_NAME}-windows-${GOARCH_AMD64}.exe
+LINUX_BINARY_NAME := ${APP_NAME}-linux-${GOARCH_AMD64}
+DARWIN_BINARY_NAME := ${APP_NAME}-darwin-${GOARCH_ARM64}
 
 GO_BIN := ${GOPATH}/bin
 VERSION := 1.3.1
@@ -13,6 +14,9 @@ DEST := ./build
 WATCH_SRC := ./main.go \
 						 ./devcontainer/DevcontainerJson.go \
 						 ./devcontainer/devcontainer.go \
+						 ./devcontainer/dockerVimArgs_darwin_arm64.go \
+						 ./devcontainer/dockerVimArgs_linux_amd64.go \
+						 ./devcontainer/dockerVimArgs_windows_amd64.go \
 						 ./devcontainer/readConfigurationResult.go \
 						 ./devcontainer/upCommandResult.go \
 						 ./docker/docker.go \
@@ -20,8 +24,12 @@ WATCH_SRC := ./main.go \
 						 ./dockercompose/dockerCompose.go \
 						 ./dockercompose/dockerComposePsResult.go \
 						 ./tools/tools.go \
+						 ./tools/vim_linux_amd64.go \
+						 ./tools/vim_darwin_arm64.go \
+						 ./tools/vim_windows_amd64.go \
 						 ./tools/devcontainer.go \
-						 ./tools/devcontainer_nowindows.go \
+						 ./tools/devcontainer_darwin.go \
+						 ./tools/devcontainer_linux.go \
 						 ./tools/devcontainer_windows.go \
 						 ./tools/clipboard-data-receiver.go \
 						 ./util/util.go
@@ -38,15 +46,15 @@ build-all: build-windows build-linux build-darwin
 
 build-windows: build/${WINDOWS_BINARY_NAME}
 build/${WINDOWS_BINARY_NAME}: ${WATCH_SRC}
-	GOOS=windows GOARCH=${GOARCH} go build -ldflags=${LD_FLAGS} -trimpath -o build/${WINDOWS_BINARY_NAME}
+	GOOS=windows GOARCH=${GOARCH_AMD64} go build -ldflags=${LD_FLAGS} -trimpath -o build/${WINDOWS_BINARY_NAME}
 
 build-linux: build/${LINUX_BINARY_NAME}
 build/${LINUX_BINARY_NAME}: ${WATCH_SRC}
-	GOOS=linux GOARCH=${GOARCH} go build -ldflags=${LD_FLAGS} -trimpath -o build/${LINUX_BINARY_NAME}
+	GOOS=linux GOARCH=${GOARCH_AMD64} go build -ldflags=${LD_FLAGS} -trimpath -o build/${LINUX_BINARY_NAME}
 
 build-darwin: build/${DARWIN_BINARY_NAME}
 build/${DARWIN_BINARY_NAME}: ${WATCH_SRC}
-	GOOS=darwin GOARCH=${GOARCH} go build -ldflags=${LD_FLAGS} -trimpath -o build/${DARWIN_BINARY_NAME}
+	GOOS=darwin GOARCH=${GOARCH_ARM64} go build -ldflags=${LD_FLAGS} -trimpath -o build/${DARWIN_BINARY_NAME}
 
 .PHONY: lint
 lint:

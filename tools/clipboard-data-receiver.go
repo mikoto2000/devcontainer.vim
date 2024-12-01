@@ -15,10 +15,12 @@ import (
 )
 
 const CdrFileName = "clipboard-data-receiver"
+const CdrFileNameForMac = "clipboard-data-receiver"
 const cdrFileNameForWindows = "clipboard-data-receiver.exe"
 
 // clipboard-data-receiver のダウンロード URL
 const downloadURLCdrPattern = "https://github.com/mikoto2000/clipboard-data-receiver/releases/download/{{ .TagName }}/clipboard-data-receiver.linux-amd64"
+const downloadURLCdrPatternForMac = "https://github.com/mikoto2000/clipboard-data-receiver/releases/download/{{ .TagName }}/clipboard-data-receiver.darwin-amd64"
 const downloadURLCdrPatternForWindows = "https://github.com/mikoto2000/clipboard-data-receiver/releases/download/{{ .TagName }}/clipboard-data-receiver.windows-amd64.exe"
 
 const vimScriptTemplateSendToCdr = `function! SendToCdr(register) abort
@@ -39,6 +41,9 @@ var CDR Tool = func() Tool {
 	if util.IsWsl() {
 		cdrFileName = cdrFileNameForWindows
 		tmpl, err = template.New("ducp").Parse(downloadURLCdrPatternForWindows)
+	} else if runtime.GOOS == "darwin" {
+		cdrFileName = CdrFileNameForMac
+		tmpl, err = template.New("ducp").Parse(downloadURLCdrPatternForMac)
 	} else {
 		cdrFileName = CdrFileName
 		tmpl, err = template.New("ducp").Parse(downloadURLCdrPattern)

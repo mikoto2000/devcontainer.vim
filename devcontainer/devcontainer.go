@@ -31,7 +31,7 @@ func (e *UnknownTypeError) Error() string {
 
 // devcontainer でコンテナを立ち上げ、 Vim を転送し、実行する。
 // 既存実装の都合上、configFilePath から configDirForDevcontainer を抽出している
-func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath string, cdrPath, configFilePath string, vimrc string) error {
+func Start(args []string, devcontainerPath string, vimFilePath string, cdrPath, configFilePath string, vimrc string) error {
 
 	vimFileName := filepath.Base(vimFilePath)
 
@@ -71,15 +71,11 @@ func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath str
 	// コンテナへ appimage を転送して実行権限を追加
 	// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
 	containerID := upCommandResult.ContainerID
-	dockerCpArgs := []string{"cp", vimFilePath, containerID + ":/"}
-	fmt.Printf("Copy AppImage: `%s \"%s\"` ...", containerCommand, strings.Join(dockerCpArgs, "\" \""))
-	copyResult, err := exec.Command(containerCommand, dockerCpArgs...).CombinedOutput()
+
+	err = docker.Cp("vim", vimFilePath, containerID, "/")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "AppImage copy error.")
-		fmt.Fprintln(os.Stderr, string(copyResult))
 		return err
 	}
-	fmt.Printf(" done.\n")
 
 	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> chmod +x /Vim-AppImage`
 	dockerChownArgs := []string{"exec", "--user", "root", containerID, "sh", "-c", "chmod +x /" + vimFileName}
@@ -116,15 +112,7 @@ func ExecuteDevcontainer(args []string, devcontainerPath string, vimFilePath str
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	dockerVimArgs := []string{
-		"exec",
-		"--container-id",
-		containerID,
-		"--workspace-folder",
-		workspaceFolder,
-		"sh",
-		"-c",
-		"cd ~; /" + vimFileName + " --appimage-extract > /dev/null; cd -; ~/squashfs-root/AppRun --cmd \"let g:devcontainer_vim = v:true\" -S /SendToTcp.vim -S /vimrc"}
+	dockerVimArgs := DockerVimArgs(containerID, workspaceFolder, vimFileName)
 	fmt.Printf("Start vim: `%s \"%s\"`\n", devcontainerPath, strings.Join(dockerVimArgs, "\" \""))
 	dockerExec := exec.CommandContext(ctx, devcontainerPath, dockerVimArgs...)
 	dockerExec.Stdin = os.Stdin
