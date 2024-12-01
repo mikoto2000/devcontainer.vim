@@ -622,6 +622,33 @@ func main() {
 						},
 					},
 					{
+						Name:            "nvim",
+						Usage:           "Management nvim",
+						UsageText:       "devcontainer.vim tool nvim SUB_COMMAND",
+						HideHelp:        false,
+						SkipFlagParsing: false,
+						Subcommands: []*cli.Command{
+							{
+								Name:            "download",
+								Usage:           "Download newly nvim",
+								UsageText:       "devcontainer.vim tool nvim download",
+								HideHelp:        false,
+								SkipFlagParsing: false,
+								Action: func(cCtx *cli.Context) error {
+
+									// NeoVim のダウンロード
+									_, err := tools.NVIM.Install(binDir, true)
+									if err != nil {
+										fmt.Fprintf(os.Stderr, "Error installing nvim: %v\n", err)
+										os.Exit(1)
+									}
+
+									return nil
+								},
+							},
+						},
+					},
+					{
 						Name:            "devcontainer",
 						Usage:           "Management devcontainer cli",
 						UsageText:       "devcontainer.vim tool devcontainer SUB_COMMAND",

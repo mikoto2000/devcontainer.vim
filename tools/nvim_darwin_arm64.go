@@ -1,4 +1,7 @@
-//go:build linux && amd64
+//go:build darwin
+
+// ARM 版スタティックリンク NeoVim が存在しないため、
+// Vim のスタティックリンクバイナリで我慢してもらう。
 
 package tools
 
@@ -10,13 +13,13 @@ import (
 )
 
 // Vim のダウンロード URL
-const vimDownloadURLPattern = "https://github.com/neovim/neovim/releases/download/{{ .TagName }}/nvim.appimage"
+const nvimDownloadURLPattern = "https://github.com/mikoto2000/vim-static/releases/download/{{ .TagName }}/vim-{{ .TagName }}-aarch64.tar.gz"
 
 // Vim のツール情報
-var VIM Tool = Tool{
+var NVIM Tool = Tool{
 	FileName: "vim",
 	CalculateDownloadURL: func() string {
-		latestTagName, err := util.GetLatestReleaseFromGitHub("neovim", "neovim")
+		latestTagName, err := util.GetLatestReleaseFromGitHub("mikoto2000", "vim-static")
 		if err != nil {
 			panic(err)
 		}
@@ -36,7 +39,18 @@ var VIM Tool = Tool{
 		return downloadURL.String()
 	},
 	installFunc: func(downloadURL string, filePath string) (string, error) {
-		return simpleInstall(downloadURL, filePath)
+		_, err := simpleInstall(downloadURL, filePath)
+		if err != nil {
+			return "", err
+		}
+
+		// TODO, tar.gz を展開
+		//err = util.ExtractTarGz(filePath + ".tar.gz" ,filePath)
+		//if err != nil {
+		//	return "", err
+		//}
+		return filePath, nil
+
 	},
 }
 

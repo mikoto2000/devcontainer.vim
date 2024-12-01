@@ -7,6 +7,7 @@ _completion_devcontainer_vim(){
     local subcommands_templates="apply"
     local subcommands_tool="vim devcontainer clipboard-data-receiver"
     local subcommands_tool_vim="download"
+    local subcommands_tool_nvim="download"
     local subcommands_tool_devcontainer="download"
     local subcommands_tool_clipboard_data_receiver="download"
     local subcommands_index="update"
@@ -26,6 +27,9 @@ _completion_devcontainer_vim(){
                 ;;
             vim)
                 COMPREPLY=( $(compgen -W "${subcommands_tool_vim}" -- "${cur}") )
+                ;;
+            nvim)
+                COMPREPLY=( $(compgen -W "${subcommands_tool_nvim}" -- "${cur}") )
                 ;;
             devcontainer)
                 COMPREPLY=( $(compgen -W "${subcommands_tool_devcontainer}" -- "${cur}") )

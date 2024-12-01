@@ -10,11 +10,11 @@ import (
 )
 
 // Vim のダウンロード URL
-const vimDownloadURLPattern = "https://github.com/neovim/neovim/releases/download/{{ .TagName }}/nvim.appimage"
+const nvimDownloadURLPattern = "https://github.com/neovim/neovim/releases/download/{{ .TagName }}/nvim.appimage"
 
 // Vim のツール情報
-var VIM Tool = Tool{
-	FileName: "vim",
+var NVIM Tool = Tool{
+	FileName: "nvim",
 	CalculateDownloadURL: func() string {
 		latestTagName, err := util.GetLatestReleaseFromGitHub("neovim", "neovim")
 		if err != nil {
@@ -39,5 +39,3 @@ var VIM Tool = Tool{
 		return simpleInstall(downloadURL, filePath)
 	},
 }
-
-
