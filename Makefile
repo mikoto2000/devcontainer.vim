@@ -20,6 +20,9 @@ WATCH_SRC := ./main.go \
 						 ./devcontainer/readConfigurationResult.go \
 						 ./devcontainer/upCommandResult.go \
 						 ./docker/docker.go \
+						 ./docker/dockerVimArgs_darwin_arm64.go \
+						 ./docker/dockerVimArgs_linux_amd64.go \
+						 ./docker/dockerVimArgs_windows_amd64.go \
 						 ./docker/dockerPsResult.go \
 						 ./dockercompose/dockerCompose.go \
 						 ./dockercompose/dockerComposePsResult.go \
