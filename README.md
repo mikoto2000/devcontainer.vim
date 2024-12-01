@@ -15,7 +15,7 @@ VSCode 向けに作成された `devcontainer.json` に追加する形で Vim �
 ## Features:
 
 - 開発用コンテナを立ち上げ、そこに Vim を転送し、起動する
-    - `devcontainre.json` が無いプロジェクトで、ワンショットで開発用コンテナを立ち上げる
+    - `devcontainer.json` が無いプロジェクトで、ワンショットで開発用コンテナを立ち上げる
         - docker に渡す引数のカスタマイズができる
     - `devcontainer.json` が無いプロジェクトに、`devcontainer.json` のテンプレートを追加できる
     - `devcontainer.json` があるプロジェクトで、開発用コンテナを開始・停止・削除できる
@@ -306,7 +306,7 @@ devcontainer.vim runargs -g
 
 ### NeoVim の利用
 
-「`--nvim` オプションを追加する」または、「`DEVCONTAINRE_VIM_TYPE` に `nvim` を設定する」
+「`--nvim` オプションを追加する」または、「`DEVCONTAINER_VIM_TYPE` に `nvim` を設定する」
 と、 vim の代わりに nvim の AppImage を転送して起動します。
 
 
