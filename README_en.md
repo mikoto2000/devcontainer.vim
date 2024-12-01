@@ -35,6 +35,8 @@ The following commands are installed and in the PATH.
 
 - docker
 
+For ARM, the `tar` command must be present in the container.
+
 
 ## Usage:
 
@@ -310,9 +312,9 @@ devcontainer.vim runargs -g
 
 ## Limitation:
 
-- Only amd64 containers can be used
-- Not supported in Alpine-based containers
-- Does not work on arm-based macOS
+- On Windows and Linux, only amd64 containers can be used.
+- On amd64, alpine-based containers cannot be used.
+- On macOS, only arm64 containers can be used.
 
 
 ## Install:
