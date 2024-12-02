@@ -113,7 +113,13 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	dockerRunVimArgs := dockerRunVimArgs(containerID, vimFileName)
+	useSystemVim := false
+	out, err := docker.Exec(containerID, "which", "vim")
+	if err != nil || out != "" {
+		useSystemVim = true
+	}
+
+	dockerRunVimArgs := dockerRunVimArgs(containerID, vimFileName, useSystemVim)
 	fmt.Printf("Start vim: `%s \"%s\"`\n", containerCommand, strings.Join(dockerRunVimArgs, "\" \""))
 	dockerExec := exec.CommandContext(ctx, containerCommand, dockerRunVimArgs...)
 	dockerExec.Stdin = os.Stdin

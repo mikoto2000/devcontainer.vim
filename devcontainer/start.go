@@ -98,7 +98,13 @@ func Start(args []string, devcontainerPath string, vimFilePath string, cdrPath, 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	devcontainerStartVimArgs := devcontainerStartVimArgs(containerID, workspaceFolder, vimFileName)
+	useSystemVim := false
+	out, err := docker.Exec(containerID, "which", "vim")
+	if err != nil || out != "" {
+		useSystemVim = true
+	}
+
+	devcontainerStartVimArgs := devcontainerStartVimArgs(containerID, workspaceFolder, vimFileName, useSystemVim)
 	fmt.Printf("Start vim: `%s \"%s\"`\n", devcontainerPath, strings.Join(devcontainerStartVimArgs, "\" \""))
 	dockerExec := exec.CommandContext(ctx, devcontainerPath, devcontainerStartVimArgs...)
 	dockerExec.Stdin = os.Stdin
