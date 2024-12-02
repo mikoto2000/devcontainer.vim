@@ -15,7 +15,7 @@ It's a tool that adds and starts settings for Vim-based Dev Container developmen
 
 ## Features:
 
-- Set up a development container, transfer Vim to it, and start it.
+- Set up a development container, transfer Vim/NeoVim to it, and start it.
     - For projects without `devcontainre.json`, launch a development container in a single shot
         - You can customize the arguments passed to docker.
     - Add a template for `devcontainer.json` to projects that don't have a `devcontainer.json` file
@@ -23,6 +23,7 @@ It's a tool that adds and starts settings for Vim-based Dev Container developmen
     - In addition to `devcontainer.json`, you can add settings for `devcontainer.vim`
       to the development container by specifying `devcontainer.vim.json`.
     - You can define a vimrc to be used with Vim launched in a development container.
+    - If the path to Vim/NeoVim is set in the development container, use it.
 - The text copied in Vim on the development container can be pasted to the clipboard of the host PC.
 - Transfer tools to be used in the development container to make them usable in the development container.
 - Tools such as `vim`, `devcontainer`, and `clipboard-data-receiver` can be updated.
@@ -34,6 +35,7 @@ It's a tool that adds and starts settings for Vim-based Dev Container developmen
 The following commands are installed and in the PATH.
 
 - docker
+- which
 
 For ARM, the `tar` command must be present in the container.
 
@@ -315,7 +317,7 @@ devcontainer.vim runargs -g
 
 ### Using NeoVim
 
-Add the `--nvim` option or set `DEVCONTAINER_VIM_TYPE` to `nvim` to transfer and launch the nvim AppImage instead of vim
+By adding the `--nvim` option or setting the environment variable `DEVCONTAINER_VIM_TYPE` to `nvim`, the nvim AppImage will be transferred and launched instead of vim.
 
 
 ## Migration:
@@ -338,7 +340,7 @@ endif
 - On amd64, alpine-based containers cannot be used.
 - On macOS, only arm64 containers can be used.
 - Clipboard integration is not available when using NeoVim.
-- macOS does not allow the use of NeoVim (Vim is launched instead).
+- If you use NeoVim on macOS, you can only use the system-installed NeoVim.
 
 
 ## Install:

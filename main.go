@@ -15,7 +15,6 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/mikoto2000/devcontainer.vim/v3/devcontainer"
-	"github.com/mikoto2000/devcontainer.vim/v3/docker"
 	"github.com/mikoto2000/devcontainer.vim/v3/oras"
 	"github.com/mikoto2000/devcontainer.vim/v3/tools"
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
@@ -180,7 +179,7 @@ func main() {
 					if runtime.GOOS == "windows" {
 						// コンテナ起動
 						// windows はシェル変数展開が上手くいかないので runargs を使用しない
-						err = docker.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker, vimrc, []string{})
+						err = devcontainer.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker, vimrc, []string{})
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Error running docker: %v\n", err)
 							os.Exit(1)
@@ -201,7 +200,7 @@ func main() {
 						}
 
 						// コンテナ起動
-						err = docker.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker, vimrc, defaultRunargs)
+						err = devcontainer.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker, vimrc, defaultRunargs)
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Error running docker: %v\n", err)
 							os.Exit(1)
