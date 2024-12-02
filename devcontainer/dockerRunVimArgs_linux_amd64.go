@@ -1,8 +1,8 @@
 //go:build linux && amd64
 
-package docker
+package devcontainer
 
-func DockerVimArgs(containerID string, vimFileName string) []string {
+func dockerRunVimArgs(containerID string, vimFileName string) []string {
 	return []string{
 		"exec",
 		"-it",
