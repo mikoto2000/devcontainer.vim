@@ -14,7 +14,7 @@ VSCode 向けに作成された `devcontainer.json` に追加する形で Vim �
 
 ## Features:
 
-- 開発用コンテナを立ち上げ、そこに Vim を転送し、起動する
+- 開発用コンテナを立ち上げ、そこに Vim/NeoVim を転送し、起動する
     - `devcontainer.json` が無いプロジェクトで、ワンショットで開発用コンテナを立ち上げる
         - docker に渡す引数のカスタマイズができる
     - `devcontainer.json` が無いプロジェクトに、`devcontainer.json` のテンプレートを追加できる
@@ -22,6 +22,7 @@ VSCode 向けに作成された `devcontainer.json` に追加する形で Vim �
     - `devcontainer.json` とは別に、 `devcontainer.vim.json` を記述することで
       開発用コンテナに `devcontainer.vim` 用の設定を追加できる
     - 開発用コンテナで起動する Vim に追加で設定する vimrc を定義できる
+    - 開発コンテナ内に Vim/NeoVim のパスが通っている場合、それを利用する
 - 開発用コンテナ上の Vim でヤンクした文字列を、ホスト PC のクリップボードへ貼り付けられる
 - 開発用コンテナ内で使用するしたいツールを、開発用コンテナに転送して使用可能にする
 - `vim`, `devcontainer`, `clipboard-data-receiver` など、使用するツールのアップデートができる
@@ -33,6 +34,7 @@ VSCode 向けに作成された `devcontainer.json` に追加する形で Vim �
 以下コマンドがインストール済みで、PATH が通っていること。
 
 - docker
+- which
 
 
 ARM の場合、コンテナ内に `tar` コマンドが存在していること
@@ -306,8 +308,8 @@ devcontainer.vim runargs -g
 
 ### NeoVim の利用
 
-「`--nvim` オプションを追加する」または、「`DEVCONTAINER_VIM_TYPE` に `nvim` を設定する」
-と、 vim の代わりに nvim の AppImage を転送して起動します。
+「`--nvim` オプションを追加する」または、「環境変数 `DEVCONTAINER_VIM_TYPE` に `nvim` を設定する」
+ことで、 vim の代わりに nvim の AppImage を転送して起動します。
 
 
 ## Migration:
@@ -329,7 +331,7 @@ endif
 - amd64 では、 alpine 系のコンテナでは使用できません
 - macOS では、arm64 のコンテナしか使用できません
 - NeoVim 利用時には、クリップボード連携が利用できません
-- macOS では、NeoVim を使用できません(代わりに Vim が起動します)
+- macOS で NeoVim を利用する場合は、システムインストールの NeoVim しか利用できません
 
 
 ## Install:
