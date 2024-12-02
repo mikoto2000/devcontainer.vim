@@ -2,6 +2,15 @@
 
 package devcontainer
 
+// `devcontainer.vim run` 時の `docker exec` の引数を組み立てる
+//
+// Args:
+//     - containerID: コンテナ ID
+//     - vimFileName: コンテナ上に転送した vim のファイル名
+//     - useSystemVim: vim or nvim of ""(空文字) 空文字でない場合は、
+//       システムにインストールされた vim/nvim を使用する
+// Return:
+//     `docker exec` に使うコマンドライン引数の配列
 func dockerRunVimArgs(containerID string, vimFileName string, useSystemVim string) []string {
 	if useSystemVim != "" {
 		return []string{

@@ -2,6 +2,16 @@
 
 package devcontainer
 
+// `devcontainer.vim start` 時の `devcontainer exec` の引数を組み立てる
+//
+// Args:
+//     - containerID: コンテナ ID
+//     - workspaceFolder: ワークスペースフォルダパス
+//     - vimFileName: コンテナ上に転送した vim のファイル名
+//     - useSystemVim: vim or nvim of ""(空文字) 空文字でない場合は、
+//       システムにインストールされた vim/nvim を使用する
+// Return:
+//     `devcontainer exec` に使うコマンドライン引数の配列
 func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFileName string, useSystemVim string) []string {
 	if useSystemVim != ""{
 		return []string{
