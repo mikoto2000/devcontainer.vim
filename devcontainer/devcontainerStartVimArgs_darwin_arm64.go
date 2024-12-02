@@ -2,8 +2,8 @@
 
 package devcontainer
 
-func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFileName string, useSystemVim bool) []string {
-	if useSystemVim {
+func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFileName string, useSystemVim string) []string {
+	if useSystemVim != "" {
 		return []string{
 			"exec",
 			"--container-id",
@@ -12,7 +12,7 @@ func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFil
 			workspaceFolder,
 			"sh",
 			"-c",
-			"vim --cmd \"let g:devcontainer_vim = v:true\" -S /SendToTcp.vim -S /vimrc"}
+			useSystemVim + " --cmd \"let g:devcontainer_vim = v:true\" -S /SendToTcp.vim -S /vimrc"}
 	} else {
 		return []string{
 			"exec",
