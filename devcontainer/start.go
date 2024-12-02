@@ -58,21 +58,35 @@ func Start(args []string, devcontainerPath string, vimFilePath string, cdrPath, 
 	// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
 	containerID := upCommandResult.ContainerID
 
-	err = docker.Cp("vim", vimFilePath, containerID, "/")
-	if err != nil {
-		return err
+	useSystemVim := ""
+	vimCommand := filepath.Base(vimFilePath)
+	fmt.Printf("Check system installed %s ... ", vimCommand)
+	out, _ := docker.Exec(containerID, "which", vimCommand)
+	if out != "" {
+		fmt.Printf("found.\n")
+		useSystemVim = vimCommand
+	} else {
+		fmt.Printf("not found.\n")
 	}
+	fmt.Printf("docker exec output: \"%s\".\n", strings.TrimSpace(out))
 
-	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> chmod +x /Vim-AppImage`
-	dockerChownArgs := []string{"exec", "--user", "root", containerID, "sh", "-c", "chmod +x /" + vimFileName}
-	fmt.Printf("Chown AppImage: `%s \"%s\"` ...", containerCommand, strings.Join(dockerChownArgs, "\" \""))
-	chmodResult, err := exec.Command(containerCommand, dockerChownArgs...).CombinedOutput()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "chmod error.")
-		fmt.Fprintln(os.Stderr, string(chmodResult))
-		return err
+	if useSystemVim == "" {
+		err = docker.Cp("vim", vimFilePath, containerID, "/")
+		if err != nil {
+			return err
+		}
+
+		// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> chmod +x /Vim-AppImage`
+		dockerChownArgs := []string{"exec", "--user", "root", containerID, "sh", "-c", "chmod +x /" + vimFileName}
+		fmt.Printf("Chown AppImage: `%s \"%s\"` ...", containerCommand, strings.Join(dockerChownArgs, "\" \""))
+		chmodResult, err := exec.Command(containerCommand, dockerChownArgs...).CombinedOutput()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "chmod error.")
+			fmt.Fprintln(os.Stderr, string(chmodResult))
+			return err
+		}
+		fmt.Printf(" done.\n")
 	}
-	fmt.Printf(" done.\n")
 
 	// Vim 関連ファイルの転送(`SendToTcp.vim` と、追加の `vimrc`)
 	sendToTCP, err := tools.CreateSendToTCP(configDirForDevcontainer, port)
@@ -97,17 +111,6 @@ func Start(args []string, devcontainerPath string, vimFilePath string, cdrPath, 
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
-
-	useSystemVim := ""
-	vimCommand := filepath.Base(vimFilePath)
-	fmt.Printf("Check system installed %s ... ", vimCommand)
-	out, _ := docker.Exec(containerID, "which", vimCommand)
-	if out != "" {
-		fmt.Printf("found.\n")
-		useSystemVim = vimCommand
-	} else {
-		fmt.Printf("not found.\n")
-	}
 
 	devcontainerStartVimArgs := devcontainerStartVimArgs(containerID, workspaceFolder, vimFileName, useSystemVim)
 	fmt.Printf("Start vim: `%s \"%s\"`\n", devcontainerPath, strings.Join(devcontainerStartVimArgs, "\" \""))

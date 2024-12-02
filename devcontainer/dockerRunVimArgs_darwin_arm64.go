@@ -2,8 +2,8 @@
 
 package devcontainer
 
-func dockerRunVimArgs(containerID string, vimFileName string, useSystemVim bool) []string {
-	if useSystemVim {
+func dockerRunVimArgs(containerID string, vimFileName string, useSystemVim string) []string {
+	if useSystemVim != "" {
 		return []string{
 			"exec",
 			"-it",
