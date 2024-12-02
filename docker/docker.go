@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/mikoto2000/devcontainer.vim/tools"
+	"github.com/mikoto2000/devcontainer.vim/v3/tools"
 )
 
 const containerCommand = "docker"

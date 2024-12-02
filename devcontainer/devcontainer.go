@@ -11,10 +11,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mikoto2000/devcontainer.vim/docker"
-	"github.com/mikoto2000/devcontainer.vim/dockercompose"
-	"github.com/mikoto2000/devcontainer.vim/tools"
-	"github.com/mikoto2000/devcontainer.vim/util"
+	"github.com/mikoto2000/devcontainer.vim/v3/docker"
+	"github.com/mikoto2000/devcontainer.vim/v3/dockercompose"
+	"github.com/mikoto2000/devcontainer.vim/v3/tools"
+	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
 const containerCommand = "docker"

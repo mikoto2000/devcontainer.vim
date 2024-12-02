@@ -14,11 +14,11 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/urfave/cli/v2"
 
-	"github.com/mikoto2000/devcontainer.vim/devcontainer"
-	"github.com/mikoto2000/devcontainer.vim/docker"
-	"github.com/mikoto2000/devcontainer.vim/oras"
-	"github.com/mikoto2000/devcontainer.vim/tools"
-	"github.com/mikoto2000/devcontainer.vim/util"
+	"github.com/mikoto2000/devcontainer.vim/v3/devcontainer"
+	"github.com/mikoto2000/devcontainer.vim/v3/docker"
+	"github.com/mikoto2000/devcontainer.vim/v3/oras"
+	"github.com/mikoto2000/devcontainer.vim/v3/tools"
+	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
 type IndexRoot struct {

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/mikoto2000/devcontainer.vim/util"
+	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
 // Vim のダウンロード URL

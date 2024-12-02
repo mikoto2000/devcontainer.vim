@@ -11,7 +11,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/mikoto2000/devcontainer.vim/util"
+	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
 const CdrFileName = "clipboard-data-receiver"
