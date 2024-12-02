@@ -272,6 +272,9 @@ The default is as follows:
 if !has("nvim")
   nnoremap <silent> "*yy yy:call SendToCdr('"')<CR>
   vnoremap <silent> "*y y:call SendToCdr('"')<CR>
+else
+  nnoremap <silent> "*yy yy:lua SendToCdr('"')<CR>
+  vnoremap <silent> "*y y:lua SendToCdr('"')<CR>
 endif
 ```
 
@@ -333,13 +336,26 @@ if !has("nvim")
 endif
 ```
 
+### 3.1.0 to 3.2.0
+
+Clipboard integration with NeoVim has been available since v3.2.0,
+so if you use both Vim and NeoVim, please rewrite your vimrc as follows.
+
+```vim
+if !has("nvim")
+  nnoremap <silent> "*yy yy:call SendToCdr('"')<CR>
+  vnoremap <silent> "*y y:call SendToCdr('"')<CR>
+else
+  nnoremap <silent> "*yy yy:lua SendToCdr('"')<CR>
+  vnoremap <silent> "*y y:lua SendToCdr('"')<CR>
+endif
+```
 
 ## Limitation:
 
 - On Windows and Linux, only amd64 containers can be used.
 - On amd64, alpine-based containers cannot be used.
 - On macOS, only arm64 containers can be used.
-- Clipboard integration is not available when using NeoVim.
 - If you use NeoVim on macOS, you can only use the system-installed NeoVim.
 
 

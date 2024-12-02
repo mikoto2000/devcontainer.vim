@@ -104,7 +104,7 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	}
 
 	// Vim 関連ファイルの転送(`SendToTcp.vim` と、追加の `vimrc`)
-	sendToTCP, err := tools.CreateSendToTCP(configDirForDocker, port)
+	sendToTCP, err := tools.CreateSendToTCP(configDirForDocker, port, vimFileName == "nvim")
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,8 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	dockerRunVimArgs := dockerRunVimArgs(containerID, vimFileName, useSystemVim)
+	sendToTCPName := filepath.Base(sendToTCP)
+	dockerRunVimArgs := dockerRunVimArgs(containerID, vimFileName, sendToTCPName, useSystemVim)
 	fmt.Printf("Start vim: `%s \"%s\"`\n", containerCommand, strings.Join(dockerRunVimArgs, "\" \""))
 	dockerExec := exec.CommandContext(ctx, containerCommand, dockerRunVimArgs...)
 	dockerExec.Stdin = os.Stdin
