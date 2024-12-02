@@ -1,4 +1,4 @@
-module github.com/mikoto2000/devcontainer.vim
+module github.com/mikoto2000/devcontainer.vim/v3
 
 go 1.22.1
 

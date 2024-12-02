@@ -30,3 +30,9 @@ docker run -it --rm -v "$(pwd):/work" --workdir /work --name devcontainer.vim go
 go mod init github.com/mikoto2000/devcontainer.vim
 ```
 
+## Update major version
+
+```sh
+go mod edit -module github.com/mikoto2000/devcontainer.vim/v3
+```
+
