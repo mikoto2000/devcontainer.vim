@@ -5,15 +5,16 @@ package devcontainer
 // `devcontainer.vim start` 時の `devcontainer exec` の引数を組み立てる
 //
 // Args:
-//     - containerID: コンテナ ID
-//     - workspaceFolder: ワークスペースフォルダパス
-//     - vimFileName: コンテナ上に転送した vim のファイル名
-//     - useSystemVim: vim or nvim of ""(空文字) 空文字でない場合は、
-//       システムにインストールされた vim/nvim を使用する
+//   - containerID: コンテナ ID
+//   - workspaceFolder: ワークスペースフォルダパス
+//   - vimFileName: コンテナ上に転送した vim/nvim のファイル名
+//   - useSystemVim: true の場合、システムにインストールした vim/nvim を利用する
+//
 // Return:
-//     `devcontainer exec` に使うコマンドライン引数の配列
-func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFileName string, useSystemVim string) []string {
-	if useSystemVim != "" {
+//
+//	`devcontainer exec` に使うコマンドライン引数の配列
+func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFileName string, useSystemVim bool) []string {
+	if useSystemVim {
 		return []string{
 			"exec",
 			"--container-id",
@@ -22,7 +23,7 @@ func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFil
 			workspaceFolder,
 			"sh",
 			"-c",
-			useSystemVim + " --cmd \"let g:devcontainer_vim = v:true\" -S /SendToTcp.vim -S /vimrc"}
+			vimFileName + " --cmd \"let g:devcontainer_vim = v:true\" -S /SendToTcp.vim -S /vimrc"}
 	} else {
 		return []string{
 			"exec",

@@ -58,19 +58,18 @@ func Start(args []string, devcontainerPath string, vimFilePath string, cdrPath, 
 	// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
 	containerID := upCommandResult.ContainerID
 
-	useSystemVim := ""
-	vimCommand := filepath.Base(vimFilePath)
-	fmt.Printf("Check system installed %s ... ", vimCommand)
-	out, _ := docker.Exec(containerID, "which", vimCommand)
+	useSystemVim := false
+	fmt.Printf("Check system installed %s ... ", vimFileName)
+	out, _ := docker.Exec(containerID, "which", vimFileName)
 	if out != "" {
 		fmt.Printf("found.\n")
-		useSystemVim = vimCommand
+		useSystemVim = true
 	} else {
 		fmt.Printf("not found.\n")
 	}
 	fmt.Printf("docker exec output: \"%s\".\n", strings.TrimSpace(out))
 
-	if useSystemVim == "" {
+	if !useSystemVim {
 		err = docker.Cp("vim", vimFilePath, containerID, "/")
 		if err != nil {
 			return err
