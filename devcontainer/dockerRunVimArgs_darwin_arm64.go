@@ -12,7 +12,7 @@ package devcontainer
 // Return:
 //
 //	`docker exec` に使うコマンドライン引数の配列
-func dockerRunVimArgs(containerID string, vimFileName string, useSystemVim bool) []string {
+func dockerRunVimArgs(containerID string, vimFileName string, sendToTCP string, useSystemVim bool) []string {
 	if useSystemVim {
 		return []string{
 			"exec",
@@ -20,7 +20,7 @@ func dockerRunVimArgs(containerID string, vimFileName string, useSystemVim bool)
 			containerID,
 			"sh",
 			"-c",
-			vimFileName + " --cmd \"let g:devcontainer_vim = v:true\" -S /SendToTcp.vim -S /vimrc"}
+			vimFileName + " --cmd \"let g:devcontainer_vim = v:true\" -S /" + sendToTCP + " -S /vimrc"}
 	} else {
 		return []string{
 			"exec",
@@ -28,6 +28,6 @@ func dockerRunVimArgs(containerID string, vimFileName string, useSystemVim bool)
 			containerID,
 			"sh",
 			"-c",
-			"cd /; tar zxf ./" + vimFileName + " -C ~/ > /dev/null; cd ~; sudo rm -rf ~/vim-static; mv $(ls -d ~/vim-*-aarch64) ~/vim-static;~/vim-static/AppRun --cmd \"let g:devcontainer_vim = v:true\" -S /SendToTcp.vim -S /vimrc"}
+			"cd /; tar zxf ./" + vimFileName + " -C ~/ > /dev/null; cd ~; sudo rm -rf ~/vim-static; mv $(ls -d ~/vim-*-aarch64) ~/vim-static;~/vim-static/AppRun --cmd \"let g:devcontainer_vim = v:true\" -S /" + sendToTCP + " -S /vimrc"}
 	}
 }

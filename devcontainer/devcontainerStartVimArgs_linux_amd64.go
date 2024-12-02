@@ -13,7 +13,7 @@ package devcontainer
 // Return:
 //
 //	`devcontainer exec` に使うコマンドライン引数の配列
-func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFileName string, useSystemVim bool) []string {
+func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFileName string, sendToTCP string, useSystemVim bool) []string {
 	if useSystemVim {
 		return []string{
 			"exec",
@@ -23,7 +23,7 @@ func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFil
 			workspaceFolder,
 			"sh",
 			"-c",
-			vimFileName + " --cmd \"let g:devcontainer_vim = v:true\" -S /SendToTcp.vim -S /vimrc"}
+			vimFileName + " --cmd \"let g:devcontainer_vim = v:true\" -S /" + sendToTCP + " -S /vimrc"}
 	} else {
 		return []string{
 			"exec",
@@ -33,6 +33,6 @@ func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFil
 			workspaceFolder,
 			"sh",
 			"-c",
-			"cd ~; /" + vimFileName + " --appimage-extract > /dev/null; cd -; ~/squashfs-root/AppRun --cmd \"let g:devcontainer_vim = v:true\" -S /SendToTcp.vim -S /vimrc"}
+			"cd ~; /" + vimFileName + " --appimage-extract > /dev/null; cd -; ~/squashfs-root/AppRun --cmd \"let g:devcontainer_vim = v:true\" -S /" + sendToTCP + " -S /vimrc"}
 	}
 }

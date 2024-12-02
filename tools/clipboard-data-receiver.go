@@ -32,6 +32,48 @@ const vimScriptTemplateSendToCdr = `if !has("nvim")
   endfunction
 endif`
 
+const luaScriptTemplateSendToCdr = `function SendToCdr(register)
+  local text = vim.fn.getreg(register)
+  local uv = vim.loop
+  local host = "host.docker.internal"
+  local port = {{ .Port }}
+
+  -- ホスト名を解決
+  uv.getaddrinfo(host, nil, { socktype = "STREAM" }, function(err, res)
+    if err then
+      print("DNS resolution error: " .. err)
+      return
+    end
+
+    local addr = res[1].addr -- 解決されたIPアドレス
+    local client = uv.new_tcp()
+
+    -- TCP接続
+    client:connect(addr, port, function(connect_err)
+      if connect_err then
+        print("Connection error: " .. connect_err)
+        return
+      end
+
+      -- データを送信
+      client:write(text, function(write_err)
+        if write_err then
+          print("Write error: " .. write_err)
+        end
+
+        -- 接続を閉じる
+        client:shutdown(function(shutdown_err)
+          if shutdown_err then
+            print("Shutdown error: " .. shutdown_err)
+          end
+          client:close()
+        end)
+      end)
+    end)
+  end)
+end
+`
+
 // clipboard-data-receiver のツール情報
 var CDR Tool = func() Tool {
 
@@ -199,11 +241,20 @@ func KillCdr(pid int) error {
 	return nil
 }
 
-func CreateSendToTCP(configDir string, port int) (string, error) {
+func CreateSendToTCP(configDir string, port int, nvim bool) (string, error) {
 	// SendToTcp.vim の文字列を組み立て
-	tmpl, err := template.New("SendToTcp").Parse(vimScriptTemplateSendToCdr)
-	if err != nil {
-		return "", err
+	var tmpl *template.Template
+	var err error
+	if nvim {
+		tmpl, err = template.New("SendToTcp").Parse(luaScriptTemplateSendToCdr)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		tmpl, err = template.New("SendToTcp").Parse(vimScriptTemplateSendToCdr)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	tmplParams := map[string]int{"Port": port}
@@ -214,7 +265,12 @@ func CreateSendToTCP(configDir string, port int) (string, error) {
 	}
 
 	// ファイルに出力
-	sendToTCP := filepath.Join(configDir, "SendToTcp.vim")
+	var sendToTCP string
+	if nvim {
+		sendToTCP = filepath.Join(configDir, "SendToTcp.lua")
+	} else {
+		sendToTCP = filepath.Join(configDir, "SendToTcp.vim")
+	}
 	err = os.WriteFile(sendToTCP, []byte(sendToTCPString.String()), 0666)
 	if err != nil {
 		return "", err
