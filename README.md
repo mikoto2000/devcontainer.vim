@@ -265,6 +265,9 @@ deno をコンテナにインストールする例:
 if !has("nvim")
   nnoremap <silent> "*yy yy:call SendToCdr('"')<CR>
   vnoremap <silent> "*y y:call SendToCdr('"')<CR>
+else
+  nnoremap <silent> "*yy yy:lua SendToCdr('"')<CR>
+  vnoremap <silent> "*y y:lua SendToCdr('"')<CR>
 endif
 ```
 
@@ -325,12 +328,26 @@ if !has("nvim")
 endif
 ```
 
+### 3.1.0 to 3.2.0
+
+v3.2.0 から NeoVim でのクリップボード連携が使用可能となったため、
+Vim/NeoVim 両方を使用する場合、vimrc を以下のように書き換えてください。
+
+```vim
+if !has("nvim")
+  nnoremap <silent> "*yy yy:call SendToCdr('"')<CR>
+  vnoremap <silent> "*y y:call SendToCdr('"')<CR>
+else
+  nnoremap <silent> "*yy yy:lua SendToCdr('"')<CR>
+  vnoremap <silent> "*y y:lua SendToCdr('"')<CR>
+endif
+```
+
 ## Limitation:
 
 - Windows, Linux では、amd64 のコンテナしか使用できません
 - amd64 では、 alpine 系のコンテナでは使用できません
 - macOS では、arm64 のコンテナしか使用できません
-- NeoVim 利用時には、クリップボード連携が利用できません
 - macOS で NeoVim を利用する場合は、システムインストールの NeoVim しか利用できません
 
 
