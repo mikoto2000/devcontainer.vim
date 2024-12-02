@@ -20,8 +20,8 @@ import (
 
 const containerCommand = "docker"
 
-var dockerRunArgsPrefix = []string{"run", "-d", "--rm"}
-var dockerRunArgsSuffix = []string{"sh", "-c", "trap \"exit 0\" TERM; sleep infinity & wait"}
+var devcontainerRunArgsPrefix = []string{"run", "-d", "--rm"}
+var devcontainerRunArgsSuffix = []string{"sh", "-c", "trap \"exit 0\" TERM; sleep infinity & wait"}
 
 var devcontainreArgsPrefix = []string{"up"}
 
@@ -55,15 +55,15 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 
 	// バックグラウンドでコンテナを起動
 	// `docker run -d --rm os.Args[1:] sh -c "sleep infinity"`
-	dockerRunArgs := dockerRunArgsPrefix
+	devcontainerRunArgs := devcontainerRunArgsPrefix
 	// windows でなければ、 runargs を使用する
 	if runtime.GOOS != "windows" {
-		dockerRunArgs = append(dockerRunArgs, defaultRunargs...)
+		devcontainerRunArgs = append(devcontainerRunArgs, defaultRunargs...)
 	}
-	dockerRunArgs = append(dockerRunArgs, args...)
-	dockerRunArgs = append(dockerRunArgs, dockerRunArgsSuffix...)
-	fmt.Printf("run container: `%s \"%s\"`\n", containerCommand, strings.Join(dockerRunArgs, "\" \""))
-	dockerRunCommand := exec.Command(containerCommand, dockerRunArgs...)
+	devcontainerRunArgs = append(devcontainerRunArgs, args...)
+	devcontainerRunArgs = append(devcontainerRunArgs, devcontainerRunArgsSuffix...)
+	fmt.Printf("run container: `%s \"%s\"`\n", containerCommand, strings.Join(devcontainerRunArgs, "\" \""))
+	dockerRunCommand := exec.Command(containerCommand, devcontainerRunArgs...)
 	containerIDRaw, err := dockerRunCommand.CombinedOutput()
 	containerID := string(containerIDRaw)
 	if err != nil {
@@ -129,9 +129,9 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	dockerVimArgs := dockerRunVimArgs(containerID, vimFileName)
-	fmt.Printf("Start vim: `%s \"%s\"`\n", containerCommand, strings.Join(dockerVimArgs, "\" \""))
-	dockerExec := exec.CommandContext(ctx, containerCommand, dockerVimArgs...)
+	dockerRunVimArgs := dockerRunVimArgs(containerID, vimFileName)
+	fmt.Printf("Start vim: `%s \"%s\"`\n", containerCommand, strings.Join(dockerRunVimArgs, "\" \""))
+	dockerExec := exec.CommandContext(ctx, containerCommand, dockerRunVimArgs...)
 	dockerExec.Stdin = os.Stdin
 	dockerExec.Stdout = os.Stdout
 	dockerExec.Stderr = os.Stderr
@@ -247,9 +247,9 @@ func Start(args []string, devcontainerPath string, vimFilePath string, cdrPath, 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	dockerVimArgs := DockerVimArgs(containerID, workspaceFolder, vimFileName)
-	fmt.Printf("Start vim: `%s \"%s\"`\n", devcontainerPath, strings.Join(dockerVimArgs, "\" \""))
-	dockerExec := exec.CommandContext(ctx, devcontainerPath, dockerVimArgs...)
+	devcontainerStartVimArgs := devcontainerStartVimArgs(containerID, workspaceFolder, vimFileName)
+	fmt.Printf("Start vim: `%s \"%s\"`\n", devcontainerPath, strings.Join(devcontainerStartVimArgs, "\" \""))
+	dockerExec := exec.CommandContext(ctx, devcontainerPath, devcontainerStartVimArgs...)
 	dockerExec.Stdin = os.Stdin
 	dockerExec.Stdout = os.Stdout
 	dockerExec.Stderr = os.Stderr

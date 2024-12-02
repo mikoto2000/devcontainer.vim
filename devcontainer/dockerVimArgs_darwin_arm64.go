@@ -2,7 +2,7 @@
 
 package devcontainer
 
-func DockerVimArgs(containerID string, workspaceFolder string, vimFileName string) []string {
+func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFileName string) []string {
 	return []string{
 		"exec",
 		"--container-id",
