@@ -354,6 +354,13 @@ endif
 go install github.com/mikoto2000/devcontainer.vim@latest
 ```
 
+If you want to install by specifying the version, install with the following command.
+† Due to an incomplete setting, only v3.0.2 or later can be installed by specifying the version.
+
+```sh
+go install github.com/mikoto2000/devcontainer.vim/v3@3.0.2
+```
+
 
 ## Uninstall:
 
