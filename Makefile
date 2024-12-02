@@ -14,12 +14,14 @@ DEST := ./build
 WATCH_SRC := ./main.go \
 						 ./devcontainer/DevcontainerJson.go \
 						 ./devcontainer/devcontainer.go \
+						 ./devcontainer/run.go \
+						 ./devcontainer/start.go \
 						 ./devcontainer/dockerRunVimArgs_darwin_arm64.go \
 						 ./devcontainer/dockerRunVimArgs_linux_amd64.go \
 						 ./devcontainer/dockerRunVimArgs_windows_amd64.go \
-						 ./devcontainer/dockerVimArgs_darwin_arm64.go \
-						 ./devcontainer/dockerVimArgs_linux_amd64.go \
-						 ./devcontainer/dockerVimArgs_windows_amd64.go \
+						 ./devcontainer/devcontainerStartVimArgs_darwin_arm64.go \
+						 ./devcontainer/devcontainerStartVimArgs_linux_amd64.go \
+						 ./devcontainer/devcontainerStartVimArgs_windows_amd64.go \
 						 ./devcontainer/readConfigurationResult.go \
 						 ./devcontainer/upCommandResult.go \
 						 ./docker/docker.go \

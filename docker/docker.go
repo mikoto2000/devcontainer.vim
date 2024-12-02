@@ -44,6 +44,17 @@ func GetContainerIDFromWorkspaceFolder(workspaceFolder string) (string, error) {
 	return id, nil
 }
 
+// `docker exec` コマンドを実行する。
+func Exec(containerID string, command ...string) (string, error) {
+
+	dockerExecArgs := []string{"exec", "-t", containerID}
+	dockerExecArgs = append(dockerExecArgs, command...)
+
+	dockerExecCommand := exec.Command(containerCommand, dockerExecArgs...)
+	stdout, err := dockerExecCommand.Output()
+	return string(stdout), err
+}
+
 // `docker ps --format json` コマンドを実行する。
 func Ps(filter string) (string, error) {
 	dockerPsCommand := exec.Command("docker", "ps", "--format", "json", "--filter", filter)
@@ -77,5 +88,3 @@ func Cp(tagForLog string, from string, containerID string, to string) error {
 	fmt.Printf(" done.\n")
 	return nil
 }
-
-// TODO: Exec
