@@ -188,7 +188,7 @@ func SelfUpdate() error {
 	if runtime.GOOS == "windows" {
 		downloadURL = fmt.Sprintf("https://github.com/mikoto2000/devcontainer.vim/releases/download/%s/devcontainer.vim-windows-amd64.exe", latestTagName)
 	} else if runtime.GOOS == "darwin" {
-		downloadURL = fmt.Sprintf("https://github.com/mikoto2000/devcontainer.vim/releases/download/%s/devcontainer.vim-darwin-amd64", latestTagName)
+		downloadURL = fmt.Sprintf("https://github.com/mikoto2000/devcontainer.vim/releases/download/%s/devcontainer.vim-darwin-arm64", latestTagName)
 	} else {
 		downloadURL = fmt.Sprintf("https://github.com/mikoto2000/devcontainer.vim/releases/download/%s/devcontainer.vim-linux-amd64", latestTagName)
 	}
