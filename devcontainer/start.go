@@ -87,6 +87,15 @@ func Start(
 		return err
 	}
 
+	portForwarderContainerPath, err := tools.PortForwarderContainer.Install(vimInstallDir, containerArch, false)
+	if err != nil {
+		return err
+	}
+	err = docker.Cp("port-forwarder-container", portForwarderContainerPath, containerID, "/port-forwarder")
+	if err != nil {
+		return err
+	}
+
 	// vim_<ARCH>, nvim_<ARCH> の形式でパスがわたってくるので、
 	// vim/nvim の部分を抽出する。
 	vimFileName := strings.Split(filepath.Base(vimFilePath), "_")[0]

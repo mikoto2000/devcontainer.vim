@@ -84,6 +84,15 @@ func Run(
 		return err
 	}
 
+	portForwarderContainerPath, err := tools.PortForwarderContainer.Install(vimInstallDir, containerArch, false)
+	if err != nil {
+		return err
+	}
+	err = docker.Cp("port-forwarder-container", portForwarderContainerPath, containerID, "/port-forwarder")
+	if err != nil {
+		return err
+	}
+
 	vimFileName := filepath.Base(vimFilePath)
 
 	// clipboard-data-receiver を起動
