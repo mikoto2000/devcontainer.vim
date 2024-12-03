@@ -3,6 +3,7 @@ package util
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -236,4 +237,17 @@ func ExtractShellVariables(str string) (string, error) {
 		return "", err
 	}
 	return string(extractedStrBytes), nil
+}
+
+func NormalizeContainerArch(containerArch string) (string, error) {
+	if containerArch == "amd64" || containerArch == "x86_64" {
+		return "amd64", nil
+	} else if containerArch == "arm64" || containerArch == "aarch64" {
+		return "aarch64", nil
+	} else if containerArch == "" {
+		return "", nil
+	} else {
+		return "", errors.New("Unknown Architecture")
+	}
+
 }

@@ -353,11 +353,11 @@ endif
 
 ## Limitation:
 
-- On Windows and Linux, only amd64 containers can be used.
-- On amd64, alpine-based containers cannot be used.
-- On macOS, only arm64 containers can be used.
-- If you use NeoVim on macOS, you can only use the system-installed NeoVim.
-  If a system installed NeoVim cannot be detected, Vim will be launched instead.
+- amd64 architecture cannot be used in alpine-based containers
+- When using NeoVim in an aarch64 container, you must use the system-installed version
+- If the NeoVim AppImage is not available and there is no system-installed NeoVim, Vim will start instead of NeoVim
+- When using NeoVim on macOS, only the system-installed NeoVim can be used
+  If the system-installed NeoVim cannot be detected, Vim will start instead
 
 ## Install:
 
