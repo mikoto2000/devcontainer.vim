@@ -50,7 +50,7 @@ USAGE:
    devcontainer.vim [global options] command [command options]
 
 VERSION:
-   3.2.1
+   3.3.0
 
 COMMANDS:
    run                 Run container use `docker run`
@@ -358,7 +358,6 @@ endif
 ## Limitation:
 
 - alpine 系のコンテナでは amd64 アーキテクチャは使用できません
-- macOS で NeoVim を利用する場合はシステムインストールされたものを利用する必要があります
 - aarch64 のコンテナで NeoVim を利用する場合はシステムインストールされたものを利用する必要があります
 - NeoVim AppImage が使えず、システムインストールの NeoVim も存在しない場合、 NeoVim の代わりに Vim が起動します
 - macOS で NeoVim を利用する場合は、システムインストールの NeoVim しか利用できません
