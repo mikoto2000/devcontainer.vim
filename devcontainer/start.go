@@ -19,7 +19,15 @@ var devcontainreArgsPrefix = []string{"up"}
 
 // devcontainer でコンテナを立ち上げ、 Vim を転送し、実行する。
 // 既存実装の都合上、configFilePath から configDirForDevcontainer を抽出している
-func Start(args []string, devcontainerPath string, cdrPath, vimInstallDir string, nvim bool, configFilePath string, vimrc string) error {
+func Start(
+	args []string,
+	devcontainerPath string,
+	cdrPath string,
+	portForwarderPath string,
+	vimInstallDir string,
+	nvim bool,
+	configFilePath string,
+	vimrc string) error {
 
 	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
 	workspaceFolder := args[len(args)-1]
@@ -55,6 +63,12 @@ func Start(args []string, devcontainerPath string, cdrPath, vimInstallDir string
 	fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
 
 	containerID := upCommandResult.ContainerID
+
+	// コンテナへ port-forwarder を転送して実行権限を追加
+	err = docker.Cp("port-forwarder", portForwarderPath, containerID, "/")
+	if err != nil {
+		return err
+	}
 
 	// コンテナ内に入り、コンテナの Arch を確認
 	containerArch, err := docker.Exec(containerID, "uname", "-m")

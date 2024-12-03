@@ -125,13 +125,17 @@ func download(downloadURL string, destPath string) error {
 }
 
 // run サブコマンド用のツールインストール
-func InstallRunTools(installDir string, nvim bool) (string, error) {
+func InstallRunTools(installDir string, nvim bool) (string, string, error) {
 	var err error
 	cdrPath, err := CDR.Install(installDir, "", false)
 	if err != nil {
-		return cdrPath, err
+		return cdrPath, "", err
 	}
-	return cdrPath, err
+	portForwarderHostPath, err := PortForwarderHost.Install(installDir, "", false)
+	if err != nil {
+		return cdrPath, "", err
+	}
+	return cdrPath, portForwarderHostPath, err
 }
 
 func InstallVim(installDir string, nvim bool, containerArch string) (string, error) {
@@ -152,17 +156,21 @@ func InstallVim(installDir string, nvim bool, containerArch string) (string, err
 
 // start サブコマンド用のツールインストール
 // 戻り値は、 devcontainerPath, cdrPath, error
-func InstallStartTools(installDir string) (string, string, error) {
+func InstallStartTools(installDir string) (string, string, string, error) {
 	var err error
 	devcontainerPath, err := DEVCONTAINER.Install(installDir, "", false)
 	if err != nil {
-		return devcontainerPath, "", err
+		return devcontainerPath, "", "", err
 	}
 	cdrPath, err := CDR.Install(installDir, "", false)
 	if err != nil {
-		return devcontainerPath, cdrPath, err
+		return devcontainerPath, cdrPath, "", err
 	}
-	return devcontainerPath, cdrPath, err
+	portForwarderHostPath, err := PortForwarderHost.Install(installDir, "", false)
+	if err != nil {
+		return devcontainerPath, cdrPath, "", err
+	}
+	return devcontainerPath, cdrPath, portForwarderHostPath, nil
 }
 
 // devcontainer サブコマンド用のツールインストール

@@ -35,7 +35,15 @@ func (e *ChmodError) Error() string {
 }
 
 // docker run で、ワンショットでコンテナを立ち上げる
-func Run(args []string, cdrPath string, vimInstallDir string, nvim bool, configDirForDocker string, vimrc string, defaultRunargs []string) error {
+func Run(
+	args []string,
+	cdrPath string,
+	portForwarderPath string,
+	vimInstallDir string,
+	nvim bool,
+	configDirForDocker string,
+	vimrc string,
+	defaultRunargs []string) error {
 
 	// バックグラウンドでコンテナを起動
 	// `docker run -d --rm os.Args[1:] sh -c "sleep infinity"`
@@ -89,6 +97,12 @@ func Run(args []string, cdrPath string, vimInstallDir string, nvim bool, configD
 		return err
 	}
 	fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
+
+	// コンテナへ port-forwarder を転送して実行権限を追加
+	err = docker.Cp("port-forwarder", portForwarderPath, containerID, "/")
+	if err != nil {
+		return err
+	}
 
 	useSystemVim := false
 	fmt.Printf("Check system installed %s ... ", vimFileName)
