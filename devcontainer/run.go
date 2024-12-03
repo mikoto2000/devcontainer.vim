@@ -82,11 +82,16 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 		useSystemVim = true
 	} else {
 		fmt.Printf("not found.\n")
+
+		// arm の場合スタティックリンクの nvim を作れないため、 vim にフォールバック
+		if runtime.GOARCH == "arm64" {
+			vimFileName = "vim"
+		}
 	}
 	fmt.Printf("docker exec output: \"%s\".\n", strings.TrimSpace(out))
 
 	if !useSystemVim {
-		err = docker.Cp("vim", vimFilePath, containerID, "/")
+		err = docker.Cp("vim", vimFilePath, containerID, "/" + vimFileName)
 		if err != nil {
 			return err
 		}

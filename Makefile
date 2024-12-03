@@ -32,6 +32,9 @@ WATCH_SRC := ./main.go \
 						 ./tools/vim_linux_amd64.go \
 						 ./tools/vim_darwin_arm64.go \
 						 ./tools/vim_windows_amd64.go \
+						 ./tools/nvim_linux_amd64.go \
+						 ./tools/nvim_darwin_arm64.go \
+						 ./tools/nvim_windows_amd64.go \
 						 ./tools/devcontainer.go \
 						 ./tools/devcontainer_darwin.go \
 						 ./tools/devcontainer_linux.go \

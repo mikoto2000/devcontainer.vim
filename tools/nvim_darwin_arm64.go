@@ -14,7 +14,8 @@ import (
 
 // Vim のダウンロード URL
 // システムインストールの NeoVim が見つからなかった場合に Vim を起動するため、
-// Vim のバイナリを nvim の名前でダウンロードしておく。
+// バイナリダウンロートが必要ない。
+// TODO: 余計なダウンロードなので、発生しないようにしたい
 const nvimDownloadURLPattern = "https://github.com/mikoto2000/vim-static/releases/download/{{ .TagName }}/vim-{{ .TagName }}-aarch64.tar.gz"
 
 // Vim のツール情報

@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/mikoto2000/devcontainer.vim/v3/docker"
@@ -66,11 +67,16 @@ func Start(args []string, devcontainerPath string, vimFilePath string, cdrPath, 
 		useSystemVim = true
 	} else {
 		fmt.Printf("not found.\n")
+
+		// arm の場合スタティックリンクの nvim を作れないため、 vim にフォールバック
+		if runtime.GOARCH == "arm64" {
+			vimFileName = "vim"
+		}
 	}
 	fmt.Printf("docker exec output: \"%s\".\n", strings.TrimSpace(out))
 
 	if !useSystemVim {
-		err = docker.Cp("vim", vimFilePath, containerID, "/")
+		err = docker.Cp("vim", vimFilePath, containerID, "/" + vimFileName)
 		if err != nil {
 			return err
 		}
