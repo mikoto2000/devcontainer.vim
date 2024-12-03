@@ -357,9 +357,10 @@ endif
 
 ## Limitation:
 
-- Windows, Linux では、amd64 のコンテナしか使用できません
-- amd64 では、 alpine 系のコンテナでは使用できません
-- macOS では、arm64 のコンテナしか使用できません
+- alpine 系のコンテナでは amd64 アーキテクチャは使用できません
+- macOS で NeoVim を利用する場合はシステムインストールされたものを利用する必要があります
+- aarch64 のコンテナで NeoVim を利用する場合はシステムインストールされたものを利用する必要があります
+- NeoVim AppImage が使えず、システムインストールの NeoVim も存在しない場合、 NeoVim の代わりに Vim が起動します
 - macOS で NeoVim を利用する場合は、システムインストールの NeoVim しか利用できません
   システムインストールの NeoVim が検出できなかった場合、代わりに Vim が起動します
 
