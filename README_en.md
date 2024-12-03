@@ -357,7 +357,7 @@ endif
 - On amd64, alpine-based containers cannot be used.
 - On macOS, only arm64 containers can be used.
 - If you use NeoVim on macOS, you can only use the system-installed NeoVim.
-
+  If a system installed NeoVim cannot be detected, Vim will be launched instead.
 
 ## Install:
 

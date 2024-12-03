@@ -13,11 +13,13 @@ import (
 )
 
 // Vim のダウンロード URL
+// システムインストールの NeoVim が見つからなかった場合に Vim を起動するため、
+// Vim のバイナリを nvim の名前でダウンロードしておく。
 const nvimDownloadURLPattern = "https://github.com/mikoto2000/vim-static/releases/download/{{ .TagName }}/vim-{{ .TagName }}-aarch64.tar.gz"
 
 // Vim のツール情報
 var NVIM Tool = Tool{
-	FileName: "vim",
+	FileName: "nvim",
 	CalculateDownloadURL: func() string {
 		latestTagName, err := util.GetLatestReleaseFromGitHub("mikoto2000", "vim-static")
 		if err != nil {

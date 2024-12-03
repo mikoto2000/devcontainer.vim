@@ -6,7 +6,7 @@ package devcontainer
 //
 // Args:
 //   - containerID: コンテナ ID
-//   - vimFileName: コンテナ上に転送した vim のファイル名
+//   - vimFileName: コンテナ上に転送した vim/nvim のファイル名
 //   - useSystemVim: true の場合、システムにインストールされた vim/nvim を使用する
 //
 // Return:

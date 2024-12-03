@@ -349,6 +349,7 @@ endif
 - amd64 では、 alpine 系のコンテナでは使用できません
 - macOS では、arm64 のコンテナしか使用できません
 - macOS で NeoVim を利用する場合は、システムインストールの NeoVim しか利用できません
+  システムインストールの NeoVim が検出できなかった場合、代わりに Vim が起動します
 
 
 ## Install:

@@ -9,10 +9,10 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
-// Vim のダウンロード URL
+// NeoVim のダウンロード URL
 const nvimDownloadURLPattern = "https://github.com/neovim/neovim/releases/download/{{ .TagName }}/nvim.appimage"
 
-// Vim のツール情報
+// NeoVim のツール情報
 var NVIM Tool = Tool{
 	FileName: "nvim",
 	CalculateDownloadURL: func() string {
