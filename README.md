@@ -314,6 +314,18 @@ devcontainer.vim runargs -g
 「`--nvim` オプションを追加する」または、「環境変数 `DEVCONTAINER_VIM_TYPE` に `nvim` を設定する」
 ことで、 vim の代わりに nvim の AppImage を転送して起動します。
 
+```sh
+devcontainer.vim --nvim start .
+```
+
+or
+
+```sh
+export DEVCONTAINER_VIM_TYPE=nvim
+devcontainer.vim start .
+```
+
+
 
 ## Migration:
 
