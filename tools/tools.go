@@ -14,21 +14,37 @@ import (
 // ツール情報
 type Tool struct {
 	FileName             string
-	CalculateDownloadURL func() string
-	installFunc          func(downloadURL string, filePath string) (string, error)
+	CalculateDownloadURL func(containerArch string) (string, error)
+	installFunc          func(downloadURL string, filePath string, containerArch string) (string, error)
 }
 
 // ツールのインストールを実行
-func (t Tool) Install(installDir string, override bool) (string, error) {
+func (t Tool) Install(installDir string, containerArch string, override bool) (string, error) {
+
+	// tool download から直接呼ばれることもあるのでここでも正規化する
+	containerArch, err := util.NormalizeContainerArch(containerArch)
+	if err != nil {
+		return "", nil
+	}
 
 	// ツールの配置先組み立て
-	filePath := filepath.Join(installDir, t.FileName)
+	var fileName string
+	if containerArch != "" {
+		fileName = t.FileName + "_" + containerArch
+	} else {
+		fileName = t.FileName
+	}
+	filePath := filepath.Join(installDir, fileName)
 
 	if util.IsExists(filePath) && !override {
 		fmt.Printf("%s aleady exist, use this.\n", filePath)
 		return filePath, nil
 	} else {
-		return t.installFunc(t.CalculateDownloadURL(), filePath)
+		downloadURL, err := t.CalculateDownloadURL(containerArch)
+		if err != nil {
+			return "", err
+		}
+		return t.installFunc(downloadURL, filePath, containerArch)
 	}
 }
 
@@ -109,69 +125,67 @@ func download(downloadURL string, destPath string) error {
 }
 
 // run サブコマンド用のツールインストール
-func InstallRunTools(installDir string, nvim bool) (string, string, error) {
+func InstallRunTools(installDir string, nvim bool) (string, error) {
+	var err error
+	cdrPath, err := CDR.Install(installDir, "", false)
+	if err != nil {
+		return cdrPath, err
+	}
+	return cdrPath, err
+}
+
+func InstallVim(installDir string, nvim bool, containerArch string) (string, error) {
 	var vimPath string
 	var err error
 	if !nvim {
-		vimPath, err = VIM.Install(installDir, false)
+		vimPath, err = VIM.Install(installDir, containerArch, false)
 	} else {
-		vimPath, err = NVIM.Install(installDir, false)
+		if runtime.GOOS == "darwin" && containerArch == "amd64" {
+			// M1 Mac で amd64 のコンテナを動かすと、なぜか AppImage が動かないので vim にフォールバック
+			vimPath, err = VIM.Install(installDir, containerArch, false)
+		} else {
+			vimPath, err = NVIM.Install(installDir, containerArch, false)
+		}
 	}
-	if err != nil {
-		return vimPath, "", err
-	}
-	cdrPath, err := CDR.Install(installDir, false)
-	if err != nil {
-		return vimPath, cdrPath, err
-	}
-	return vimPath, cdrPath, err
+	return vimPath, err
 }
 
 // start サブコマンド用のツールインストール
-// 戻り値は、 vimPath, devcontainerPath, cdrPath, error
-func InstallStartTools(installDir string, nvim bool) (string, string, string, error) {
-	var vimPath string
+// 戻り値は、 devcontainerPath, cdrPath, error
+func InstallStartTools(installDir string) (string, string, error) {
 	var err error
-	if !nvim {
-		vimPath, err = VIM.Install(installDir, false)
-	} else {
-		vimPath, err = NVIM.Install(installDir, false)
-	}
+	devcontainerPath, err := DEVCONTAINER.Install(installDir, "", false)
 	if err != nil {
-		return vimPath, "", "", err
+		return devcontainerPath, "", err
 	}
-	devcontainerPath, err := DEVCONTAINER.Install(installDir, false)
+	cdrPath, err := CDR.Install(installDir, "", false)
 	if err != nil {
-		return vimPath, devcontainerPath, "", err
+		return devcontainerPath, cdrPath, err
 	}
-	cdrPath, err := CDR.Install(installDir, false)
-	if err != nil {
-		return vimPath, devcontainerPath, cdrPath, err
-	}
-	return vimPath, devcontainerPath, cdrPath, err
+	return devcontainerPath, cdrPath, err
 }
 
 // devcontainer サブコマンド用のツールインストール
 func InstallDevcontainerTools(installDir string) (string, error) {
-	devcontainerPath, err := DEVCONTAINER.Install(installDir, false)
+	devcontainerPath, err := DEVCONTAINER.Install(installDir, "", false)
 	return devcontainerPath, err
 }
 
 // Templates サブコマンド用のツールインストール
 func InstallTemplatesTools(installDir string) (string, error) {
-	devcontainerPath, err := DEVCONTAINER.Install(installDir, false)
+	devcontainerPath, err := DEVCONTAINER.Install(installDir, "", false)
 	return devcontainerPath, err
 }
 
 // Stop サブコマンド用のツールインストール
 func InstallStopTools(installDir string) (string, error) {
-	devcontainerPath, err := DEVCONTAINER.Install(installDir, false)
+	devcontainerPath, err := DEVCONTAINER.Install(installDir, "", false)
 	return devcontainerPath, err
 }
 
 // Down サブコマンド用のツールインストール
 func InstallDownTools(installDir string) (string, error) {
-	devcontainerPath, err := DEVCONTAINER.Install(installDir, false)
+	devcontainerPath, err := DEVCONTAINER.Install(installDir, "", false)
 	return devcontainerPath, err
 }
 

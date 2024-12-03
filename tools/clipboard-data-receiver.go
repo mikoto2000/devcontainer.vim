@@ -99,21 +99,21 @@ var CDR Tool = func() Tool {
 	// 実際に使用する cdr の構造体を返却
 	return Tool{
 		FileName: cdrFileName,
-		CalculateDownloadURL: func() string {
+		CalculateDownloadURL: func(_ string) (string, error) {
 			latestTagName, err := util.GetLatestReleaseFromGitHub("mikoto2000", "clipboard-data-receiver")
 			if err != nil {
-				panic(err)
+				return "", err
 			}
 
 			tmplParams := map[string]string{"TagName": latestTagName}
 			var downloadURL strings.Builder
 			err = tmpl.Execute(&downloadURL, tmplParams)
 			if err != nil {
-				panic(err)
+				return "", err
 			}
-			return downloadURL.String()
+			return downloadURL.String(), nil
 		},
-		installFunc: func(downloadURL string, filePath string) (string, error) {
+		installFunc: func(downloadURL string, filePath string, _ string) (string, error) {
 			return simpleInstall(downloadURL, filePath)
 		},
 	}

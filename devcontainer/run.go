@@ -12,6 +12,7 @@ import (
 
 	"github.com/mikoto2000/devcontainer.vim/v3/docker"
 	"github.com/mikoto2000/devcontainer.vim/v3/tools"
+	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
 var devcontainerRunArgsPrefix = []string{"run", "-d", "--rm"}
@@ -34,8 +35,7 @@ func (e *ChmodError) Error() string {
 }
 
 // docker run で、ワンショットでコンテナを立ち上げる
-func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker string, vimrc string, defaultRunargs []string) error {
-	vimFileName := filepath.Base(vimFilePath)
+func Run(args []string, cdrPath string, vimInstallDir string, nvim bool, configDirForDocker string, vimrc string, defaultRunargs []string) error {
 
 	// バックグラウンドでコンテナを起動
 	// `docker run -d --rm os.Args[1:] sh -c "sleep infinity"`
@@ -59,6 +59,25 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	containerID = strings.ReplaceAll(containerID, "\r", "")
 	fmt.Printf("Container started. id: %s\n", containerID)
 
+	// コンテナ内に入り、コンテナの Arch を確認
+	containerArch, err := docker.Exec(containerID, "uname", "-m")
+	if err != nil {
+		return err
+	}
+	containerArch = strings.TrimSpace(containerArch)
+	containerArch, err = util.NormalizeContainerArch(containerArch)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Container Arch: '%s'.\n", containerArch)
+
+	vimFilePath, err := tools.InstallVim(vimInstallDir, nvim, containerArch)
+	if err != nil {
+		return err
+	}
+
+	vimFileName := filepath.Base(vimFilePath)
+
 	// clipboard-data-receiver を起動
 	configDirForCdr := filepath.Join(configDirForDocker, containerID)
 	err = os.MkdirAll(configDirForCdr, 0744)
@@ -71,9 +90,6 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	}
 	fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
 
-	// コンテナへ appimage を転送して実行権限を追加
-	// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
-
 	useSystemVim := false
 	fmt.Printf("Check system installed %s ... ", vimFileName)
 	out, _ := docker.Exec(containerID, "which", vimFileName)
@@ -83,15 +99,23 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	} else {
 		fmt.Printf("not found.\n")
 
-		// arm の場合スタティックリンクの nvim を作れないため、 vim にフォールバック
 		if runtime.GOARCH == "arm64" {
+			// arm の場合スタティックリンクの nvim を作れないため、 vim にフォールバック
 			vimFileName = "vim"
+			nvim = false
+		} else if runtime.GOOS == "darwin" && runtime.GOARCH == "amd64" && nvim {
+			// M1 Mac で amd64 のコンテナを動かすと、なぜか AppImage が動かないので vim にフォールバック
+			vimFileName = "vim"
+			nvim = false
 		}
 	}
 	fmt.Printf("docker exec output: \"%s\".\n", strings.TrimSpace(out))
 
 	if !useSystemVim {
-		err = docker.Cp("vim", vimFilePath, containerID, "/" + vimFileName)
+		// コンテナへ appimage を転送して実行権限を追加
+		// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
+
+		err = docker.Cp("vim", vimFilePath, containerID, "/"+vimFileName)
 		if err != nil {
 			return err
 		}
@@ -133,7 +157,7 @@ func Run(args []string, vimFilePath string, cdrPath string, configDirForDocker s
 	defer cancel()
 
 	sendToTCPName := filepath.Base(sendToTCP)
-	dockerRunVimArgs := dockerRunVimArgs(containerID, vimFileName, sendToTCPName, useSystemVim)
+	dockerRunVimArgs := dockerRunVimArgs(containerID, vimFileName, sendToTCPName, containerArch, useSystemVim)
 	fmt.Printf("Start vim: `%s \"%s\"`\n", containerCommand, strings.Join(dockerRunVimArgs, "\" \""))
 	dockerExec := exec.CommandContext(ctx, containerCommand, dockerRunVimArgs...)
 	dockerExec.Stdin = os.Stdin

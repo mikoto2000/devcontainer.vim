@@ -16,12 +16,8 @@ WATCH_SRC := ./main.go \
 						 ./devcontainer/devcontainer.go \
 						 ./devcontainer/run.go \
 						 ./devcontainer/start.go \
-						 ./devcontainer/dockerRunVimArgs_darwin_arm64.go \
-						 ./devcontainer/dockerRunVimArgs_linux_amd64.go \
-						 ./devcontainer/dockerRunVimArgs_windows_amd64.go \
-						 ./devcontainer/devcontainerStartVimArgs_darwin_arm64.go \
-						 ./devcontainer/devcontainerStartVimArgs_linux_amd64.go \
-						 ./devcontainer/devcontainerStartVimArgs_windows_amd64.go \
+						 ./devcontainer/dockerRunVimArgs.go \
+						 ./devcontainer/devcontainerStartVimArgs.go \
 						 ./devcontainer/readConfigurationResult.go \
 						 ./devcontainer/upCommandResult.go \
 						 ./docker/docker.go \
@@ -29,12 +25,8 @@ WATCH_SRC := ./main.go \
 						 ./dockercompose/dockerCompose.go \
 						 ./dockercompose/dockerComposePsResult.go \
 						 ./tools/tools.go \
-						 ./tools/vim_linux_amd64.go \
-						 ./tools/vim_darwin_arm64.go \
-						 ./tools/vim_windows_amd64.go \
-						 ./tools/nvim_linux_amd64.go \
-						 ./tools/nvim_darwin_arm64.go \
-						 ./tools/nvim_windows_amd64.go \
+						 ./tools/vim.go \
+						 ./tools/nvim.go \
 						 ./tools/devcontainer.go \
 						 ./tools/devcontainer_darwin.go \
 						 ./tools/devcontainer_linux.go \

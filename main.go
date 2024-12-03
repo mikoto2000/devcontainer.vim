@@ -40,6 +40,7 @@ const envDevcontainerVimType = "DEVCONTAINER_VIM_TYPE"
 
 const flagNameLicense = "license"
 const flagNameNeoVim = "nvim"
+const flagNameArch = "arch"
 
 const flagNameGenerate = "generate"
 const flagNameHome = "home"
@@ -162,7 +163,7 @@ func main() {
 					if cCtx.Bool(flagNameNeoVim) || os.Getenv(envDevcontainerVimType) == "nvim" {
 						nvim = true
 					}
-					vimPath, cdrPath, err := tools.InstallRunTools(binDir, nvim)
+					cdrPath, err := tools.InstallRunTools(binDir, nvim)
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "Error installing run tools: %v\n", err)
 						os.Exit(1)
@@ -179,7 +180,7 @@ func main() {
 					if runtime.GOOS == "windows" {
 						// コンテナ起動
 						// windows はシェル変数展開が上手くいかないので runargs を使用しない
-						err = devcontainer.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker, vimrc, []string{})
+						err = devcontainer.Run(cCtx.Args().Slice(), cdrPath, binDir, nvim, configDirForDocker, vimrc, []string{})
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Error running docker: %v\n", err)
 							os.Exit(1)
@@ -200,7 +201,7 @@ func main() {
 						}
 
 						// コンテナ起動
-						err = devcontainer.Run(cCtx.Args().Slice(), vimPath, cdrPath, configDirForDocker, vimrc, defaultRunargs)
+						err = devcontainer.Run(cCtx.Args().Slice(), cdrPath, binDir, nvim, configDirForDocker, vimrc, defaultRunargs)
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Error running docker: %v\n", err)
 							os.Exit(1)
@@ -324,7 +325,7 @@ func main() {
 					if cCtx.Bool(flagNameNeoVim) || os.Getenv(envDevcontainerVimType) == "nvim" {
 						nvim = true
 					}
-					vimPath, devcontainerPath, cdrPath, err := tools.InstallStartTools(binDir, nvim)
+					devcontainerPath, cdrPath, err := tools.InstallStartTools(binDir)
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "Error installing start tools: %v\n", err)
 						os.Exit(1)
@@ -344,7 +345,7 @@ func main() {
 					}
 
 					// devcontainer を用いたコンテナ立ち上げ
-					err = devcontainer.Start(args, devcontainerPath, vimPath, cdrPath, configFilePath, vimrc)
+					err = devcontainer.Start(args, devcontainerPath, cdrPath, binDir, nvim, configFilePath, vimrc)
 					if err != nil {
 						if errors.Is(err, os.ErrPermission) {
 							fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
@@ -624,10 +625,17 @@ func main() {
 								UsageText:       "devcontainer.vim tool vim download",
 								HideHelp:        false,
 								SkipFlagParsing: false,
+								Flags: []cli.Flag{
+									&cli.StringFlag{
+										Name:  flagNameArch,
+										Value: runtime.GOARCH,
+										Usage: "regenerate runargs file.",
+									},
+								},
 								Action: func(cCtx *cli.Context) error {
 
 									// Vim のダウンロード
-									_, err := tools.VIM.Install(binDir, true)
+									_, err := tools.VIM.Install(binDir, cCtx.String(flagNameArch), true)
 									if err != nil {
 										fmt.Fprintf(os.Stderr, "Error installing vim: %v\n", err)
 										os.Exit(1)
@@ -651,10 +659,17 @@ func main() {
 								UsageText:       "devcontainer.vim tool nvim download",
 								HideHelp:        false,
 								SkipFlagParsing: false,
+								Flags: []cli.Flag{
+									&cli.StringFlag{
+										Name:  flagNameArch,
+										Value: runtime.GOARCH,
+										Usage: "regenerate runargs file.",
+									},
+								},
 								Action: func(cCtx *cli.Context) error {
 
 									// NeoVim のダウンロード
-									_, err := tools.NVIM.Install(binDir, true)
+									_, err := tools.NVIM.Install(binDir, cCtx.String(flagNameArch), true)
 									if err != nil {
 										fmt.Fprintf(os.Stderr, "Error installing nvim: %v\n", err)
 										os.Exit(1)
@@ -681,7 +696,7 @@ func main() {
 								Action: func(cCtx *cli.Context) error {
 
 									// devcontainer のダウンロード
-									_, err := tools.DEVCONTAINER.Install(binDir, true)
+									_, err := tools.DEVCONTAINER.Install(binDir, "", true)
 									if err != nil {
 										fmt.Fprintf(os.Stderr, "Error installing devcontainer: %v\n", err)
 										os.Exit(1)
@@ -708,7 +723,7 @@ func main() {
 								Action: func(cCtx *cli.Context) error {
 
 									// clipboard-data-receiver のダウンロード
-									_, err := tools.CDR.Install(binDir, true)
+									_, err := tools.CDR.Install(binDir, "", true)
 									if err != nil {
 										fmt.Fprintf(os.Stderr, "Error installing clipboard-data-receiver: %v\n", err)
 										os.Exit(1)
