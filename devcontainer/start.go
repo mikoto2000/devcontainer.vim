@@ -1,8 +1,10 @@
 package devcontainer
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -19,7 +21,14 @@ var devcontainreArgsPrefix = []string{"up"}
 
 // devcontainer でコンテナを立ち上げ、 Vim を転送し、実行する。
 // 既存実装の都合上、configFilePath から configDirForDevcontainer を抽出している
-func Start(args []string, devcontainerPath string, cdrPath, vimInstallDir string, nvim bool, configFilePath string, vimrc string) error {
+func Start(
+	args []string,
+	devcontainerPath string,
+	cdrPath string,
+	vimInstallDir string,
+	nvim bool,
+	configFilePath string,
+	vimrc string) error {
 
 	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
 	workspaceFolder := args[len(args)-1]
@@ -44,17 +53,10 @@ func Start(args []string, devcontainerPath string, cdrPath, vimInstallDir string
 	if err != nil {
 		return err
 	}
-	fmt.Printf("finished devcontainer up: %s\n", upCommandResult)
-
-	// clipboard-data-receiver を起動
-	configDirForDevcontainer := filepath.Dir(configFilePath)
-	pid, port, err := tools.RunCdr(cdrPath, configDirForDevcontainer)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
 
 	containerID := upCommandResult.ContainerID
+
+	fmt.Printf("finished devcontainer up: %s\n", upCommandResult)
 
 	// コンテナ内に入り、コンテナの Arch を確認
 	containerArch, err := docker.Exec(containerID, "uname", "-m")
@@ -68,11 +70,123 @@ func Start(args []string, devcontainerPath string, cdrPath, vimInstallDir string
 	}
 	fmt.Printf("Container Arch: '%s'.\n", containerArch)
 
-	vimFilePath, err := tools.InstallVim(vimInstallDir, nvim, containerArch)
+	portForwarderContainerPath, err := tools.PortForwarderContainer.Install(vimInstallDir, containerArch, false)
+	if err != nil {
+		return err
+	}
+	err = docker.Cp("port-forwarder-container", portForwarderContainerPath, containerID, "/port-forwarder")
 	if err != nil {
 		return err
 	}
 
+	// clipboard-data-receiver を起動
+	configDirForDevcontainer := filepath.Dir(configFilePath)
+	pid, port, err := tools.RunCdr(cdrPath, configDirForDevcontainer)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
+
+	// コンテナの IP アドレスを取得
+	containerIp, err := docker.Exec(containerID, "sh", "-c", "hostname -i")
+	if err != nil {
+		return err
+	}
+	containerIp = strings.TrimSpace(containerIp)
+
+	// すでに port-forwarder が起動しているなら実行しない
+	psOut, err := docker.Exec(containerID, "sh", "-c", "ps aux | grep port-forwarder")
+	if err != nil {
+		return err
+	}
+	if len(strings.Split(strings.TrimSpace(psOut), "\n")) == 2 {
+		fmt.Println("Start port-forwarder in container.")
+
+		// forwardPorts を解釈してport-forwarder を実行
+
+		// forwardPorts を解釈
+		configurationString, err := ReadConfiguration(devcontainerPath, "--workspace-folder", workspaceFolder)
+		if err != nil {
+			return err
+		}
+		forwardConfigs, err := GetForwardPorts(configurationString)
+
+		// 解釈した forwardPort ごとに port-forwarder を起動する
+		for _, fc := range forwardConfigs {
+
+			// コンテナ側の port-forwarder の起動
+			portForwarderCtx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+			defer cancel()
+			fmt.Printf("%s %s %s %s %s %s %s.\n", devcontainerPath, "exec", "--workspace-folder", ".", "sh", "-c", "/port-forwarder -l 0.0.0.0:0 -f "+fc.Host+":"+fc.Port)
+			dockerExecPortForwarder := exec.CommandContext(portForwarderCtx, devcontainerPath, "exec", "--workspace-folder", ".", "sh", "-c", "/port-forwarder -l 0.0.0.0:0 -f "+fc.Host+":"+fc.Port)
+			portOut, err := dockerExecPortForwarder.StdoutPipe()
+			if err != nil {
+				return err
+			}
+
+			dockerExecPortForwarder.Cancel = func() error {
+				fmt.Fprintf(os.Stderr, "Receive SIGINT.\n")
+				return dockerExecPortForwarder.Process.Signal(os.Interrupt)
+			}
+
+			err = dockerExecPortForwarder.Start()
+			if err != nil {
+				return err
+			}
+
+			go func() {
+				reader := bufio.NewReader(portOut)
+				for {
+					port, err := reader.ReadString('\n')
+					if err != nil {
+						if err != io.EOF {
+							fmt.Println("Error reading from stdout:", err)
+						}
+						break
+					}
+					port = strings.TrimSpace(port)
+					fmt.Printf("port-forwarder started: %s:%s %s\n", containerIp, port, fc.Host+":"+fc.Port)
+
+					// forwardPorts の内容を `/pf` ディテク取りに「<転送先>_<リッスンアドレス＆ポート>」の形式で配置する
+					docker.Exec(containerID, "sh", "-c", "mkdir -p /pf && touch /pf/"+fc.Host+":"+fc.Port+"_"+containerIp+":"+port)
+
+					util.StartForwarding("0.0.0.0:"+fc.Port, containerIp+":"+port)
+				}
+
+			}()
+		}
+	} else {
+		fmt.Println("port-forwarder already running.")
+
+		// `/pf` ディレクトリの内容からフォワードするポートを解釈し、フォワードする
+		lspfOut, err := docker.Exec(containerID, "sh", "-c", "ls --zero /pf")
+		if err != nil {
+			return err
+		}
+		forwardConfigs := strings.Split(lspfOut, "\x00")
+		for _, forwardConfig := range forwardConfigs {
+			if len(forwardConfig) == 0 {
+				continue
+			}
+			splitedForwardConfig := strings.Split(forwardConfig, "_")
+			containerSrc := splitedForwardConfig[0]
+			scs := strings.Split(containerSrc, ":")
+			containerSrcPort := scs[1]
+			containerDest := splitedForwardConfig[1]
+			scd := strings.Split(containerDest, ":")
+			containerDestPort := scd[1]
+
+			go func() {
+				fmt.Printf("listen: %s, forward: %s.\n", "0.0.0.0:"+containerSrcPort, containerIp+":"+containerDestPort)
+				util.StartForwarding("0.0.0.0:"+containerSrcPort, containerIp+":"+containerDestPort)
+			}()
+		}
+	}
+
+	vimFilePath, err := tools.InstallVim(vimInstallDir, nvim, containerArch)
+	if err != nil {
+		return err
+	}
 	// vim_<ARCH>, nvim_<ARCH> の形式でパスがわたってくるので、
 	// vim/nvim の部分を抽出する。
 	vimFileName := strings.Split(filepath.Base(vimFilePath), "_")[0]

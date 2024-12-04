@@ -32,6 +32,8 @@ WATCH_SRC := ./main.go \
 						 ./tools/devcontainer_linux.go \
 						 ./tools/devcontainer_windows.go \
 						 ./tools/clipboard-data-receiver.go \
+						 ./tools/port-forwarder.go \
+						 ./util/port-forwarder.go \
 						 ./util/util.go
 
 ### 開発関連

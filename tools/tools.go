@@ -162,7 +162,7 @@ func InstallStartTools(installDir string) (string, string, error) {
 	if err != nil {
 		return devcontainerPath, cdrPath, err
 	}
-	return devcontainerPath, cdrPath, err
+	return devcontainerPath, cdrPath, nil
 }
 
 // devcontainer サブコマンド用のツールインストール

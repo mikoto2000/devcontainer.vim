@@ -35,7 +35,14 @@ func (e *ChmodError) Error() string {
 }
 
 // docker run で、ワンショットでコンテナを立ち上げる
-func Run(args []string, cdrPath string, vimInstallDir string, nvim bool, configDirForDocker string, vimrc string, defaultRunargs []string) error {
+func Run(
+	args []string,
+	cdrPath string,
+	vimInstallDir string,
+	nvim bool,
+	configDirForDocker string,
+	vimrc string,
+	defaultRunargs []string) error {
 
 	// バックグラウンドでコンテナを起動
 	// `docker run -d --rm os.Args[1:] sh -c "sleep infinity"`
@@ -72,6 +79,15 @@ func Run(args []string, cdrPath string, vimInstallDir string, nvim bool, configD
 	fmt.Printf("Container Arch: '%s'.\n", containerArch)
 
 	vimFilePath, err := tools.InstallVim(vimInstallDir, nvim, containerArch)
+	if err != nil {
+		return err
+	}
+
+	portForwarderContainerPath, err := tools.PortForwarderContainer.Install(vimInstallDir, containerArch, false)
+	if err != nil {
+		return err
+	}
+	err = docker.Cp("port-forwarder-container", portForwarderContainerPath, containerID, "/port-forwarder")
 	if err != nil {
 		return err
 	}

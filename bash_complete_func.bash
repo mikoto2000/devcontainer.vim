@@ -10,6 +10,7 @@ _completion_devcontainer_vim(){
     local subcommands_tool_nvim="download"
     local subcommands_tool_devcontainer="download"
     local subcommands_tool_clipboard_data_receiver="download"
+    local subcommands_tool_port_forwarder="download"
     local subcommands_index="update"
 
     if [[ ${cword} -eq 1 ]]; then
@@ -36,6 +37,9 @@ _completion_devcontainer_vim(){
                 ;;
             clipboard-data-receiver)
                 COMPREPLY=( $(compgen -W "${subcommands_tool_clipboard_data_receiver}" -- "${cur}") )
+                ;;
+            port-forwarder)
+                COMPREPLY=( $(compgen -W "${subcommands_tool_port_forwarder}" -- "${cur}") )
                 ;;
             index)
                 COMPREPLY=( $(compgen -W "${subcommands_index}" -- "${cur}") )
