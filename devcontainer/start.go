@@ -88,6 +88,13 @@ func Start(
 	}
 	fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
 
+	// コンテナの IP アドレスを取得
+	containerIp, err := docker.Exec(containerID, "sh", "-c", "hostname -i")
+	if err != nil {
+		return err
+	}
+	containerIp = strings.TrimSpace(containerIp)
+
 	// すでに port-forwarder が起動しているなら実行しない
 	psOut, err := docker.Exec(containerID, "sh", "-c", "ps aux | grep port-forwarder")
 	if err != nil {
@@ -97,13 +104,6 @@ func Start(
 		fmt.Println("Start port-forwarder in container.")
 
 		// forwardPorts を解釈してport-forwarder を実行
-
-		// コンテナの IP アドレスを取得
-		containerIp, err := docker.Exec(containerID, "sh", "-c", "hostname -i")
-		if err != nil {
-			return err
-		}
-		containerIp = strings.TrimSpace(containerIp)
 
 		// forwardPorts を解釈
 		configurationString, err := ReadConfiguration(devcontainerPath, "--workspace-folder", workspaceFolder)
@@ -150,12 +150,38 @@ func Start(
 
 					// forwardPorts の内容を `/pf` ディテク取りに「<転送先>_<リッスンアドレス＆ポート>」の形式で配置する
 					docker.Exec(containerID, "sh", "-c", "mkdir -p /pf && touch /pf/"+fc.Host+":"+fc.Port+"_"+containerIp+":"+port)
+
+					util.StartForwarding("0.0.0.0:"+fc.Port, containerIp+":"+port)
 				}
 
 			}()
 		}
 	} else {
 		fmt.Println("port-forwarder already running.")
+
+		// `/pf` ディレクトリの内容からフォワードするポートを解釈し、フォワードする
+		lspfOut, err := docker.Exec(containerID, "sh", "-c", "ls --zero /pf")
+		if err != nil {
+			return err
+		}
+		forwardConfigs := strings.Split(lspfOut, "\x00")
+		for _, forwardConfig := range forwardConfigs {
+			if len(forwardConfig) == 0 {
+				continue
+			}
+			splitedForwardConfig := strings.Split(forwardConfig, "_")
+			containerSrc := splitedForwardConfig[0]
+			scs := strings.Split(containerSrc, ":")
+			containerSrcPort := scs[1]
+			containerDest := splitedForwardConfig[1]
+			scd := strings.Split(containerDest, ":")
+			containerDestPort := scd[1]
+
+			go func() {
+				fmt.Printf("listen: %s, forward: %s.\n", "0.0.0.0:"+containerSrcPort, containerIp+":"+containerDestPort)
+				util.StartForwarding("0.0.0.0:"+containerSrcPort, containerIp+":"+containerDestPort)
+			}()
+		}
 	}
 
 	vimFilePath, err := tools.InstallVim(vimInstallDir, nvim, containerArch)

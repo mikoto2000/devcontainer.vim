@@ -36,6 +36,7 @@ WATCH_SRC := ./main.go \
 						 ./tools/port-forwarder_darwin.go \
 						 ./tools/port-forwarder_linux.go \
 						 ./tools/port-forwarder_windows.go \
+						 ./util/port-forwarder.go \
 						 ./util/util.go
 
 ### 開発関連
