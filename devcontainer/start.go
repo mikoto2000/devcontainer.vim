@@ -25,7 +25,7 @@ func Start(
 	args []string,
 	devcontainerPath string,
 	cdrPath string,
-	portForwarderPath string,
+	portForwarderHostPath string,
 	vimInstallDir string,
 	nvim bool,
 	configFilePath string,
@@ -54,7 +54,31 @@ func Start(
 	if err != nil {
 		return err
 	}
+
+	containerID := upCommandResult.ContainerID
+
 	fmt.Printf("finished devcontainer up: %s\n", upCommandResult)
+
+	// コンテナ内に入り、コンテナの Arch を確認
+	containerArch, err := docker.Exec(containerID, "uname", "-m")
+	if err != nil {
+		return err
+	}
+	containerArch = strings.TrimSpace(containerArch)
+	containerArch, err = util.NormalizeContainerArch(containerArch)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Container Arch: '%s'.\n", containerArch)
+
+	portForwarderContainerPath, err := tools.PortForwarderContainer.Install(vimInstallDir, containerArch, false)
+	if err != nil {
+		return err
+	}
+	err = docker.Cp("port-forwarder-container", portForwarderContainerPath, containerID, "/port-forwarder")
+	if err != nil {
+		return err
+	}
 
 	// clipboard-data-receiver を起動
 	configDirForDevcontainer := filepath.Dir(configFilePath)
@@ -64,22 +88,22 @@ func Start(
 	}
 	fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
 
-	containerID := upCommandResult.ContainerID
-
-	// コンテナへ port-forwarder を転送して実行権限を追加
-	err = docker.Cp("port-forwarder", portForwarderPath, containerID, "/")
-	if err != nil {
-		return err
-	}
-
 	// すでに port-forwarder が起動しているなら実行しない
 	psOut, err := docker.Exec(containerID, "sh", "-c", "ps aux | grep port-forwarder")
 	if err != nil {
 		return err
 	}
-	if len(strings.Split(psOut, "\n")) == 1 {
+	if len(strings.Split(strings.TrimSpace(psOut), "\n")) == 2 {
+		fmt.Println("Start port-forwarder in container.")
 
 		// forwardPorts を解釈してport-forwarder を実行
+
+		// コンテナの IP アドレスを取得
+		containerIp, err := docker.Exec(containerID, "sh", "-c", "hostname -i")
+		if err != nil {
+			return err
+		}
+		containerIp = strings.TrimSpace(containerIp)
 
 		// forwardPorts を解釈
 		configurationString, err := ReadConfiguration(devcontainerPath, "--workspace-folder", workspaceFolder)
@@ -122,41 +146,22 @@ func Start(
 						break
 					}
 					port = strings.TrimSpace(port)
-					fmt.Printf("port-forwarder started: 0.0.0.0:%s %s\n", port, fc.Host+":"+fc.Port)
-				}
+					fmt.Printf("port-forwarder started: %s:%s %s\n", containerIp, port, fc.Host+":"+fc.Port)
 
-				// TODO: ホスト側の port-forwarder 起動
+					// forwardPorts の内容を `/pf` ディテク取りに「<転送先>_<リッスンアドレス＆ポート>」の形式で配置する
+					docker.Exec(containerID, "sh", "-c", "mkdir -p /pf && touch /pf/"+fc.Host+":"+fc.Port+"_"+containerIp+":"+port)
+				}
 
 			}()
 		}
+	} else {
+		fmt.Println("port-forwarder already running.")
 	}
-
-	// コンテナ内に入り、コンテナの Arch を確認
-	containerArch, err := docker.Exec(containerID, "uname", "-m")
-	if err != nil {
-		return err
-	}
-	containerArch = strings.TrimSpace(containerArch)
-	containerArch, err = util.NormalizeContainerArch(containerArch)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Container Arch: '%s'.\n", containerArch)
 
 	vimFilePath, err := tools.InstallVim(vimInstallDir, nvim, containerArch)
 	if err != nil {
 		return err
 	}
-
-	portForwarderContainerPath, err := tools.PortForwarderContainer.Install(vimInstallDir, containerArch, false)
-	if err != nil {
-		return err
-	}
-	err = docker.Cp("port-forwarder-container", portForwarderContainerPath, containerID, "/port-forwarder")
-	if err != nil {
-		return err
-	}
-
 	// vim_<ARCH>, nvim_<ARCH> の形式でパスがわたってくるので、
 	// vim/nvim の部分を抽出する。
 	vimFileName := strings.Split(filepath.Base(vimFilePath), "_")[0]
