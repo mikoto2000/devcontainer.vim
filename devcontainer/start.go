@@ -1,8 +1,10 @@
 package devcontainer
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -68,6 +70,65 @@ func Start(
 	err = docker.Cp("port-forwarder", portForwarderPath, containerID, "/")
 	if err != nil {
 		return err
+	}
+
+	// すでに port-forwarder が起動しているなら実行しない
+	psOut, err := docker.Exec(containerID, "sh", "-c", "ps aux | grep port-forwarder")
+	if err != nil {
+		return err
+	}
+	if len(strings.Split(psOut, "\n")) == 1 {
+
+		// forwardPorts を解釈してport-forwarder を実行
+
+		// forwardPorts を解釈
+		configurationString, err := ReadConfiguration(devcontainerPath, "--workspace-folder", workspaceFolder)
+		if err != nil {
+			return err
+		}
+		forwardConfigs, err := GetForwardPorts(configurationString)
+
+		// 解釈した forwardPort ごとに port-forwarder を起動する
+		for _, fc := range forwardConfigs {
+
+			// コンテナ側の port-forwarder の起動
+			portForwarderCtx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+			defer cancel()
+			fmt.Printf("%s %s %s %s %s %s %s.\n", devcontainerPath, "exec", "--workspace-folder", ".", "sh", "-c", "/port-forwarder -l 0.0.0.0:0 -f "+fc.Host+":"+fc.Port)
+			dockerExecPortForwarder := exec.CommandContext(portForwarderCtx, devcontainerPath, "exec", "--workspace-folder", ".", "sh", "-c", "/port-forwarder -l 0.0.0.0:0 -f "+fc.Host+":"+fc.Port)
+			portOut, err := dockerExecPortForwarder.StdoutPipe()
+			if err != nil {
+				return err
+			}
+
+			dockerExecPortForwarder.Cancel = func() error {
+				fmt.Fprintf(os.Stderr, "Receive SIGINT.\n")
+				return dockerExecPortForwarder.Process.Signal(os.Interrupt)
+			}
+
+			err = dockerExecPortForwarder.Start()
+			if err != nil {
+				return err
+			}
+
+			go func() {
+				reader := bufio.NewReader(portOut)
+				for {
+					port, err := reader.ReadString('\n')
+					if err != nil {
+						if err != io.EOF {
+							fmt.Println("Error reading from stdout:", err)
+						}
+						break
+					}
+					port = strings.TrimSpace(port)
+					fmt.Printf("port-forwarder started: 0.0.0.0:%s %s\n", port, fc.Host+":"+fc.Port)
+				}
+
+				// TODO: ホスト側の port-forwarder 起動
+
+			}()
+		}
 	}
 
 	// コンテナ内に入り、コンテナの Arch を確認
