@@ -163,7 +163,7 @@ func main() {
 					if cCtx.Bool(flagNameNeoVim) || os.Getenv(envDevcontainerVimType) == "nvim" {
 						nvim = true
 					}
-					cdrPath, portForwarderPath, err := tools.InstallRunTools(binDir, nvim)
+					cdrPath, err := tools.InstallRunTools(binDir, nvim)
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "Error installing run tools: %v\n", err)
 						os.Exit(1)
@@ -180,7 +180,7 @@ func main() {
 					if runtime.GOOS == "windows" {
 						// コンテナ起動
 						// windows はシェル変数展開が上手くいかないので runargs を使用しない
-						err = devcontainer.Run(cCtx.Args().Slice(), cdrPath, portForwarderPath, binDir, nvim, configDirForDocker, vimrc, []string{})
+						err = devcontainer.Run(cCtx.Args().Slice(), cdrPath, binDir, nvim, configDirForDocker, vimrc, []string{})
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Error running docker: %v\n", err)
 							os.Exit(1)
@@ -201,7 +201,7 @@ func main() {
 						}
 
 						// コンテナ起動
-						err = devcontainer.Run(cCtx.Args().Slice(), cdrPath, portForwarderPath, binDir, nvim, configDirForDocker, vimrc, defaultRunargs)
+						err = devcontainer.Run(cCtx.Args().Slice(), cdrPath, binDir, nvim, configDirForDocker, vimrc, defaultRunargs)
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Error running docker: %v\n", err)
 							os.Exit(1)
@@ -325,7 +325,7 @@ func main() {
 					if cCtx.Bool(flagNameNeoVim) || os.Getenv(envDevcontainerVimType) == "nvim" {
 						nvim = true
 					}
-					devcontainerPath, cdrPath, portForwarderHostPath, err := tools.InstallStartTools(binDir)
+					devcontainerPath, cdrPath, err := tools.InstallStartTools(binDir)
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "Error installing start tools: %v\n", err)
 						os.Exit(1)
@@ -345,7 +345,7 @@ func main() {
 					}
 
 					// devcontainer を用いたコンテナ立ち上げ
-					err = devcontainer.Start(args, devcontainerPath, cdrPath, portForwarderHostPath, binDir, nvim, configFilePath, vimrc)
+					err = devcontainer.Start(args, devcontainerPath, cdrPath, binDir, nvim, configFilePath, vimrc)
 					if err != nil {
 						if errors.Is(err, os.ErrPermission) {
 							fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
@@ -629,7 +629,7 @@ func main() {
 									&cli.StringFlag{
 										Name:  flagNameArch,
 										Value: runtime.GOARCH,
-										Usage: "regenerate runargs file.",
+										Usage: "download cpu archtecture.",
 									},
 								},
 								Action: func(cCtx *cli.Context) error {
@@ -663,7 +663,7 @@ func main() {
 									&cli.StringFlag{
 										Name:  flagNameArch,
 										Value: runtime.GOARCH,
-										Usage: "regenerate runargs file.",
+										Usage: "download cpu archtecture.",
 									},
 								},
 								Action: func(cCtx *cli.Context) error {
@@ -735,24 +735,31 @@ func main() {
 						},
 					},
 					{
-						Name:            tools.PortForwarderHostFileName,
-						Usage:           "Management port-forwarder on host",
+						Name:            "port-forwarder",
+						Usage:           "Management port-forwarder on container",
 						UsageText:       "devcontainer.vim tool port-forwarder SUB_COMMAND",
 						HideHelp:        false,
 						SkipFlagParsing: false,
 						Subcommands: []*cli.Command{
 							{
 								Name:            "download",
-								Usage:           "Download newly clipboard-data-receiver cli",
-								UsageText:       "devcontainer.vim tool clipboard-data-receiver download",
+								Usage:           "Download newly port-forwarder cli",
+								UsageText:       "devcontainer.vim tool port-forwarder download",
 								HideHelp:        false,
 								SkipFlagParsing: false,
+								Flags: []cli.Flag{
+									&cli.StringFlag{
+										Name:  flagNameArch,
+										Value: runtime.GOARCH,
+										Usage: "download cpu archtecture.",
+									},
+								},
 								Action: func(cCtx *cli.Context) error {
 
 									// clipboard-data-receiver のダウンロード
-									_, err := tools.CDR.Install(binDir, "", true)
+									_, err := tools.PortForwarderContainer.Install(binDir, cCtx.String(flagNameArch), true)
 									if err != nil {
-										fmt.Fprintf(os.Stderr, "Error installing clipboard-data-receiver: %v\n", err)
+										fmt.Fprintf(os.Stderr, "Error installing port-forwarder: %v\n", err)
 										os.Exit(1)
 									}
 

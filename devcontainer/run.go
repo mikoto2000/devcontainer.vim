@@ -38,7 +38,6 @@ func (e *ChmodError) Error() string {
 func Run(
 	args []string,
 	cdrPath string,
-	portForwarderPath string,
 	vimInstallDir string,
 	nvim bool,
 	configDirForDocker string,
@@ -106,12 +105,6 @@ func Run(
 		return err
 	}
 	fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
-
-	// コンテナへ port-forwarder を転送して実行権限を追加
-	err = docker.Cp("port-forwarder", portForwarderPath, containerID, "/")
-	if err != nil {
-		return err
-	}
 
 	useSystemVim := false
 	fmt.Printf("Check system installed %s ... ", vimFileName)

@@ -25,7 +25,6 @@ func Start(
 	args []string,
 	devcontainerPath string,
 	cdrPath string,
-	portForwarderHostPath string,
 	vimInstallDir string,
 	nvim bool,
 	configFilePath string,

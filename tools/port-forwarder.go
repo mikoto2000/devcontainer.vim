@@ -11,34 +11,6 @@ import (
 const downloadURLPortForwarderContainerAmd64Pattern = "https://github.com/mikoto2000/port-forwarder/releases/download/{{ .TagName }}/port-forwarder-linux-amd64"
 const downloadURLPortForwarderContainerArm64Pattern = "https://github.com/mikoto2000/port-forwarder/releases/download/{{ .TagName }}/port-forwarder-linux-arm64"
 
-// ホスト上で起動する port-forwarder のツール情報
-var PortForwarderHost Tool = Tool{
-	FileName: PortForwarderHostFileName,
-	CalculateDownloadURL: func(containerArch string) (string, error) {
-		latestTagName, err := util.GetLatestReleaseFromGitHub("mikoto2000", "port-forwarder")
-		if err != nil {
-			return "", err
-		}
-
-		pattern := "pattern"
-		tmpl, err := template.New(pattern).Parse(downloadURLPortForwarderHostPattern)
-		if err != nil {
-			return "", err
-		}
-
-		tmplParams := map[string]string{"TagName": latestTagName}
-		var downloadURL strings.Builder
-		err = tmpl.Execute(&downloadURL, tmplParams)
-		if err != nil {
-			panic(err)
-		}
-		return downloadURL.String(), nil
-	},
-	installFunc: func(downloadURL string, filePath string, containerArch string) (string, error) {
-		return simpleInstall(downloadURL, filePath)
-	},
-}
-
 // コンテナ上で起動する port-forwarder のツール情報
 var PortForwarderContainer Tool = Tool{
 	FileName: "port-forwarder-container",
