@@ -47,4 +47,3 @@ func StartForwarding(listenAddr, forwardAddr string) error {
 		go forward(client, forwardAddr)
 	}
 }
-

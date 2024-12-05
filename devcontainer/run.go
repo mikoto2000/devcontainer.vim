@@ -55,7 +55,7 @@ func Run(
 	devcontainerRunArgs = append(devcontainerRunArgs, devcontainerRunArgsSuffix...)
 	fmt.Printf("run container: `%s \"%s\"`\n", containerCommand, strings.Join(devcontainerRunArgs, "\" \""))
 	dockerRunCommand := exec.Command(containerCommand, devcontainerRunArgs...)
-	containerIDRaw, err := dockerRunCommand.CombinedOutput()
+	containerIDRaw, err := dockerRunCommand.Output()
 	containerID := string(containerIDRaw)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Container start error.")
@@ -65,6 +65,16 @@ func Run(
 	containerID = strings.ReplaceAll(containerID, "\n", "")
 	containerID = strings.ReplaceAll(containerID, "\r", "")
 	fmt.Printf("Container started. id: %s\n", containerID)
+
+	// コンテナ停止
+	defer func() {
+		// `docker stop <dockerrun 時に標準出力に表示される CONTAINER ID>`
+		fmt.Printf("Stop container(Async) %s.\n", containerID)
+		err = exec.Command(containerCommand, "stop", containerID).Start()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Container stop error: %s\n", err)
+		}
+	}()
 
 	// コンテナ内に入り、コンテナの Arch を確認
 	containerArch, err := docker.Exec(containerID, "uname", "-m")
@@ -105,6 +115,19 @@ func Run(
 		return err
 	}
 	fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
+
+	// clipboard-data-receiver を停止
+	defer func() {
+		err = tools.KillCdr(pid)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Container stop error: %s\n", err)
+		}
+
+		err = os.RemoveAll(configDirForCdr)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Cache remove error: %s\n", err)
+		}
+	}()
 
 	useSystemVim := false
 	fmt.Printf("Check system installed %s ... ", vimFileName)
@@ -185,22 +208,7 @@ func Run(
 	}
 
 	// 失敗してもコンテナのあと片付けはしたいのでエラーを無視
-	dockerExec.Run()
-
-	// コンテナ停止
-	// `docker stop <dockerrun 時に標準出力に表示される CONTAINER ID>`
-	fmt.Printf("Stop container(Async) %s.\n", containerID)
-	err = exec.Command(containerCommand, "stop", containerID).Start()
-	if err != nil {
-		return err
-	}
-
-	// clipboard-data-receiver を停止
-	err = tools.KillCdr(pid)
-	if err != nil {
-		return err
-	}
-	err = os.RemoveAll(configDirForCdr)
+	err = dockerExec.Run()
 	if err != nil {
 		return err
 	}
