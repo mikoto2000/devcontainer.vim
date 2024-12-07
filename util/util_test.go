@@ -1,6 +1,7 @@
 package util
 
 import (
+	"encoding/json"
 	"errors"
 	"path/filepath"
 	"testing"
@@ -157,6 +158,24 @@ func TestAddExecutePermission(t *testing.T) {
 
 	want := "drwxr-xr-x"
 	got := fileInfo.Mode().String()
+	if got != want {
+		t.Fatalf("error: want %s but got %s", got, want)
+	}
+}
+
+func TestParseJwcc(t *testing.T) {
+	target := "test/resource/TestParseJwcc.json"
+	jsonBytes, err := ParseJwcc(target)
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+
+	var unmarshaledJson map[string]interface{}
+	json.Unmarshal(jsonBytes, &unmarshaledJson)
+
+	want := "test_value"
+	got := unmarshaledJson["test_key"]
+
 	if got != want {
 		t.Fatalf("error: want %s but got %s", got, want)
 	}
