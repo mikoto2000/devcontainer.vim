@@ -85,7 +85,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	appCacheDir, binDir, configDirForDocker, configDirForDevcontainer := util.CreateCacheDirectory(os.UserCacheDir, appName)
+	appCacheDir, binDir, configDirForDocker, configDirForDevcontainer, err := util.CreateCacheDirectory(os.UserCacheDir, appName)
+	if err != nil {
+		panic(err)
+	}
 
 	// vimrc ファイルの出力先を組み立て
 	// vimrc を出力(既に存在するなら何もしない)

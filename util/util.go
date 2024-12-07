@@ -45,34 +45,34 @@ func CreateConfigDirectory(pathFunc GetDirFunc, dirName string) (string, error) 
 // devcontainer.vim 用のキャッシュディレクトリ
 // devcontainer.vim 用の実行バイナリ格納ディレクトリ
 // devcontainer.vim のマージ済み設定ファイル格納ディレクトリ
-func CreateCacheDirectory(pathFunc GetDirFunc, dirName string) (string, string, string, string) {
+func CreateCacheDirectory(pathFunc GetDirFunc, dirName string) (string, string, string, string, error) {
 	var baseDir, err = pathFunc()
 	if err != nil {
-		panic(err)
+		return "", "", "", "", err
 	}
 	var appCacheDir = filepath.Join(baseDir, dirName)
 	if err := os.MkdirAll(appCacheDir, 0766); err != nil {
-		panic(err)
+		return "", "", "", "", err
 	}
 	var binDir = filepath.Join(baseDir, dirName, binDirName)
 	if err := os.MkdirAll(binDir, 0766); err != nil {
-		panic(err)
+		return appCacheDir, "", "", "", err
 	}
 	var configDir = filepath.Join(baseDir, dirName, configDirName)
 	if err := os.MkdirAll(configDir, 0766); err != nil {
-		panic(err)
+		return appCacheDir, binDir, "", "", err
 	}
 	// docker 用のコンフィグディレクトリ作成
 	var configDirForDocker = filepath.Join(baseDir, dirName, configDirName, "docker")
 	if err := os.MkdirAll(configDirForDocker, 0766); err != nil {
-		panic(err)
+		return appCacheDir, binDir, "", "", err
 	}
 	// devcontainer 用のコンフィグディレクトリ作成
 	var configDirForDevcontainer = filepath.Join(baseDir, dirName, configDirName, "devcontainer")
 	if err := os.MkdirAll(configDirForDevcontainer, 0766); err != nil {
-		panic(err)
+		return appCacheDir, binDir, configDir, "", err
 	}
-	return appCacheDir, binDir, configDirForDocker, configDirForDevcontainer
+	return appCacheDir, binDir, configDirForDocker, configDirForDevcontainer, nil
 }
 
 func IsExists(filePath string) bool {

@@ -62,6 +62,10 @@ func pathFuncHello() (string, error) {
 	return "Hello", nil
 }
 
+func pathFuncFailed() (string, error) {
+	return "", errors.New("failed!")
+}
+
 func TestGetConfigDirectorySuccess(t *testing.T) {
 	want := "Hello/success"
 	// 存在しないファイルの存在確認
@@ -78,10 +82,6 @@ func TestGetConfigDirectorySuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error: %s", err)
 	}
-}
-
-func pathFuncFailed() (string, error) {
-	return "", errors.New("failed!")
 }
 
 func TestGetConfigDirectoryFailed(t *testing.T) {
@@ -101,3 +101,37 @@ func TestGetConfigDirectoryFailed(t *testing.T) {
 		t.Fatalf("not return error found: %s", got)
 	}
 }
+
+func TestCreateCacheDirectorySuccess(t *testing.T) {
+	wantBase := "Hello/success"
+	// 存在しないファイルの存在確認
+	gotAppCacheDir, _, _, _, err := CreateCacheDirectory(pathFuncHello, "success")
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+
+	defer func () {
+		os.RemoveAll(filepath.Dir(gotAppCacheDir))
+	}()
+
+	_, err = os.Stat(filepath.Join(wantBase))
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+
+	_, err = os.Stat(filepath.Join(wantBase, "bin"))
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+
+	_, err = os.Stat(filepath.Join(wantBase, "config", "docker"))
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+
+	_, err = os.Stat(filepath.Join(wantBase, "config", "devcontainer"))
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+}
+
