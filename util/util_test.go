@@ -228,3 +228,15 @@ func TestCreateConfigFileForDevcontainer(t *testing.T) {
 	}
 
 }
+
+func TestGetConfigDir(t *testing.T) {
+	configDir := "test/resource/TestGetConfigDir/config"
+	workspaceFolder := "test/resource/TestGetConfigDir"
+	got := GetConfigDir(configDir, workspaceFolder)
+
+	want := "test/resource/TestGetConfigDir/config/c6f98b7a913a4e3c094b7ba70d2e0f00"
+	if want != got {
+		t.Fatalf("error: want %s, but got %s", want, got)
+	}
+
+}
