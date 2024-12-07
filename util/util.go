@@ -27,16 +27,16 @@ func IsExistsCommand(command string) bool {
 type GetDirFunc func() (string, error)
 
 // devcontainer.vim が使用するコンフィグディレクトリを作成し、返却する。
-func CreateConfigDirectory(pathFunc GetDirFunc, dirName string) string {
+func CreateConfigDirectory(pathFunc GetDirFunc, dirName string) (string, error) {
 	var baseDir, err = pathFunc()
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	var appConfigDir = filepath.Join(baseDir, dirName)
 	if err := os.MkdirAll(appConfigDir, 0766); err != nil {
 		panic(err)
 	}
-	return appConfigDir
+	return appConfigDir, nil
 }
 
 // devcontainer.vim が使用するキャッシュディレクトリを作成し、返却する。

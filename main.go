@@ -81,7 +81,10 @@ func main() {
 	//    `os.UserConfigDir` + `devcontainer.vim`
 	// 2. ユーザーキャッシュ用ディレクトリ
 	//    `os.UserCacheDir` + `devcontainer.vim`
-	appConfigDir := util.CreateConfigDirectory(os.UserConfigDir, appName)
+	appConfigDir, err := util.CreateConfigDirectory(os.UserConfigDir, appName)
+	if err != nil {
+		panic(err)
+	}
 	appCacheDir, binDir, configDirForDocker, configDirForDevcontainer := util.CreateCacheDirectory(os.UserCacheDir, appName)
 
 	// vimrc ファイルの出力先を組み立て
@@ -868,7 +871,7 @@ func main() {
 	})
 
 	// アプリ実行
-	err := devcontainerVimArgProcess.Run(os.Args)
+	err = devcontainerVimArgProcess.Run(os.Args)
 	if err != nil {
 		if errors.Is(err, os.ErrPermission) {
 			fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
