@@ -135,3 +135,29 @@ func TestCreateCacheDirectorySuccess(t *testing.T) {
 	}
 }
 
+func TestAddExecutePermission(t *testing.T) {
+	target := "TestAddExecutePermission"
+	err := os.Mkdir(target, 0644)
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+	defer func () {
+		os.RemoveAll(target)
+	}()
+
+	err = AddExecutePermission(target)
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+
+	fileInfo, err := os.Stat(target)
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+
+	want := "drwxr-xr-x"
+	got := fileInfo.Mode().String()
+	if got != want {
+		t.Fatalf("error: want %s but got %s", got, want)
+	}
+}
