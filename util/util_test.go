@@ -238,5 +238,19 @@ func TestGetConfigDir(t *testing.T) {
 	if want != got {
 		t.Fatalf("error: want %s, but got %s", want, got)
 	}
-
 }
+
+func TestIsWsl(t *testing.T) {
+	os.Setenv("WSL_DISTRO_NAME", "")
+	got := IsWsl()
+	if got != true {
+		t.Fatalf("error: want true, but got false")
+	}
+
+	os.Unsetenv("WSL_DISTRO_NAME")
+	got = IsWsl()
+	if got != false {
+		t.Fatalf("error: want false, but got true")
+	}
+}
+
