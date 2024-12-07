@@ -254,3 +254,38 @@ func TestIsWsl(t *testing.T) {
 	}
 }
 
+func TestCreateFileWithContents(t *testing.T) {
+	file := "test/TestCreateFileWithContents"
+	contents := "testing"
+
+	err := CreateFileWithContents(file, contents, 0755)
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+
+	defer os.RemoveAll(file)
+
+	// ファイルの存在確認
+	fileInfo, err := os.Stat(file)
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+
+	// モードが設定した通りか？
+	wantFileModeString := "-rwxr-xr-x"
+	gotFileModeString := fileInfo.Mode().String()
+	if wantFileModeString != gotFileModeString {
+		t.Fatalf("error: want %s, but got %s", wantFileModeString, gotFileModeString)
+	}
+
+	// コンテンツが設定した通りか？
+	bytes, err := os.ReadFile(file)
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	if contents != string(bytes) {
+		t.Fatalf("error: want %s, but got %s", contents, string(bytes))
+	}
+
+}
