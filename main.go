@@ -34,6 +34,8 @@ type AvailableTemplateItem struct {
 	Name    string `json:"name"`
 }
 
+const containerCommand = "docker"
+
 var version string
 
 const envDevcontainerVimType = "DEVCONTAINER_VIM_TYPE"
@@ -157,7 +159,7 @@ func main() {
 
 					// Requirements のチェック
 					// 1. docker
-					isExistsDocker := util.IsExistsCommand("docker")
+					isExistsDocker := util.IsExistsCommand(containerCommand)
 					if !isExistsDocker {
 						fmt.Fprintf(os.Stderr, "docker not found.")
 						os.Exit(1)

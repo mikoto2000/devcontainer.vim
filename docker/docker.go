@@ -57,21 +57,21 @@ func Exec(containerID string, command ...string) (string, error) {
 
 // `docker ps --format json` コマンドを実行する。
 func Ps(filter string) (string, error) {
-	dockerPsCommand := exec.Command("docker", "ps", "--format", "json", "--filter", filter)
+	dockerPsCommand := exec.Command(containerCommand, "ps", "--format", "json", "--filter", filter)
 	stdout, err := dockerPsCommand.Output()
 	return string(stdout), err
 }
 
 // `docker stop -f ${containerID}` コマンドを実行する。
 func Stop(containerID string) error {
-	dockerStopCommand := exec.Command("docker", "stop", containerID)
+	dockerStopCommand := exec.Command(containerCommand, "stop", containerID)
 	err := dockerStopCommand.Start()
 	return err
 }
 
 // `docker rm -f ${containerID}` コマンドを実行する。
 func Rm(containerID string) error {
-	dockerRmCommand := exec.Command("docker", "rm", "-f", containerID)
+	dockerRmCommand := exec.Command(containerCommand, "rm", "-f", containerID)
 	err := dockerRmCommand.Start()
 	return err
 }

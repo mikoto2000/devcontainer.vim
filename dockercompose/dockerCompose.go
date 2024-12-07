@@ -5,6 +5,8 @@ import (
 	"os/exec"
 )
 
+const containerCommand = "docker"
+
 type PsCommandError struct {
 	msg string
 }
@@ -53,7 +55,7 @@ func Ps(workspaceFolder string) (string, error) {
 		return "", &PsCommandError{msg: "ワークスペースへの移動に失敗しました。指定したディレクトリが存在するか・パーミッションが正しいかの確認をしてください。 "}
 	}
 
-	dockerComposePsCommand := exec.Command("docker", "compose", "ps", "--format", "json")
+	dockerComposePsCommand := exec.Command(containerCommand, "compose", "ps", "--format", "json")
 	stdout, err := dockerComposePsCommand.Output()
 	if err != nil {
 		return "", &PsCommandError{msg: "docker compose ps コマンドの実行に失敗しました。docker がインストールされているか・docker エンジンが起動しているかの確認をしてください。 "}
@@ -63,7 +65,7 @@ func Ps(workspaceFolder string) (string, error) {
 
 // `docker compose -p ${projectName} stop` を実行する。
 func Stop(projectName string) error {
-	dockerComposeStopCommand := exec.Command("docker", "compose", "-p", projectName, "stop")
+	dockerComposeStopCommand := exec.Command(containerCommand, "compose", "-p", projectName, "stop")
 	err := dockerComposeStopCommand.Start()
 	if err != nil {
 		return &StopCommandError{msg: "docker compose stop コマンドの実行に失敗しました。docker がインストールされているか・docker エンジンが起動しているかの確認をしてください。 "}
@@ -73,7 +75,7 @@ func Stop(projectName string) error {
 
 // `docker compose -p ${projectName} down` を実行する。
 func Down(projectName string) error {
-	dockerComposeDownCommand := exec.Command("docker", "compose", "-p", projectName, "down")
+	dockerComposeDownCommand := exec.Command(containerCommand, "compose", "-p", projectName, "down")
 	err := dockerComposeDownCommand.Start()
 	if err != nil {
 		return &DownCommandError{msg: "docker compose down コマンドの実行に失敗しました。docker がインストールされているか・docker エンジンが起動しているかの確認をしてください。 "}
