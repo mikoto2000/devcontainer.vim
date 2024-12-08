@@ -140,7 +140,7 @@ func download(downloadURL string, destPath string) error {
 }
 
 // run サブコマンド用のツールインストール
-func InstallRunTools(installDir string, nvim bool) (string, error) {
+func InstallRunTools(installDir string) (string, error) {
 	var err error
 	cdrPath, err := CDR.Install(installDir, "", false)
 	if err != nil {
