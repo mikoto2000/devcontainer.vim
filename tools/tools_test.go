@@ -9,6 +9,9 @@ import (
 )
 
 func TestInstallStartTools(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
 	defer os.RemoveAll("test")
 	_, binDir, _, _, err := util.CreateCacheDirectory(func() (string, error) {
 		return "test", nil
@@ -41,4 +44,3 @@ func TestInstallStartTools(t *testing.T) {
 		t.Fatalf("error: %s", err)
 	}
 }
-
