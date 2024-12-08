@@ -8,6 +8,21 @@ import (
 	"github.com/google/go-github/v62/github"
 )
 
+type GetLatestReleaseFromGitHubService interface {
+	GetLatestReleaseFromGitHub(owner string, repo string) (string, error)
+}
+
+type DefaultGetLatestReleaseFromGitHubService struct{}
+
+func (s DefaultGetLatestReleaseFromGitHubService) GetLatestReleaseFromGitHub(owner string, repo string) (string, error) {
+	return GetLatestReleaseFromGitHub(owner, repo)
+}
+
+var GetGetLatestReleaseFromGitHubService = func() GetLatestReleaseFromGitHubService {
+	dglrfg := DefaultGetLatestReleaseFromGitHubService{}
+	return dglrfg
+}
+
 /**
  * ユーザー名、リポジトリ名から最新リリースタグ名を返却する。
  */

@@ -11,6 +11,16 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
+type DownloadService interface {
+	Download(downloadURL string, destPath string) error
+}
+
+type DefaultDownloadService struct{}
+
+func (s DefaultDownloadService) Download(downloadURL string, destPath string) error {
+	return download(downloadURL, destPath)
+}
+
 var GetDownloadService = func() DownloadService {
 	dds := DefaultDownloadService{}
 	return dds
@@ -90,16 +100,6 @@ func (p *ProgressWriter) Write(data []byte) (int, error) {
 	fmt.Printf("\033[7D")
 
 	return n, nil
-}
-
-type DownloadService interface {
-	Download(downloadURL string, destPath string) error
-}
-
-type DefaultDownloadService struct{}
-
-func (s DefaultDownloadService) Download(downloadURL string, destPath string) error {
-	return download(downloadURL, destPath)
 }
 
 // ファイルダウンロード処理。
