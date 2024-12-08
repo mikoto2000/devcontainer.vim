@@ -8,7 +8,18 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
+type TestDownloadService struct{}
+
+func (s TestDownloadService) Download(_ string, destPath string) error {
+	return os.WriteFile(destPath, []byte{}, 0755)
+}
+
 func TestInstallStartTools(t *testing.T) {
+	GetDownloadService = func() DownloadService {
+		tds := TestDownloadService{}
+		return tds
+	}
+
 	if testing.Short() {
 		t.SkipNow()
 	}

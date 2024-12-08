@@ -8,8 +8,14 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
+type TestDownloadService struct{}
+
+func (s TestDownloadService) Download(_ string, destPath string) error {
+	return os.WriteFile(destPath, []byte{}, 0755)
+}
+
 func TestCreateConfigFile(t *testing.T) {
-	defer os.RemoveAll("./test/resource")
+	defer os.RemoveAll("./test/resource/config")
 	_, binDir, _, configDirForDevcontainer, err := util.CreateCacheDirectory(func() (string, error) {
 		return "./test", nil
 	}, "resource")
