@@ -643,7 +643,7 @@ func main() {
 								Action: func(cCtx *cli.Context) error {
 
 									// Vim のダウンロード
-									_, err := tools.VIM.Install(binDir, cCtx.String(flagNameArch), true)
+									_, err := tools.VIM(tools.DefaultInstallerUseServices{}).Install(binDir, cCtx.String(flagNameArch), true)
 									if err != nil {
 										fmt.Fprintf(os.Stderr, "Error installing vim: %v\n", err)
 										os.Exit(1)
