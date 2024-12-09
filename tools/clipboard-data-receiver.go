@@ -114,7 +114,7 @@ var CDR Tool = func() Tool {
 			return downloadURL.String(), nil
 		},
 		installFunc: func(downloadURL string, filePath string, _ string) (string, error) {
-			return simpleInstall(GetDownloadService(), downloadURL, filePath)
+			return simpleInstall(downloadURL, filePath)
 		},
 	}
 }()

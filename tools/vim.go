@@ -82,6 +82,6 @@ var VIM Tool = Tool{
 		}
 	},
 	installFunc: func(downloadURL string, filePath string, containerArch string) (string, error) {
-		return simpleInstall(GetDownloadService(), downloadURL, filePath)
+		return simpleInstall(downloadURL, filePath)
 	},
 }

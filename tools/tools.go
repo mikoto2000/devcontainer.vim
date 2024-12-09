@@ -11,11 +11,6 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
-var GetDownloadService = func() DownloadService {
-	dds := DefaultDownloadService{}
-	return dds
-}
-
 // ツール情報
 type Tool struct {
 	FileName             string
@@ -56,10 +51,10 @@ func (t Tool) Install(installDir string, containerArch string, override bool) (s
 // 単純なファイル配置でインストールが完了するもののインストール処理。
 //
 // downloadURL からファイルをダウンロードし、 installDir に fileName とう名前で配置する。
-func simpleInstall(ds DownloadService, downloadURL string, filePath string) (string, error) {
+func simpleInstall(downloadURL string, filePath string) (string, error) {
 
 	// ツールのダウンロード
-	err := ds.Download(downloadURL, filePath)
+	err := download(downloadURL, filePath)
 	if err != nil {
 		return filePath, err
 	}
@@ -90,16 +85,6 @@ func (p *ProgressWriter) Write(data []byte) (int, error) {
 	fmt.Printf("\033[7D")
 
 	return n, nil
-}
-
-type DownloadService interface {
-	Download(downloadURL string, destPath string) error
-}
-
-type DefaultDownloadService struct{}
-
-func (s DefaultDownloadService) Download(downloadURL string, destPath string) error {
-	return download(downloadURL, destPath)
 }
 
 // ファイルダウンロード処理。
@@ -235,7 +220,7 @@ func SelfUpdate() error {
 		return err
 	}
 
-	_, err = simpleInstall(GetDownloadService(), downloadURL, executablePath)
+	_, err = simpleInstall(downloadURL, executablePath)
 	if err != nil {
 		// Restore the original binary if download fails
 		os.Rename(tempPath, executablePath)
