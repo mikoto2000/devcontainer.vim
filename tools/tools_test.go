@@ -14,20 +14,10 @@ func (s TestDownloadService) Download(_ string, destPath string) error {
 	return os.WriteFile(destPath, []byte{}, 0755)
 }
 
-type TestGetLatestReleaseFromGitHubService struct{}
-
-func (s TestGetLatestReleaseFromGitHubService) GetLatestReleaseFromGitHub(_ string, _ string) (string, error) {
-	return "", nil
-}
-
 func TestInstallStartTools(t *testing.T) {
 	GetDownloadService = func() DownloadService {
 		tds := TestDownloadService{}
 		return tds
-	}
-	util.GetGetLatestReleaseFromGitHubService = func() util.GetLatestReleaseFromGitHubService {
-		tglrfg := TestGetLatestReleaseFromGitHubService{}
-		return tglrfg
 	}
 
 	defer os.RemoveAll("test")
@@ -68,10 +58,6 @@ func TestInstallRunTools(t *testing.T) {
 		tds := TestDownloadService{}
 		return tds
 	}
-	util.GetGetLatestReleaseFromGitHubService = func() util.GetLatestReleaseFromGitHubService {
-		tglrfg := TestGetLatestReleaseFromGitHubService{}
-		return tglrfg
-	}
 
 	defer os.RemoveAll("test")
 	_, binDir, _, _, err := util.CreateCacheDirectory(func() (string, error) {
@@ -101,10 +87,6 @@ func TestInstallVimAmd64(t *testing.T) {
 	GetDownloadService = func() DownloadService {
 		tds := TestDownloadService{}
 		return tds
-	}
-	util.GetGetLatestReleaseFromGitHubService = func() util.GetLatestReleaseFromGitHubService {
-		tglrfg := TestGetLatestReleaseFromGitHubService{}
-		return tglrfg
 	}
 
 	defer os.RemoveAll("test")
@@ -136,10 +118,6 @@ func TestInstallVimAarch64(t *testing.T) {
 		tds := TestDownloadService{}
 		return tds
 	}
-	util.GetGetLatestReleaseFromGitHubService = func() util.GetLatestReleaseFromGitHubService {
-		tglrfg := TestGetLatestReleaseFromGitHubService{}
-		return tglrfg
-	}
 
 	defer os.RemoveAll("test")
 	_, binDir, _, _, err := util.CreateCacheDirectory(func() (string, error) {
@@ -169,10 +147,6 @@ func TestInstallNVimAmd64(t *testing.T) {
 	GetDownloadService = func() DownloadService {
 		tds := TestDownloadService{}
 		return tds
-	}
-	util.GetGetLatestReleaseFromGitHubService = func() util.GetLatestReleaseFromGitHubService {
-		tglrfg := TestGetLatestReleaseFromGitHubService{}
-		return tglrfg
 	}
 
 	defer os.RemoveAll("test")
@@ -204,10 +178,6 @@ func TestInstallNVimAarch64(t *testing.T) {
 		tds := TestDownloadService{}
 		return tds
 	}
-	util.GetGetLatestReleaseFromGitHubService = func() util.GetLatestReleaseFromGitHubService {
-		tglrfg := TestGetLatestReleaseFromGitHubService{}
-		return tglrfg
-	}
 
 	defer os.RemoveAll("test")
 	_, binDir, _, _, err := util.CreateCacheDirectory(func() (string, error) {
@@ -224,74 +194,6 @@ func TestInstallNVimAarch64(t *testing.T) {
 
 	// devcontainer の存在確認
 	wantDevcontainerPath := filepath.Join(binDir, "nvim_aarch64")
-	if wantDevcontainerPath != devcontainerPath {
-		t.Fatalf("want %s, but got %s", wantDevcontainerPath, devcontainerPath)
-	}
-	_, err = os.Stat(wantDevcontainerPath)
-	if err != nil {
-		t.Fatalf("error: %s", err)
-	}
-}
-
-func TestInstallPortForwarderAmd64(t *testing.T) {
-	GetDownloadService = func() DownloadService {
-		tds := TestDownloadService{}
-		return tds
-	}
-	util.GetGetLatestReleaseFromGitHubService = func() util.GetLatestReleaseFromGitHubService {
-		tglrfg := TestGetLatestReleaseFromGitHubService{}
-		return tglrfg
-	}
-
-	defer os.RemoveAll("test")
-	_, binDir, _, _, err := util.CreateCacheDirectory(func() (string, error) {
-		return "test", nil
-	}, "resource")
-	if err != nil {
-		panic(err)
-	}
-
-	devcontainerPath, err := PortForwarderContainer.Install(binDir, "amd64", false)
-	if err != nil {
-		t.Fatalf("Error installing run tools: %v", err)
-	}
-
-	// devcontainer の存在確認
-	wantDevcontainerPath := filepath.Join(binDir, "port-forwarder-container_amd64")
-	if wantDevcontainerPath != devcontainerPath {
-		t.Fatalf("want %s, but got %s", wantDevcontainerPath, devcontainerPath)
-	}
-	_, err = os.Stat(wantDevcontainerPath)
-	if err != nil {
-		t.Fatalf("error: %s", err)
-	}
-}
-
-func TestInstallPortForwarderAarch64(t *testing.T) {
-	GetDownloadService = func() DownloadService {
-		tds := TestDownloadService{}
-		return tds
-	}
-	util.GetGetLatestReleaseFromGitHubService = func() util.GetLatestReleaseFromGitHubService {
-		tglrfg := TestGetLatestReleaseFromGitHubService{}
-		return tglrfg
-	}
-
-	defer os.RemoveAll("test")
-	_, binDir, _, _, err := util.CreateCacheDirectory(func() (string, error) {
-		return "test", nil
-	}, "resource")
-	if err != nil {
-		panic(err)
-	}
-
-	devcontainerPath, err := PortForwarderContainer.Install(binDir, "aarch64", false)
-	if err != nil {
-		t.Fatalf("Error installing run tools: %v", err)
-	}
-
-	// devcontainer の存在確認
-	wantDevcontainerPath := filepath.Join(binDir, "port-forwarder-container_aarch64")
 	if wantDevcontainerPath != devcontainerPath {
 		t.Fatalf("want %s, but got %s", wantDevcontainerPath, devcontainerPath)
 	}
