@@ -80,8 +80,9 @@ var VIM = func(service InstallerUseServices) Tool {
 				return "", errors.New("Unknown Architecture")
 			}
 		},
-		installFunc: func(downloadURL string, filePath string, containerArch string) (string, error) {
-			return service.SimpleInstall(downloadURL, filePath)
+		installFunc: func(downloadFunc func(downloadURL string, destPath string) error, downloadURL string, filePath string, containerArch string) (string, error) {
+			return simpleInstall(downloadFunc, downloadURL, filePath)
 		},
+		DownloadFunc: download,
 	}
 }

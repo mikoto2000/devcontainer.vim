@@ -113,9 +113,10 @@ var CDR = func(services InstallerUseServices) Tool {
 			}
 			return downloadURL.String(), nil
 		},
-		installFunc: func(downloadURL string, filePath string, _ string) (string, error) {
-			return services.SimpleInstall(downloadURL, filePath)
+		installFunc: func(downloadFunc func(downloadURL string, destPath string) error, downloadURL string, filePath string, containerArch string) (string, error) {
+			return simpleInstall(downloadFunc, downloadURL, filePath)
 		},
+		DownloadFunc: download,
 	}
 }
 

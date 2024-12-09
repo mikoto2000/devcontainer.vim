@@ -17,7 +17,7 @@ func TestCreateConfigFile(t *testing.T) {
 		panic(err)
 	}
 
-	devcontainerPath, _, err := tools.InstallStartTools(binDir)
+	devcontainerPath, _, err := tools.InstallStartTools(tools.DefaultInstallerUseServices{}, binDir)
 	if err != nil {
 		t.Fatalf("Error installing start tools: %v", err)
 	}

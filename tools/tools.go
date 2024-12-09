@@ -13,7 +13,7 @@ import (
 
 type InstallerUseServices interface {
 	GetLatestReleaseFromGitHub(owner string, repository string) (string, error)
-	SimpleInstall(downloadURL string, filePath string) (string, error)
+	Download(downloadURL string, destPath string) error
 }
 
 type DefaultInstallerUseServices struct{}
@@ -22,15 +22,16 @@ func (s DefaultInstallerUseServices) GetLatestReleaseFromGitHub(owner string, re
 	return util.GetLatestReleaseFromGitHub(owner, repository)
 }
 
-func (s DefaultInstallerUseServices) SimpleInstall(downloadURL string, filePath string) (string, error) {
-	return SimpleInstall(downloadURL, filePath)
+func (s DefaultInstallerUseServices) Download(downloadURL string, destPath string) error {
+	return download(downloadURL, destPath)
 }
 
 // ツール情報
 type Tool struct {
 	FileName             string
 	CalculateDownloadURL func(containerArch string) (string, error)
-	installFunc          func(downloadURL string, filePath string, containerArch string) (string, error)
+	installFunc          func(downloadFunc func(downloadURL string, destPath string) error, downloadURL string, filePath string, containerArch string) (string, error)
+	DownloadFunc         func(downloadURL string, destPath string) error
 }
 
 // ツールのインストールを実行
@@ -59,17 +60,17 @@ func (t Tool) Install(installDir string, containerArch string, override bool) (s
 		if err != nil {
 			return "", err
 		}
-		return t.installFunc(downloadURL, filePath, containerArch)
+		return t.installFunc(t.DownloadFunc, downloadURL, filePath, containerArch)
 	}
 }
 
 // 単純なファイル配置でインストールが完了するもののインストール処理。
 //
 // downloadURL からファイルをダウンロードし、 installDir に fileName とう名前で配置する。
-func SimpleInstall(downloadURL string, filePath string) (string, error) {
+func simpleInstall(downloadFunc func(downloadURL string, destPath string) error, downloadURL string, filePath string) (string, error) {
 
 	// ツールのダウンロード
-	err := download(downloadURL, filePath)
+	err := downloadFunc(downloadURL, filePath)
 	if err != nil {
 		return filePath, err
 	}
@@ -167,13 +168,13 @@ func InstallVim(installDir string, nvim bool, containerArch string) (string, err
 
 // start サブコマンド用のツールインストール
 // 戻り値は、 devcontainerPath, cdrPath, error
-func InstallStartTools(installDir string) (string, string, error) {
+func InstallStartTools(services InstallerUseServices, installDir string) (string, string, error) {
 	var err error
-	devcontainerPath, err := DEVCONTAINER(DefaultInstallerUseServices{}).Install(installDir, "", false)
+	devcontainerPath, err := DEVCONTAINER(services).Install(installDir, "", false)
 	if err != nil {
 		return devcontainerPath, "", err
 	}
-	cdrPath, err := CDR(DefaultInstallerUseServices{}).Install(installDir, "", false)
+	cdrPath, err := CDR(services).Install(installDir, "", false)
 	if err != nil {
 		return devcontainerPath, cdrPath, err
 	}
@@ -235,7 +236,7 @@ func SelfUpdate(services InstallerUseServices) error {
 		return err
 	}
 
-	_, err = services.SimpleInstall(downloadURL, executablePath)
+	_, err = simpleInstall(services.Download, downloadURL, executablePath)
 	if err != nil {
 		// Restore the original binary if download fails
 		os.Rename(tempPath, executablePath)

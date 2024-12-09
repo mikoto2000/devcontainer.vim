@@ -333,7 +333,7 @@ func main() {
 					if cCtx.Bool(flagNameNeoVim) || os.Getenv(envDevcontainerVimType) == "nvim" {
 						nvim = true
 					}
-					devcontainerPath, cdrPath, err := tools.InstallStartTools(binDir)
+					devcontainerPath, cdrPath, err := tools.InstallStartTools(tools.DefaultInstallerUseServices{}, binDir)
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "Error installing start tools: %v\n", err)
 						os.Exit(1)
