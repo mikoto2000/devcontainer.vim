@@ -73,6 +73,15 @@ func TestStart(t *testing.T) {
 		t.Fatalf("error: want match %s, but got %s", vimfilesWant, vimfilesOutput)
 	}
 	//     portForward がされるか
+	pfOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", "../test/project/TestStart", "sh", "-c", "ls /pf")
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+	pfWant := "localhost:8888_"
+	if !strings.Contains(pfOutput, pfWant) {
+		t.Fatalf("error: want match %s, but got %s", pfWant, pfOutput)
+	}
+
 	//     環境変数が設定されるか
 	termOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", "../test/project/TestStart", "sh", "-c", "\"env\"")
 	if err != nil {
@@ -83,8 +92,32 @@ func TestStart(t *testing.T) {
 		t.Fatalf("error: want match %s, but got %s", termWantMatch, termOutput)
 	}
 	//     /vim
+	vimOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", "../test/project/TestStart", "sh", "-c", "ls /vim")
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+	vimWant := "vim"
+	if !strings.Contains(vimOutput, vimWant) {
+		t.Fatalf("error: want match %s, but got %s", vimWant, vimOutput)
+	}
 	//     /vimrc
+	vimrcOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", "../test/project/TestStart", "sh", "-c", "ls /vimrc")
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+	vimrcWant := "vimrc"
+	if !strings.Contains(vimrcOutput, vimrcWant) {
+		t.Fatalf("error: want match %s, but got %s", vimrcWant, vimrcOutput)
+	}
 	//     /port-forwarder
+	portForwarderOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", "../test/project/TestStart", "sh", "-c", "ls /port-forwarder")
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+	portForwarderWant := "port-forwarder"
+	if !strings.Contains(portForwarderOutput, portForwarderWant) {
+		t.Fatalf("error: want match %s, but got %s", portForwarderWant, portForwarderOutput)
+	}
 
 	// 後片付け
 	//Down([]string{"../test/project/TestStart"}, devcontainerPath, configDirForDevcontainer)
