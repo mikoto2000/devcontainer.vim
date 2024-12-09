@@ -171,7 +171,7 @@ func main() {
 					if cCtx.Bool(flagNameNeoVim) || os.Getenv(envDevcontainerVimType) == "nvim" {
 						nvim = true
 					}
-					cdrPath, err := tools.InstallRunTools(binDir)
+					cdrPath, err := tools.InstallRunTools(binDir, nvim)
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "Error installing run tools: %v\n", err)
 						os.Exit(1)
