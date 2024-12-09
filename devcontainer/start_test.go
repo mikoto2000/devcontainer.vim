@@ -10,6 +10,12 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
+type TestDevcontainerStartUseService struct{}
+
+func (s TestDevcontainerStartUseService) StartVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, sendToTCP string, containerArch string, useSystemVim bool) error {
+	return nil
+}
+
 func TestStart(t *testing.T) {
 	appName := "devcontainer.vim"
 	_, err := util.CreateConfigDirectory(os.UserConfigDir, appName)
@@ -41,7 +47,7 @@ func TestStart(t *testing.T) {
 	}
 
 	// devcontainer を用いたコンテナ立ち上げ
-	err = Start([]string{"../test/project/TestStart"}, devcontainerPath, cdrPath, binDir, nvim, configFilePath, "../test/resource/TestStart/vimrc")
+	err = Start(TestDevcontainerStartUseService{}, []string{"../test/project/TestStart"}, devcontainerPath, cdrPath, binDir, nvim, configFilePath, "../test/resource/TestStart/vimrc")
 	if err != nil {
 		if errors.Is(err, os.ErrPermission) {
 			fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
@@ -50,4 +56,15 @@ func TestStart(t *testing.T) {
 		}
 		os.Exit(1)
 	}
+
+	// TODO:
+	// json マージ後の設定でコンテナが起動するか？
+	//     ストレージのマウントがされるか
+	//     portForward がされるか
+	//     環境変数が設定されるか
+	// 起動したコンテナに所望のファイルが転送されているか？
+	//     /vim
+	//     /vimrc
+	//     /port-forwarder
+
 }
