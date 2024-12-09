@@ -31,6 +31,6 @@ var DEVCONTAINER Tool = Tool{
 		return downloadURL.String(), nil
 	},
 	installFunc: func(downloadURL string, filePath string, _ string) (string, error) {
-		return simpleInstall(downloadURL, filePath)
+		return SimpleInstall(downloadURL, filePath)
 	},
 }

@@ -43,6 +43,6 @@ var PortForwarderContainer Tool = Tool{
 		return downloadURL.String(), nil
 	},
 	installFunc: func(downloadURL string, filePath string, containerArch string) (string, error) {
-		return simpleInstall(downloadURL, filePath)
+		return SimpleInstall(downloadURL, filePath)
 	},
 }

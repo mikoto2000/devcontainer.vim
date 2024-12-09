@@ -851,7 +851,7 @@ func main() {
 				Usage:     "Update devcontainer.vim itself",
 				UsageText: "devcontainer.vim self-update",
 				Action: func(cCtx *cli.Context) error {
-					err := tools.SelfUpdate()
+					err := tools.SelfUpdate(tools.DefaultSelfUpdateUseServices{})
 					if err != nil {
 						if errors.Is(err, os.ErrPermission) {
 							fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)

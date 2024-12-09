@@ -51,7 +51,7 @@ func (t Tool) Install(installDir string, containerArch string, override bool) (s
 // 単純なファイル配置でインストールが完了するもののインストール処理。
 //
 // downloadURL からファイルをダウンロードし、 installDir に fileName とう名前で配置する。
-func simpleInstall(downloadURL string, filePath string) (string, error) {
+func SimpleInstall(downloadURL string, filePath string) (string, error) {
 
 	// ツールのダウンロード
 	err := download(downloadURL, filePath)
@@ -189,8 +189,23 @@ func InstallDownTools(installDir string) (string, error) {
 	return devcontainerPath, err
 }
 
+type SelfUpdateUseServices interface {
+	GetLatestReleaseFromGitHub(owner string, repository string) (string, error)
+	SimpleInstall(downloadURL string, filePath string) (string, error)
+}
+
+type DefaultSelfUpdateUseServices struct{}
+
+func (s DefaultSelfUpdateUseServices) GetLatestReleaseFromGitHub(owner string, repository string) (string, error) {
+	return util.GetLatestReleaseFromGitHub(owner, repository)
+}
+
+func (s DefaultSelfUpdateUseServices) SimpleInstall(downloadURL string, filePath string) (string, error) {
+	return SimpleInstall(downloadURL, filePath)
+}
+
 // SelfUpdate downloads the latest release of devcontainer.vim from GitHub and replaces the current binary
-func SelfUpdate() error {
+func SelfUpdate(services SelfUpdateUseServices) error {
 	// Get the latest release tag name from GitHub
 	latestTagName, err := util.GetLatestReleaseFromGitHub("mikoto2000", "devcontainer.vim")
 	if err != nil {
@@ -220,7 +235,7 @@ func SelfUpdate() error {
 		return err
 	}
 
-	_, err = simpleInstall(downloadURL, executablePath)
+	_, err = SimpleInstall(downloadURL, executablePath)
 	if err != nil {
 		// Restore the original binary if download fails
 		os.Rename(tempPath, executablePath)
