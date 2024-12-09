@@ -353,7 +353,7 @@ func main() {
 					}
 
 					// devcontainer を用いたコンテナ立ち上げ
-					err = devcontainer.Start(args, devcontainerPath, cdrPath, binDir, nvim, configFilePath, vimrc)
+					err = devcontainer.Start(devcontainer.DefaultDevcontainerStartUseService{}, args, devcontainerPath, cdrPath, binDir, nvim, configFilePath, vimrc)
 					if err != nil {
 						if errors.Is(err, os.ErrPermission) {
 							fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
