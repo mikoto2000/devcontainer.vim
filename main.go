@@ -677,7 +677,7 @@ func main() {
 								Action: func(cCtx *cli.Context) error {
 
 									// NeoVim のダウンロード
-									_, err := tools.NVIM.Install(binDir, cCtx.String(flagNameArch), true)
+									_, err := tools.NVIM(tools.DefaultInstallerUseServices{}).Install(binDir, cCtx.String(flagNameArch), true)
 									if err != nil {
 										fmt.Fprintf(os.Stderr, "Error installing nvim: %v\n", err)
 										os.Exit(1)

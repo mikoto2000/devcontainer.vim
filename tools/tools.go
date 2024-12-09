@@ -159,7 +159,7 @@ func InstallVim(installDir string, nvim bool, containerArch string) (string, err
 			// M1 Mac で amd64 のコンテナを動かすと、なぜか AppImage が動かないので vim にフォールバック
 			vimPath, err = VIM(DefaultInstallerUseServices{}).Install(installDir, containerArch, false)
 		} else {
-			vimPath, err = NVIM.Install(installDir, containerArch, false)
+			vimPath, err = NVIM(DefaultInstallerUseServices{}).Install(installDir, containerArch, false)
 		}
 	}
 	return vimPath, err
