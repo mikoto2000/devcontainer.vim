@@ -704,7 +704,7 @@ func main() {
 								Action: func(cCtx *cli.Context) error {
 
 									// devcontainer のダウンロード
-									_, err := tools.DEVCONTAINER.Install(binDir, "", true)
+									_, err := tools.DEVCONTAINER(tools.DefaultInstallerUseServices{}).Install(binDir, "", true)
 									if err != nil {
 										fmt.Fprintf(os.Stderr, "Error installing devcontainer: %v\n", err)
 										os.Exit(1)
@@ -731,7 +731,7 @@ func main() {
 								Action: func(cCtx *cli.Context) error {
 
 									// clipboard-data-receiver のダウンロード
-									_, err := tools.CDR.Install(binDir, "", true)
+									_, err := tools.CDR(tools.DefaultInstallerUseServices{}).Install(binDir, "", true)
 									if err != nil {
 										fmt.Fprintf(os.Stderr, "Error installing clipboard-data-receiver: %v\n", err)
 										os.Exit(1)
@@ -765,7 +765,7 @@ func main() {
 								Action: func(cCtx *cli.Context) error {
 
 									// clipboard-data-receiver のダウンロード
-									_, err := tools.PortForwarderContainer.Install(binDir, cCtx.String(flagNameArch), true)
+									_, err := tools.PortForwarderContainer(tools.DefaultInstallerUseServices{}).Install(binDir, cCtx.String(flagNameArch), true)
 									if err != nil {
 										fmt.Fprintf(os.Stderr, "Error installing port-forwarder: %v\n", err)
 										os.Exit(1)
@@ -851,7 +851,7 @@ func main() {
 				Usage:     "Update devcontainer.vim itself",
 				UsageText: "devcontainer.vim self-update",
 				Action: func(cCtx *cli.Context) error {
-					err := tools.SelfUpdate(tools.DefaultSelfUpdateUseServices{})
+					err := tools.SelfUpdate(tools.DefaultInstallerUseServices{})
 					if err != nil {
 						if errors.Is(err, os.ErrPermission) {
 							fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)

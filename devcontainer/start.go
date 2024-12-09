@@ -70,7 +70,7 @@ func Start(
 	}
 	fmt.Printf("Container Arch: '%s'.\n", containerArch)
 
-	portForwarderContainerPath, err := tools.PortForwarderContainer.Install(vimInstallDir, containerArch, false)
+	portForwarderContainerPath, err := tools.PortForwarderContainer(tools.DefaultInstallerUseServices{}).Install(vimInstallDir, containerArch, false)
 	if err != nil {
 		return err
 	}

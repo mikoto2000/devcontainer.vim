@@ -44,3 +44,20 @@ func TestInstallStartTools(t *testing.T) {
 		t.Fatalf("error: %s", err)
 	}
 }
+
+type TestSelfUpdateUseServices struct{}
+
+func (s TestSelfUpdateUseServices) GetLatestReleaseFromGitHub(owner string, repository string) (string, error) {
+	return "", nil
+}
+
+func (s TestSelfUpdateUseServices) SimpleInstall(downloadURL string, filePath string) (string, error) {
+	return "", nil
+}
+
+func TestSelfUpdate(t *testing.T) {
+	err := SelfUpdate(TestSelfUpdateUseServices{})
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+}

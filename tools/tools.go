@@ -11,6 +11,21 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
+type InstallerUseServices interface {
+	GetLatestReleaseFromGitHub(owner string, repository string) (string, error)
+	SimpleInstall(downloadURL string, filePath string) (string, error)
+}
+
+type DefaultInstallerUseServices struct{}
+
+func (s DefaultInstallerUseServices) GetLatestReleaseFromGitHub(owner string, repository string) (string, error) {
+	return util.GetLatestReleaseFromGitHub(owner, repository)
+}
+
+func (s DefaultInstallerUseServices) SimpleInstall(downloadURL string, filePath string) (string, error) {
+	return SimpleInstall(downloadURL, filePath)
+}
+
 // ツール情報
 type Tool struct {
 	FileName             string
@@ -127,7 +142,7 @@ func download(downloadURL string, destPath string) error {
 // run サブコマンド用のツールインストール
 func InstallRunTools(installDir string, nvim bool) (string, error) {
 	var err error
-	cdrPath, err := CDR.Install(installDir, "", false)
+	cdrPath, err := CDR(DefaultInstallerUseServices{}).Install(installDir, "", false)
 	if err != nil {
 		return cdrPath, err
 	}
@@ -154,11 +169,11 @@ func InstallVim(installDir string, nvim bool, containerArch string) (string, err
 // 戻り値は、 devcontainerPath, cdrPath, error
 func InstallStartTools(installDir string) (string, string, error) {
 	var err error
-	devcontainerPath, err := DEVCONTAINER.Install(installDir, "", false)
+	devcontainerPath, err := DEVCONTAINER(DefaultInstallerUseServices{}).Install(installDir, "", false)
 	if err != nil {
 		return devcontainerPath, "", err
 	}
-	cdrPath, err := CDR.Install(installDir, "", false)
+	cdrPath, err := CDR(DefaultInstallerUseServices{}).Install(installDir, "", false)
 	if err != nil {
 		return devcontainerPath, cdrPath, err
 	}
@@ -167,47 +182,32 @@ func InstallStartTools(installDir string) (string, string, error) {
 
 // devcontainer サブコマンド用のツールインストール
 func InstallDevcontainerTools(installDir string) (string, error) {
-	devcontainerPath, err := DEVCONTAINER.Install(installDir, "", false)
+	devcontainerPath, err := DEVCONTAINER(DefaultInstallerUseServices{}).Install(installDir, "", false)
 	return devcontainerPath, err
 }
 
 // Templates サブコマンド用のツールインストール
 func InstallTemplatesTools(installDir string) (string, error) {
-	devcontainerPath, err := DEVCONTAINER.Install(installDir, "", false)
+	devcontainerPath, err := DEVCONTAINER(DefaultInstallerUseServices{}).Install(installDir, "", false)
 	return devcontainerPath, err
 }
 
 // Stop サブコマンド用のツールインストール
 func InstallStopTools(installDir string) (string, error) {
-	devcontainerPath, err := DEVCONTAINER.Install(installDir, "", false)
+	devcontainerPath, err := DEVCONTAINER(DefaultInstallerUseServices{}).Install(installDir, "", false)
 	return devcontainerPath, err
 }
 
 // Down サブコマンド用のツールインストール
 func InstallDownTools(installDir string) (string, error) {
-	devcontainerPath, err := DEVCONTAINER.Install(installDir, "", false)
+	devcontainerPath, err := DEVCONTAINER(DefaultInstallerUseServices{}).Install(installDir, "", false)
 	return devcontainerPath, err
 }
 
-type SelfUpdateUseServices interface {
-	GetLatestReleaseFromGitHub(owner string, repository string) (string, error)
-	SimpleInstall(downloadURL string, filePath string) (string, error)
-}
-
-type DefaultSelfUpdateUseServices struct{}
-
-func (s DefaultSelfUpdateUseServices) GetLatestReleaseFromGitHub(owner string, repository string) (string, error) {
-	return util.GetLatestReleaseFromGitHub(owner, repository)
-}
-
-func (s DefaultSelfUpdateUseServices) SimpleInstall(downloadURL string, filePath string) (string, error) {
-	return SimpleInstall(downloadURL, filePath)
-}
-
 // SelfUpdate downloads the latest release of devcontainer.vim from GitHub and replaces the current binary
-func SelfUpdate(services SelfUpdateUseServices) error {
+func SelfUpdate(services InstallerUseServices) error {
 	// Get the latest release tag name from GitHub
-	latestTagName, err := util.GetLatestReleaseFromGitHub("mikoto2000", "devcontainer.vim")
+	latestTagName, err := services.GetLatestReleaseFromGitHub("mikoto2000", "devcontainer.vim")
 	if err != nil {
 		return err
 	}
@@ -235,7 +235,7 @@ func SelfUpdate(services SelfUpdateUseServices) error {
 		return err
 	}
 
-	_, err = SimpleInstall(downloadURL, executablePath)
+	_, err = services.SimpleInstall(downloadURL, executablePath)
 	if err != nil {
 		// Restore the original binary if download fails
 		os.Rename(tempPath, executablePath)
