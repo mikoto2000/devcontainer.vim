@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/mikoto2000/devcontainer.vim/v3/tools"
@@ -46,8 +47,10 @@ func TestStart(t *testing.T) {
 		os.Exit(1)
 	}
 
+	args := []string{"../test/project/TestStart"}
+
 	// devcontainer を用いたコンテナ立ち上げ
-	err = Start(TestDevcontainerStartUseService{}, []string{"../test/project/TestStart"}, devcontainerPath, cdrPath, binDir, nvim, configFilePath, "../test/resource/TestStart/vimrc")
+	err = Start(TestDevcontainerStartUseService{}, args, devcontainerPath, cdrPath, binDir, nvim, configFilePath, "../test/resource/TestStart/vimrc")
 	if err != nil {
 		if errors.Is(err, os.ErrPermission) {
 			fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
@@ -59,12 +62,30 @@ func TestStart(t *testing.T) {
 
 	// TODO:
 	// json マージ後の設定でコンテナが起動するか？
+	// 起動したコンテナに所望のファイルが転送されているか？
 	//     ストレージのマウントがされるか
+	vimfilesOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", "../test/project/TestStart", "sh", "-c", "ls -d ~/.vim")
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+	vimfilesWant := "/home/vscode/.vim"
+	if !strings.Contains(vimfilesOutput, vimfilesWant) {
+		t.Fatalf("error: want match %s, but got %s", vimfilesWant, vimfilesOutput)
+	}
 	//     portForward がされるか
 	//     環境変数が設定されるか
-	// 起動したコンテナに所望のファイルが転送されているか？
+	termOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", "../test/project/TestStart", "sh", "-c", "\"env\"")
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+	termWantMatch := "TERM=xterm-256color"
+	if !strings.Contains(termOutput, termWantMatch) {
+		t.Fatalf("error: want match %s, but got %s", termWantMatch, termOutput)
+	}
 	//     /vim
 	//     /vimrc
 	//     /port-forwarder
 
+	// 後片付け
+	//Down([]string{"../test/project/TestStart"}, devcontainerPath, configDirForDevcontainer)
 }
