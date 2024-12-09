@@ -95,11 +95,16 @@ func Start(
 	containerIp = strings.TrimSpace(containerIp)
 
 	// すでに port-forwarder が起動しているなら実行しない
-	psOut, err := docker.Exec(containerID, "sh", "-c", "ps aux | grep port-forwarder")
+	psOut, err := docker.Exec(containerID, "sh", "-c", "grep --files-with-matches port-forwarder /proc/*/comm || true")
 	if err != nil {
 		return err
 	}
-	if len(strings.Split(strings.TrimSpace(psOut), "\n")) == 2 {
+	fmt.Printf("Running port-forwarders: %s\n", strings.Split(strings.TrimSpace(psOut), "\n"))
+
+	pfCount := strings.Split(strings.TrimSpace(psOut), "\n")
+	pfCount = util.RemoveEmptyString(pfCount)
+
+	if len(pfCount) == 0 {
 		fmt.Println("Start port-forwarder in container.")
 
 		// forwardPorts を解釈してport-forwarder を実行

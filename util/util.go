@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/Jeffail/gabs/v2"
 	"github.com/tailscale/hujson"
@@ -249,5 +250,16 @@ func NormalizeContainerArch(containerArch string) (string, error) {
 	} else {
 		return "", errors.New("Unknown Architecture")
 	}
+}
 
+func RemoveEmptyString(input []string) []string {
+	var result []string
+
+	for _, v := range input {
+		if strings.TrimSpace(v) != "" {
+			result = append(result, v)
+		}
+	}
+
+	return result
 }
