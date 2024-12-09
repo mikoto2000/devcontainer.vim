@@ -1,0 +1,25 @@
+{
+  "remoteEnv": {
+    "EDITOR": "/vim --appimage-extract-and-run",
+    "LESSCHARSET": "utf-8",
+    "SHELL": "bash",
+    "TERM": "xterm-256color",
+  },
+  "mounts": [
+    {
+      "type": "bind",
+      "source": "${localEnv:HOME}/.vim",
+      "target": "/home/vscode/.vim"
+    },
+    {
+      "type": "bind",
+      "source": "${localEnv:HOME}/.gitconfig",
+      "target": "/home/vscode/.gitconfig"
+    },
+    {
+      "type": "bind",
+      "source": "${localEnv:HOME}/.ssh",
+      "target": "/home/vscode/.ssh"
+    },
+  ],
+}

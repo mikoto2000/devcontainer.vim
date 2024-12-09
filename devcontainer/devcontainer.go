@@ -293,3 +293,34 @@ func ExecuteCombineOutput(devcontainerFilePath string, args ...string) (string, 
 	stdout, err := cmd.CombinedOutput()
 	return string(stdout), err
 }
+
+// devcontainer.vim 起動時に使用する設定ファイルを作成する
+// 設定ファイルは、 devcontainer.vim のキャッシュ内の `config` ディレクトリに、
+// ワークスペースフォルダのパスを md5 ハッシュ化した名前のディレクトリに格納する.
+func CreateConfigFile(devcontainerPath string, workspaceFolder string, configDirForDevcontainer string) (string, error) {
+	// devcontainer の設定ファイルパス取得
+	configFilePath, err := GetConfigurationFilePath(devcontainerPath, workspaceFolder)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return "", fmt.Errorf("configuration file not found: %w", err)
+		}
+		return "", err
+	}
+
+	// devcontainer.vim 用の追加設定ファイルを探す
+	configurationFileName := configFilePath[:len(configFilePath)-len(filepath.Ext(configFilePath))]
+	additionalConfigurationFilePath := configurationFileName + ".vim.json"
+
+	// 設定管理フォルダに JSON を配置
+	mergedConfigFilePath, err := util.CreateConfigFileForDevcontainer(configDirForDevcontainer, workspaceFolder, configFilePath, additionalConfigurationFilePath)
+	if err != nil {
+		if errors.Is(err, os.ErrPermission) {
+			return "", fmt.Errorf("permission error: %w", err)
+		}
+		return "", err
+	}
+
+	fmt.Printf("Use configuration file: `%s`", mergedConfigFilePath)
+
+	return mergedConfigFilePath, err
+}

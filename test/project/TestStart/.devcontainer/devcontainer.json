@@ -1,0 +1,4 @@
+{
+  "name": "TestStart",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+}
