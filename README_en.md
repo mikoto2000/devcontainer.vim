@@ -35,7 +35,11 @@ It's a tool that adds and starts settings for Vim-based Dev Container developmen
 The following commands are installed and in the PATH.
 
 - docker
+
+The following commands must exist in the container and be in the PATH.
+
 - which
+- ps
 
 For ARM, the `tar` command must be present in the container.
 
