@@ -1,0 +1,8 @@
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/base:bookworm
+    init: true
+    restart: always
+    command: ["sleep", "infinity"]
+    ports:
+      - 8889:8889
