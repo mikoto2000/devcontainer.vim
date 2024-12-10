@@ -11,11 +11,27 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
+type InstallerUseServices interface {
+	GetLatestReleaseFromGitHub(owner string, repository string) (string, error)
+	Download(downloadURL string, destPath string) error
+}
+
+type DefaultInstallerUseServices struct{}
+
+func (s DefaultInstallerUseServices) GetLatestReleaseFromGitHub(owner string, repository string) (string, error) {
+	return util.GetLatestReleaseFromGitHub(owner, repository)
+}
+
+func (s DefaultInstallerUseServices) Download(downloadURL string, destPath string) error {
+	return download(downloadURL, destPath)
+}
+
 // ツール情報
 type Tool struct {
 	FileName             string
 	CalculateDownloadURL func(containerArch string) (string, error)
-	installFunc          func(downloadURL string, filePath string, containerArch string) (string, error)
+	installFunc          func(downloadFunc func(downloadURL string, destPath string) error, downloadURL string, filePath string, containerArch string) (string, error)
+	DownloadFunc         func(downloadURL string, destPath string) error
 }
 
 // ツールのインストールを実行
@@ -44,17 +60,17 @@ func (t Tool) Install(installDir string, containerArch string, override bool) (s
 		if err != nil {
 			return "", err
 		}
-		return t.installFunc(downloadURL, filePath, containerArch)
+		return t.installFunc(t.DownloadFunc, downloadURL, filePath, containerArch)
 	}
 }
 
 // 単純なファイル配置でインストールが完了するもののインストール処理。
 //
 // downloadURL からファイルをダウンロードし、 installDir に fileName とう名前で配置する。
-func simpleInstall(downloadURL string, filePath string) (string, error) {
+func simpleInstall(downloadFunc func(downloadURL string, destPath string) error, downloadURL string, filePath string) (string, error) {
 
 	// ツールのダウンロード
-	err := download(downloadURL, filePath)
+	err := downloadFunc(downloadURL, filePath)
 	if err != nil {
 		return filePath, err
 	}
@@ -127,7 +143,7 @@ func download(downloadURL string, destPath string) error {
 // run サブコマンド用のツールインストール
 func InstallRunTools(installDir string, nvim bool) (string, error) {
 	var err error
-	cdrPath, err := CDR.Install(installDir, "", false)
+	cdrPath, err := CDR(DefaultInstallerUseServices{}).Install(installDir, "", false)
 	if err != nil {
 		return cdrPath, err
 	}
@@ -138,13 +154,13 @@ func InstallVim(installDir string, nvim bool, containerArch string) (string, err
 	var vimPath string
 	var err error
 	if !nvim {
-		vimPath, err = VIM.Install(installDir, containerArch, false)
+		vimPath, err = VIM(DefaultInstallerUseServices{}).Install(installDir, containerArch, false)
 	} else {
 		if runtime.GOOS == "darwin" && containerArch == "amd64" {
 			// M1 Mac で amd64 のコンテナを動かすと、なぜか AppImage が動かないので vim にフォールバック
-			vimPath, err = VIM.Install(installDir, containerArch, false)
+			vimPath, err = VIM(DefaultInstallerUseServices{}).Install(installDir, containerArch, false)
 		} else {
-			vimPath, err = NVIM.Install(installDir, containerArch, false)
+			vimPath, err = NVIM(DefaultInstallerUseServices{}).Install(installDir, containerArch, false)
 		}
 	}
 	return vimPath, err
@@ -152,13 +168,13 @@ func InstallVim(installDir string, nvim bool, containerArch string) (string, err
 
 // start サブコマンド用のツールインストール
 // 戻り値は、 devcontainerPath, cdrPath, error
-func InstallStartTools(installDir string) (string, string, error) {
+func InstallStartTools(services InstallerUseServices, installDir string) (string, string, error) {
 	var err error
-	devcontainerPath, err := DEVCONTAINER.Install(installDir, "", false)
+	devcontainerPath, err := DEVCONTAINER(services).Install(installDir, "", false)
 	if err != nil {
 		return devcontainerPath, "", err
 	}
-	cdrPath, err := CDR.Install(installDir, "", false)
+	cdrPath, err := CDR(services).Install(installDir, "", false)
 	if err != nil {
 		return devcontainerPath, cdrPath, err
 	}
@@ -167,32 +183,32 @@ func InstallStartTools(installDir string) (string, string, error) {
 
 // devcontainer サブコマンド用のツールインストール
 func InstallDevcontainerTools(installDir string) (string, error) {
-	devcontainerPath, err := DEVCONTAINER.Install(installDir, "", false)
+	devcontainerPath, err := DEVCONTAINER(DefaultInstallerUseServices{}).Install(installDir, "", false)
 	return devcontainerPath, err
 }
 
 // Templates サブコマンド用のツールインストール
 func InstallTemplatesTools(installDir string) (string, error) {
-	devcontainerPath, err := DEVCONTAINER.Install(installDir, "", false)
+	devcontainerPath, err := DEVCONTAINER(DefaultInstallerUseServices{}).Install(installDir, "", false)
 	return devcontainerPath, err
 }
 
 // Stop サブコマンド用のツールインストール
 func InstallStopTools(installDir string) (string, error) {
-	devcontainerPath, err := DEVCONTAINER.Install(installDir, "", false)
+	devcontainerPath, err := DEVCONTAINER(DefaultInstallerUseServices{}).Install(installDir, "", false)
 	return devcontainerPath, err
 }
 
 // Down サブコマンド用のツールインストール
 func InstallDownTools(installDir string) (string, error) {
-	devcontainerPath, err := DEVCONTAINER.Install(installDir, "", false)
+	devcontainerPath, err := DEVCONTAINER(DefaultInstallerUseServices{}).Install(installDir, "", false)
 	return devcontainerPath, err
 }
 
 // SelfUpdate downloads the latest release of devcontainer.vim from GitHub and replaces the current binary
-func SelfUpdate() error {
+func SelfUpdate(services InstallerUseServices) error {
 	// Get the latest release tag name from GitHub
-	latestTagName, err := util.GetLatestReleaseFromGitHub("mikoto2000", "devcontainer.vim")
+	latestTagName, err := services.GetLatestReleaseFromGitHub("mikoto2000", "devcontainer.vim")
 	if err != nil {
 		return err
 	}
@@ -220,7 +236,7 @@ func SelfUpdate() error {
 		return err
 	}
 
-	_, err = simpleInstall(downloadURL, executablePath)
+	_, err = simpleInstall(services.Download, downloadURL, executablePath)
 	if err != nil {
 		// Restore the original binary if download fails
 		os.Rename(tempPath, executablePath)

@@ -93,7 +93,7 @@ func Run(
 		return err
 	}
 
-	portForwarderContainerPath, err := tools.PortForwarderContainer.Install(vimInstallDir, containerArch, false)
+	portForwarderContainerPath, err := tools.PortForwarderContainer(tools.DefaultInstallerUseServices{}).Install(vimInstallDir, containerArch, false)
 	if err != nil {
 		return err
 	}

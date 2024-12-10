@@ -333,7 +333,7 @@ func main() {
 					if cCtx.Bool(flagNameNeoVim) || os.Getenv(envDevcontainerVimType) == "nvim" {
 						nvim = true
 					}
-					devcontainerPath, cdrPath, err := tools.InstallStartTools(binDir)
+					devcontainerPath, cdrPath, err := tools.InstallStartTools(tools.DefaultInstallerUseServices{}, binDir)
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "Error installing start tools: %v\n", err)
 						os.Exit(1)
@@ -342,7 +342,7 @@ func main() {
 					// コマンドライン引数の末尾は `--workspace-folder` の値として使う
 					args := cCtx.Args().Slice()
 					workspaceFolder := args[len(args)-1]
-					configFilePath, err := createConfigFile(devcontainerPath, workspaceFolder, configDirForDevcontainer)
+					configFilePath, err := devcontainer.CreateConfigFile(devcontainerPath, workspaceFolder, configDirForDevcontainer)
 					if err != nil {
 						if errors.Is(err, os.ErrNotExist) {
 							fmt.Fprintf(os.Stderr, "Configuration file not found: %v\n", err)
@@ -353,7 +353,7 @@ func main() {
 					}
 
 					// devcontainer を用いたコンテナ立ち上げ
-					err = devcontainer.Start(args, devcontainerPath, cdrPath, binDir, nvim, configFilePath, vimrc)
+					err = devcontainer.Start(devcontainer.DefaultDevcontainerStartUseService{}, args, devcontainerPath, cdrPath, binDir, nvim, configFilePath, vimrc)
 					if err != nil {
 						if errors.Is(err, os.ErrPermission) {
 							fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
@@ -643,7 +643,7 @@ func main() {
 								Action: func(cCtx *cli.Context) error {
 
 									// Vim のダウンロード
-									_, err := tools.VIM.Install(binDir, cCtx.String(flagNameArch), true)
+									_, err := tools.VIM(tools.DefaultInstallerUseServices{}).Install(binDir, cCtx.String(flagNameArch), true)
 									if err != nil {
 										fmt.Fprintf(os.Stderr, "Error installing vim: %v\n", err)
 										os.Exit(1)
@@ -677,7 +677,7 @@ func main() {
 								Action: func(cCtx *cli.Context) error {
 
 									// NeoVim のダウンロード
-									_, err := tools.NVIM.Install(binDir, cCtx.String(flagNameArch), true)
+									_, err := tools.NVIM(tools.DefaultInstallerUseServices{}).Install(binDir, cCtx.String(flagNameArch), true)
 									if err != nil {
 										fmt.Fprintf(os.Stderr, "Error installing nvim: %v\n", err)
 										os.Exit(1)
@@ -704,7 +704,7 @@ func main() {
 								Action: func(cCtx *cli.Context) error {
 
 									// devcontainer のダウンロード
-									_, err := tools.DEVCONTAINER.Install(binDir, "", true)
+									_, err := tools.DEVCONTAINER(tools.DefaultInstallerUseServices{}).Install(binDir, "", true)
 									if err != nil {
 										fmt.Fprintf(os.Stderr, "Error installing devcontainer: %v\n", err)
 										os.Exit(1)
@@ -731,7 +731,7 @@ func main() {
 								Action: func(cCtx *cli.Context) error {
 
 									// clipboard-data-receiver のダウンロード
-									_, err := tools.CDR.Install(binDir, "", true)
+									_, err := tools.CDR(tools.DefaultInstallerUseServices{}).Install(binDir, "", true)
 									if err != nil {
 										fmt.Fprintf(os.Stderr, "Error installing clipboard-data-receiver: %v\n", err)
 										os.Exit(1)
@@ -765,7 +765,7 @@ func main() {
 								Action: func(cCtx *cli.Context) error {
 
 									// clipboard-data-receiver のダウンロード
-									_, err := tools.PortForwarderContainer.Install(binDir, cCtx.String(flagNameArch), true)
+									_, err := tools.PortForwarderContainer(tools.DefaultInstallerUseServices{}).Install(binDir, cCtx.String(flagNameArch), true)
 									if err != nil {
 										fmt.Fprintf(os.Stderr, "Error installing port-forwarder: %v\n", err)
 										os.Exit(1)
@@ -851,7 +851,7 @@ func main() {
 				Usage:     "Update devcontainer.vim itself",
 				UsageText: "devcontainer.vim self-update",
 				Action: func(cCtx *cli.Context) error {
-					err := tools.SelfUpdate()
+					err := tools.SelfUpdate(tools.DefaultInstallerUseServices{})
 					if err != nil {
 						if errors.Is(err, os.ErrPermission) {
 							fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
@@ -885,35 +885,4 @@ func main() {
 		}
 		os.Exit(1)
 	}
-}
-
-// devcontainer.vim 起動時に使用する設定ファイルを作成する
-// 設定ファイルは、 devcontainer.vim のキャッシュ内の `config` ディレクトリに、
-// ワークスペースフォルダのパスを md5 ハッシュ化した名前のディレクトリに格納する.
-func createConfigFile(devcontainerPath string, workspaceFolder string, configDirForDevcontainer string) (string, error) {
-	// devcontainer の設定ファイルパス取得
-	configFilePath, err := devcontainer.GetConfigurationFilePath(devcontainerPath, workspaceFolder)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return "", fmt.Errorf("configuration file not found: %w", err)
-		}
-		return "", err
-	}
-
-	// devcontainer.vim 用の追加設定ファイルを探す
-	configurationFileName := configFilePath[:len(configFilePath)-len(filepath.Ext(configFilePath))]
-	additionalConfigurationFilePath := configurationFileName + ".vim.json"
-
-	// 設定管理フォルダに JSON を配置
-	mergedConfigFilePath, err := util.CreateConfigFileForDevcontainer(configDirForDevcontainer, workspaceFolder, configFilePath, additionalConfigurationFilePath)
-	if err != nil {
-		if errors.Is(err, os.ErrPermission) {
-			return "", fmt.Errorf("permission error: %w", err)
-		}
-		return "", err
-	}
-
-	fmt.Printf("Use configuration file: `%s`", mergedConfigFilePath)
-
-	return mergedConfigFilePath, err
 }

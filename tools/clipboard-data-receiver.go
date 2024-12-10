@@ -75,7 +75,7 @@ end
 `
 
 // clipboard-data-receiver のツール情報
-var CDR Tool = func() Tool {
+var CDR = func(services InstallerUseServices) Tool {
 
 	// WSL 上で実行されているかを判定し、
 	// WSL 上で実行されているなら `.exe` をダウンロード
@@ -100,7 +100,7 @@ var CDR Tool = func() Tool {
 	return Tool{
 		FileName: cdrFileName,
 		CalculateDownloadURL: func(_ string) (string, error) {
-			latestTagName, err := util.GetLatestReleaseFromGitHub("mikoto2000", "clipboard-data-receiver")
+			latestTagName, err := services.GetLatestReleaseFromGitHub("mikoto2000", "clipboard-data-receiver")
 			if err != nil {
 				return "", err
 			}
@@ -113,11 +113,12 @@ var CDR Tool = func() Tool {
 			}
 			return downloadURL.String(), nil
 		},
-		installFunc: func(downloadURL string, filePath string, _ string) (string, error) {
-			return simpleInstall(downloadURL, filePath)
+		installFunc: func(downloadFunc func(downloadURL string, destPath string) error, downloadURL string, filePath string, containerArch string) (string, error) {
+			return simpleInstall(downloadFunc, downloadURL, filePath)
 		},
+		DownloadFunc: download,
 	}
-}()
+}
 
 // clipboard-data-receiver を起動
 // pid ファイル、 port ファイルを configFileDir へ保存する。

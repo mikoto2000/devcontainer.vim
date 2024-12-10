@@ -17,11 +17,22 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
+type DevcontainerStartUseService interface {
+	StartVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, sendToTCP string, containerArch string, useSystemVim bool) error
+}
+
+type DefaultDevcontainerStartUseService struct{}
+
+func (s DefaultDevcontainerStartUseService) StartVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, sendToTCP string, containerArch string, useSystemVim bool) error {
+	return startVim(containerID, devcontainerPath, workspaceFolder, vimFileName, sendToTCP, containerArch, useSystemVim)
+}
+
 var devcontainreArgsPrefix = []string{"up"}
 
 // devcontainer でコンテナを立ち上げ、 Vim を転送し、実行する。
 // 既存実装の都合上、configFilePath から configDirForDevcontainer を抽出している
 func Start(
+	services DevcontainerStartUseService,
 	args []string,
 	devcontainerPath string,
 	cdrPath string,
@@ -70,7 +81,7 @@ func Start(
 	}
 	fmt.Printf("Container Arch: '%s'.\n", containerArch)
 
-	portForwarderContainerPath, err := tools.PortForwarderContainer.Install(vimInstallDir, containerArch, false)
+	portForwarderContainerPath, err := tools.PortForwarderContainer(tools.DefaultInstallerUseServices{}).Install(vimInstallDir, containerArch, false)
 	if err != nil {
 		return err
 	}
@@ -256,8 +267,15 @@ func Start(
 	}
 
 	// コンテナへ接続
-	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> /Vim-AppImage`
+	services.StartVim(containerID, devcontainerPath, workspaceFolder, vimFileName, sendToTCP, containerArch, useSystemVim)
 
+	// コンテナ停止は別途 down コマンドで行う
+	return nil
+}
+
+// コンテナへ接続
+// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> /Vim-AppImage`
+func startVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, sendToTCP string, containerArch string, useSystemVim bool) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
@@ -273,11 +291,10 @@ func Start(
 		return dockerExec.Process.Signal(os.Interrupt)
 	}
 
-	err = dockerExec.Run()
+	err := dockerExec.Run()
 	if err != nil {
 		return err
+	} else {
+		return nil
 	}
-
-	// コンテナ停止は別途 down コマンドで行う
-	return nil
 }

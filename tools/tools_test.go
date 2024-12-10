@@ -8,10 +8,18 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
+type TestInstallerUseServices struct{}
+
+func (s TestInstallerUseServices) GetLatestReleaseFromGitHub(owner string, repository string) (string, error) {
+	return "", nil
+}
+
+func (s TestInstallerUseServices) Download(downloadURL string, destPath string) error {
+	os.WriteFile(destPath, []byte{}, 0755)
+	return nil
+}
+
 func TestInstallStartTools(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
 	defer os.RemoveAll("test")
 	_, binDir, _, _, err := util.CreateCacheDirectory(func() (string, error) {
 		return "test", nil
@@ -20,7 +28,7 @@ func TestInstallStartTools(t *testing.T) {
 		panic(err)
 	}
 
-	devcontainerPath, cdrPath, err := InstallStartTools(binDir)
+	devcontainerPath, cdrPath, err := InstallStartTools(TestInstallerUseServices{}, binDir)
 	if err != nil {
 		t.Fatalf("Error installing start tools: %v", err)
 	}
@@ -40,6 +48,13 @@ func TestInstallStartTools(t *testing.T) {
 		t.Fatalf("want %s, but got %s", wantCdrPath, cdrPath)
 	}
 	_, err = os.Stat(wantCdrPath)
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+}
+
+func TestSelfUpdate(t *testing.T) {
+	err := SelfUpdate(TestInstallerUseServices{})
 	if err != nil {
 		t.Fatalf("error: %s", err)
 	}

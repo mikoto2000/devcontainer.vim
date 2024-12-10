@@ -1,15 +1,14 @@
 package main
 
 import (
-	"os"
 	"testing"
 
+	"github.com/mikoto2000/devcontainer.vim/v3/devcontainer"
 	"github.com/mikoto2000/devcontainer.vim/v3/tools"
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
 func TestCreateConfigFile(t *testing.T) {
-	defer os.RemoveAll("./test/resource")
 	_, binDir, _, configDirForDevcontainer, err := util.CreateCacheDirectory(func() (string, error) {
 		return "./test", nil
 	}, "resource")
@@ -17,13 +16,13 @@ func TestCreateConfigFile(t *testing.T) {
 		panic(err)
 	}
 
-	devcontainerPath, _, err := tools.InstallStartTools(binDir)
+	devcontainerPath, _, err := tools.InstallStartTools(tools.DefaultInstallerUseServices{}, binDir)
 	if err != nil {
 		t.Fatalf("Error installing start tools: %v", err)
 	}
 
 	workspaceFolder := "./test/project/TestCreateConfigFile"
-	configFilePath, err := createConfigFile(devcontainerPath, workspaceFolder, configDirForDevcontainer)
+	configFilePath, err := devcontainer.CreateConfigFile(devcontainerPath, workspaceFolder, configDirForDevcontainer)
 	if err != nil {
 		t.Fatalf("error: %v", err)
 	}
