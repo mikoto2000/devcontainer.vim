@@ -240,6 +240,7 @@ func findDockerComposeFileDir() (string, error) {
 
 	// string, []string を判別しながら docker-compose.yaml の場所を取得
 	iDockerComposeFile := devcontainerJSON.DockerComposeFile
+	fmt.Println(iDockerComposeFile)
 	var dockerComposeFilePath string
 	switch v := iDockerComposeFile.(type) {
 	case string:
