@@ -54,6 +54,17 @@ func Run(
 		vimrc,
 		defaultRunargs)
 
+	// 後片付け
+	// コンテナ停止
+	defer func() {
+		// `docker stop <dockerrun 時に標準出力に表示される CONTAINER ID>`
+		fmt.Printf("Stop container(Async) %s.\n", containerID)
+		err = exec.Command(containerCommand, "stop", containerID).Start()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Container stop error: %s\n", err)
+		}
+	}()
+
 	// コンテナへ接続
 	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> /Vim-AppImage`
 
@@ -72,7 +83,6 @@ func Run(
 		return dockerExec.Process.Signal(os.Interrupt)
 	}
 
-	// 失敗してもコンテナのあと片付けはしたいのでエラーを無視
 	err = dockerExec.Run()
 	if err != nil {
 		return err
@@ -110,16 +120,6 @@ func setupContainer(
 	containerID = strings.ReplaceAll(containerID, "\n", "")
 	containerID = strings.ReplaceAll(containerID, "\r", "")
 	fmt.Printf("Container started. id: %s\n", containerID)
-
-	// コンテナ停止
-	defer func() {
-		// `docker stop <dockerrun 時に標準出力に表示される CONTAINER ID>`
-		fmt.Printf("Stop container(Async) %s.\n", containerID)
-		err = exec.Command(containerCommand, "stop", containerID).Start()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Container stop error: %s\n", err)
-		}
-	}()
 
 	// コンテナ内に入り、コンテナの Arch を確認
 	containerArch, err := docker.Exec(containerID, "uname", "-m")
