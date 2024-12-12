@@ -64,7 +64,7 @@ func Stop(args []string, devcontainerPath string, configDirForDevcontainer strin
 		fmt.Printf("Run `docker compose -p %s stop`(Async)\n", projectName)
 
 		// docker-compose.yaml の格納ディレクトリを探す
-		dockerComposeFileDir, err := findDockerComposeFileDir()
+		dockerComposeFileDir, err := findDockerComposeFileDir(workspaceFolder)
 		if err != nil {
 			return err
 		}
@@ -119,7 +119,7 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 	if strings.Contains(stdout, "dockerComposeFile") {
 
 		// docker-compose.yaml の格納ディレクトリを探す
-		dockerComposeFileDir, err := findDockerComposeFileDir()
+		dockerComposeFileDir, err := findDockerComposeFileDir(workspaceFolder)
 		if err != nil {
 			return err
 		}
@@ -129,7 +129,7 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 		if err != nil {
 			return err
 		}
-		_, devcontainerJSONDir := findJSONInfo()
+		_, devcontainerJSONDir := findJSONInfo(workspaceFolder)
 
 		os.Chdir(filepath.Join(devcontainerJSONDir, dockerComposeFileDir))
 
@@ -206,7 +206,16 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 }
 
 // devcontainer.json の場所・ディレクトリを差がして返却する
-func findJSONInfo() (string, string) {
+func findJSONInfo(workspaceFolder string) (string, string) {
+	// カレントディレクトリを記録して workspaceFolder へ移動
+	currentDir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	defer os.Chdir(currentDir)
+
+	os.Chdir(workspaceFolder)
+
 	// devcontainer.json を取得
 	var devcontainerJSONPath, devcontainerJSONDir string
 	if util.IsExists(".devcontainer/devcontainer.json") {
@@ -217,13 +226,22 @@ func findJSONInfo() (string, string) {
 		devcontainerJSONDir = filepath.Dir(devcontainerJSONPath)
 	}
 
+	devcontainerJSONPath, err = filepath.Abs(devcontainerJSONPath)
+	if err != nil {
+		panic(err)
+	}
+	devcontainerJSONDir, err = filepath.Abs(devcontainerJSONDir)
+	if err != nil {
+		panic(err)
+	}
+
 	return devcontainerJSONPath, devcontainerJSONDir
 }
 
 // docker-compose.yaml の格納ディレクトリを返却する
-func findDockerComposeFileDir() (string, error) {
+func findDockerComposeFileDir(workspaceFolder string) (string, error) {
 	// devcontainer.json を取得
-	var devcontainerJSONPath, devcontainerJSONDir = findJSONInfo()
+	var devcontainerJSONPath, devcontainerJSONDir = findJSONInfo(workspaceFolder)
 
 	// devcontainer.json 読み込み
 	// fmt.Printf("devcontainerJSONPath directory: %s\n", devcontainerJSONPath)
