@@ -39,9 +39,11 @@ const containerCommand = "docker"
 var version string
 
 const envDevcontainerVimType = "DEVCONTAINER_VIM_TYPE"
+const envDevcontainerShellType = "DEVCONTAINER_SHELL_TYPE"
 
 const flagNameLicense = "license"
 const flagNameNeoVim = "nvim"
+const flagNameShell = "shell"
 const flagNameArch = "arch"
 
 const flagNameGenerate = "generate"
@@ -135,6 +137,11 @@ func main() {
 				DisableDefaultText: true,
 				Usage:              "use NeoVim.",
 			},
+			&cli.StringFlag{
+				Name:  flagNameShell,
+				Value: "",
+				Usage: "start with shell.",
+			},
 		},
 		Action: func(cCtx *cli.Context) error {
 			// ライセンスフラグが立っていればライセンスを表示して終
@@ -165,6 +172,14 @@ func main() {
 						os.Exit(1)
 					}
 
+					// シェル使用判定
+					shell := ""
+					if cCtx.String(flagNameShell) != "" {
+						shell = cCtx.String(flagNameShell)
+					} else if os.Getenv(envDevcontainerShellType) != "" {
+						shell = os.Getenv(envDevcontainerShellType)
+					}
+
 					// 必要なファイルのダウンロード
 
 					nvim := false
@@ -188,7 +203,7 @@ func main() {
 					if runtime.GOOS == "windows" {
 						// コンテナ起動
 						// windows はシェル変数展開が上手くいかないので runargs を使用しない
-						err = devcontainer.Run(cCtx.Args().Slice(), cdrPath, binDir, nvim, configDirForDocker, vimrc, []string{})
+						err = devcontainer.Run(cCtx.Args().Slice(), cdrPath, binDir, nvim, shell, configDirForDocker, vimrc, []string{})
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Error running docker: %v\n", err)
 							os.Exit(1)
@@ -209,7 +224,7 @@ func main() {
 						}
 
 						// コンテナ起動
-						err = devcontainer.Run(cCtx.Args().Slice(), cdrPath, binDir, nvim, configDirForDocker, vimrc, defaultRunargs)
+						err = devcontainer.Run(cCtx.Args().Slice(), cdrPath, binDir, nvim, shell, configDirForDocker, vimrc, defaultRunargs)
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Error running docker: %v\n", err)
 							os.Exit(1)
@@ -328,6 +343,14 @@ func main() {
 				Action: func(cCtx *cli.Context) error {
 					// devcontainer でコンテナを立てる
 
+					// シェル使用判定
+					shell := ""
+					if cCtx.String(flagNameShell) != "" {
+						shell = cCtx.String(flagNameShell)
+					} else if os.Getenv(envDevcontainerShellType) != "" {
+						shell = os.Getenv(envDevcontainerShellType)
+					}
+
 					// 必要なファイルのダウンロード
 					nvim := false
 					if cCtx.Bool(flagNameNeoVim) || os.Getenv(envDevcontainerVimType) == "nvim" {
@@ -353,7 +376,7 @@ func main() {
 					}
 
 					// devcontainer を用いたコンテナ立ち上げ
-					err = devcontainer.Start(devcontainer.DefaultDevcontainerStartUseService{}, args, devcontainerPath, cdrPath, binDir, nvim, configFilePath, vimrc)
+					err = devcontainer.Start(devcontainer.DefaultDevcontainerStartUseService{}, args, devcontainerPath, cdrPath, binDir, nvim, shell, configFilePath, vimrc)
 					if err != nil {
 						if errors.Is(err, os.ErrPermission) {
 							fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)

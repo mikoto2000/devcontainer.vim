@@ -12,25 +12,35 @@ import "runtime"
 // Return:
 //
 //	`docker exec` に使うコマンドライン引数の配列
-func dockerRunVimArgs(containerID string, vimFileName string, sendToTCP string, containerArch string, useSystemVim bool) []string {
-	if useSystemVim {
-		return []string{
-			"exec",
-			"-it",
-			containerID,
-			"sh",
-			"-c",
-			vimFileName + " --cmd \"let g:devcontainer_vim = v:true\" -S /" + sendToTCP + " -S /vimrc"}
-	} else {
-		if containerArch == "amd64" {
-			if runtime.GOOS != "darwin" {
-				return []string{
-					"exec",
-					"-it",
-					containerID,
-					"sh",
-					"-c",
-					"cd ~; /" + vimFileName + " --appimage-extract > /dev/null; cd -; ~/squashfs-root/AppRun --cmd \"let g:devcontainer_vim = v:true\" -S /" + sendToTCP + " -S /vimrc"}
+func dockerRunVimArgs(containerID string, vimFileName string, sendToTCP string, containerArch string, useSystemVim bool, shell string) []string {
+	if shell == "" {
+		if useSystemVim {
+			return []string{
+				"exec",
+				"-it",
+				containerID,
+				"sh",
+				"-c",
+				vimFileName + " --cmd \"let g:devcontainer_vim = v:true\" -S /" + sendToTCP + " -S /vimrc"}
+		} else {
+			if containerArch == "amd64" {
+				if runtime.GOOS != "darwin" {
+					return []string{
+						"exec",
+						"-it",
+						containerID,
+						"sh",
+						"-c",
+						"cd ~; /" + vimFileName + " --appimage-extract > /dev/null; cd -; ~/squashfs-root/AppRun --cmd \"let g:devcontainer_vim = v:true\" -S /" + sendToTCP + " -S /vimrc"}
+				} else {
+					return []string{
+						"exec",
+						"-it",
+						containerID,
+						"sh",
+						"-c",
+						"cd /; tar zxf ./" + vimFileName + " -C ~/ > /dev/null; cd ~; sudo rm -rf ~/vim-static; mv $(ls -d ~/vim-*-x86_64) ~/vim-static;~/vim-static/AppRun --cmd \"let g:devcontainer_vim = v:true\" -S /" + sendToTCP + " -S /vimrc"}
+				}
 			} else {
 				return []string{
 					"exec",
@@ -38,16 +48,15 @@ func dockerRunVimArgs(containerID string, vimFileName string, sendToTCP string, 
 					containerID,
 					"sh",
 					"-c",
-					"cd /; tar zxf ./" + vimFileName + " -C ~/ > /dev/null; cd ~; sudo rm -rf ~/vim-static; mv $(ls -d ~/vim-*-x86_64) ~/vim-static;~/vim-static/AppRun --cmd \"let g:devcontainer_vim = v:true\" -S /" + sendToTCP + " -S /vimrc"}
+					"cd /; tar zxf ./" + vimFileName + " -C ~/ > /dev/null; cd ~; sudo rm -rf ~/vim-static; mv $(ls -d ~/vim-*-aarch64) ~/vim-static;~/vim-static/AppRun --cmd \"let g:devcontainer_vim = v:true\" -S /" + sendToTCP + " -S /vimrc"}
 			}
-		} else {
-			return []string{
-				"exec",
-				"-it",
-				containerID,
-				"sh",
-				"-c",
-				"cd /; tar zxf ./" + vimFileName + " -C ~/ > /dev/null; cd ~; sudo rm -rf ~/vim-static; mv $(ls -d ~/vim-*-aarch64) ~/vim-static;~/vim-static/AppRun --cmd \"let g:devcontainer_vim = v:true\" -S /" + sendToTCP + " -S /vimrc"}
+		}
+	} else {
+		return []string{
+			"exec",
+			"-it",
+			containerID,
+			shell,
 		}
 	}
 }
