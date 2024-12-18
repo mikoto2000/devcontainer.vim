@@ -51,7 +51,7 @@ NAME:
    devcontainer.vim - devcontainer for vim.
 
 USAGE:
-   devcontainer.vim [global options] command [command options]
+   devcontainer.vim [global options] command [command options] 
 
 VERSION:
    3.4.4
@@ -75,6 +75,7 @@ COMMANDS:
 GLOBAL OPTIONS:
    --license, -l  show licensesa.
    --nvim         use NeoVim.
+   --shell value  start with shell.
    --help, -h     show help
    --version, -v  print the version
 ```
@@ -327,6 +328,35 @@ devcontainer.vim runargs -g
 By adding the `--nvim` option or setting the environment variable `DEVCONTAINER_VIM_TYPE` to `nvim`, the nvim AppImage will be transferred and launched instead of vim.
 
 
+```sh
+devcontainer.vim --nvim start .
+```
+
+or
+
+```sh
+export DEVCONTAINER_VIM_TYPE=nvim
+devcontainer.vim start .
+```
+
+
+### Using Shell
+
+By adding the `--shell` option or setting the environment variable `DEVCONTAINER_SHELL_TYPE` to using shell, the shell will be transferred and launched instead of vim.
+
+
+```sh
+devcontainer.vim --shell bash start .
+```
+
+or
+
+```sh
+export DEVCONTAINER_VIM_TYPE=bash
+devcontainer.vim start .
+```
+
+
 ## Migration:
 
 ### 2.x.x to 3.x.x
@@ -339,6 +369,7 @@ if !has("nvim")
   vnoremap <silent> "*y y:call SendToCdr('"')<CR>
 endif
 ```
+
 
 ### 3.1.0 to 3.2.0
 

@@ -40,6 +40,7 @@ func Run(
 	cdrPath string,
 	vimInstallDir string,
 	nvim bool,
+	shell string,
 	configDirForDocker string,
 	vimrc string,
 	defaultRunargs []string) error {
@@ -85,7 +86,7 @@ func Run(
 	defer cancel()
 
 	sendToTCPName := filepath.Base(sendToTCP)
-	dockerRunVimArgs := dockerRunVimArgs(containerID, vimFileName, sendToTCPName, containerArch, useSystemVim)
+	dockerRunVimArgs := dockerRunVimArgs(containerID, vimFileName, sendToTCPName, containerArch, useSystemVim, shell, configDirForDocker)
 	fmt.Printf("Start vim: `%s \"%s\"`\n", containerCommand, strings.Join(dockerRunVimArgs, "\" \""))
 	dockerExec := exec.CommandContext(ctx, containerCommand, dockerRunVimArgs...)
 	dockerExec.Stdin = os.Stdin
@@ -166,7 +167,7 @@ func setupContainer(
 	configDirForCdr := filepath.Join(configDirForDocker, containerID)
 	err = os.MkdirAll(configDirForCdr, 0744)
 	if err != nil {
-		return containerID, vimFileName, "", containerArch, false, 0, configDirForCdr,  err
+		return containerID, vimFileName, "", containerArch, false, 0, configDirForCdr, err
 	}
 	pid, port, err := tools.RunCdr(cdrPath, configDirForCdr)
 	if err != nil {

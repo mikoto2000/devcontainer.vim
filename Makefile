@@ -20,6 +20,10 @@ WATCH_SRC := ./main.go \
 						 ./devcontainer/devcontainerStartVimArgs.go \
 						 ./devcontainer/readConfigurationResult.go \
 						 ./devcontainer/upCommandResult.go \
+						 ./devcontainer/VimRun_aarch64.template.sh \
+						 ./devcontainer/VimRun_system.template.sh \
+						 ./devcontainer/VimRun_x86_64_AppImage.template.sh \
+						 ./devcontainer/VimRun_x86_64_static.template.sh \
 						 ./docker/docker.go \
 						 ./docker/dockerPsResult.go \
 						 ./dockercompose/dockerCompose.go \

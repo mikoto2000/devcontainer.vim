@@ -50,7 +50,7 @@ NAME:
    devcontainer.vim - devcontainer for vim.
 
 USAGE:
-   devcontainer.vim [global options] command [command options]
+   devcontainer.vim [global options] command [command options] 
 
 VERSION:
    3.4.4
@@ -74,6 +74,7 @@ COMMANDS:
 GLOBAL OPTIONS:
    --license, -l  show licensesa.
    --nvim         use NeoVim.
+   --shell value  start with shell.
    --help, -h     show help
    --version, -v  print the version
 ```
@@ -328,6 +329,22 @@ export DEVCONTAINER_VIM_TYPE=nvim
 devcontainer.vim start .
 ```
 
+
+### シェルの利用
+
+「`--shell` オプションを追加する」または、「環境変数 `DEVCONTAINER_SHELL_TYPE` に使用するシェルを設定する」
+ことで、 vim の代わりにシェルを起動します。
+
+```sh
+devcontainer.vim --shell bash start .
+```
+
+or
+
+```sh
+export DEVCONTAINER_VIM_TYPE=bash
+devcontainer.vim start .
+```
 
 
 ## Migration:
