@@ -356,6 +356,8 @@ export DEVCONTAINER_VIM_TYPE=bash
 devcontainer.vim start .
 ```
 
+If you want to use the transferred Vim/Neovim, run `/VimRun.sh`.
+
 
 ## Migration:
 
