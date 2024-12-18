@@ -86,7 +86,7 @@ func Run(
 	defer cancel()
 
 	sendToTCPName := filepath.Base(sendToTCP)
-	dockerRunVimArgs := dockerRunVimArgs(containerID, vimFileName, sendToTCPName, containerArch, useSystemVim, shell)
+	dockerRunVimArgs := dockerRunVimArgs(containerID, vimFileName, sendToTCPName, containerArch, useSystemVim, shell, configDirForDocker)
 	fmt.Printf("Start vim: `%s \"%s\"`\n", containerCommand, strings.Join(dockerRunVimArgs, "\" \""))
 	dockerExec := exec.CommandContext(ctx, containerCommand, dockerRunVimArgs...)
 	dockerExec.Stdin = os.Stdin

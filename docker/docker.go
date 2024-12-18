@@ -81,7 +81,7 @@ func Cp(tagForLog string, from string, containerID string, to string) error {
 	fmt.Printf("Copy %s: `%s \"%s\"` ...", tagForLog, containerCommand, strings.Join(dockerCpArgs, "\" \""))
 	copyResult, err := exec.Command(containerCommand, dockerCpArgs...).CombinedOutput()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "AppImage copy error.")
+		fmt.Fprintln(os.Stderr, "copy error.")
 		fmt.Fprintln(os.Stderr, string(copyResult))
 		return err
 	}
