@@ -29,7 +29,7 @@ func TestSetupContainer(t *testing.T) {
 
 	vimrc := "../test/resource/TestRun/vimrc"
 
-	containerID, _, _, _, _, err := setupContainer(
+	containerID, _, _, _, _, _, _, err := setupContainer(
 		[]string{"mcr.microsoft.com/devcontainers/base:bookworm"},
 		cdrPath,
 		binDir,
