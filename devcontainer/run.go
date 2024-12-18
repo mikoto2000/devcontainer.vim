@@ -45,7 +45,7 @@ func Run(
 	defaultRunargs []string) error {
 
 	// コンテナのセットアップ
-	containerID, vimFileName, sendToTCP, containerArch, useSystemVim, err := setupContainer(
+	containerID, vimFileName, sendToTCP, containerArch, useSystemVim, cdrPid, cdrConfigDir, err := setupContainer(
 		args,
 		cdrPath,
 		vimInstallDir,
@@ -55,6 +55,19 @@ func Run(
 		defaultRunargs)
 
 	// 後片付け
+	// clipboard-data-receiver を停止
+	defer func() {
+		err = tools.KillCdr(cdrPid)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Container stop error: %s\n", err)
+		}
+
+		err = os.RemoveAll(cdrConfigDir)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Cache remove error: %s\n", err)
+		}
+	}()
+
 	// コンテナ停止
 	defer func() {
 		// `docker stop <dockerrun 時に標準出力に表示される CONTAINER ID>`
@@ -98,7 +111,7 @@ func setupContainer(
 	nvim bool,
 	configDirForDocker string,
 	vimrc string,
-	defaultRunargs []string) (string, string, string, string, bool, error) {
+	defaultRunargs []string) (string, string, string, string, bool, int, string, error) {
 	// バックグラウンドでコンテナを起動
 	// `docker run -d --rm os.Args[1:] sh -c "sleep infinity"`
 	devcontainerRunArgs := devcontainerRunArgsPrefix
@@ -115,7 +128,7 @@ func setupContainer(
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Container start error.")
 		fmt.Fprintln(os.Stderr, string(containerID))
-		return "", "", "", "", false, &ContainerStartError{msg: "Container start error."}
+		return "", "", "", "", false, 0, "", &ContainerStartError{msg: "Container start error."}
 	}
 	containerID = strings.ReplaceAll(containerID, "\n", "")
 	containerID = strings.ReplaceAll(containerID, "\r", "")
@@ -124,27 +137,27 @@ func setupContainer(
 	// コンテナ内に入り、コンテナの Arch を確認
 	containerArch, err := docker.Exec(containerID, "uname", "-m")
 	if err != nil {
-		return containerID, "", "", "", false, err
+		return containerID, "", "", "", false, 0, "", err
 	}
 	containerArch = strings.TrimSpace(containerArch)
 	containerArch, err = util.NormalizeContainerArch(containerArch)
 	if err != nil {
-		return containerID, "", "", containerArch, false, err
+		return containerID, "", "", containerArch, false, 0, "", err
 	}
 	fmt.Printf("Container Arch: '%s'.\n", containerArch)
 
 	vimFilePath, err := tools.InstallVim(vimInstallDir, nvim, containerArch)
 	if err != nil {
-		return containerID, "", "", containerArch, false, err
+		return containerID, "", "", containerArch, false, 0, "", err
 	}
 
 	portForwarderContainerPath, err := tools.PortForwarderContainer(tools.DefaultInstallerUseServices{}).Install(vimInstallDir, containerArch, false)
 	if err != nil {
-		return containerID, "", "", containerArch, false, err
+		return containerID, "", "", containerArch, false, 0, "", err
 	}
 	err = docker.Cp("port-forwarder-container", portForwarderContainerPath, containerID, "/port-forwarder")
 	if err != nil {
-		return containerID, "", "", containerArch, false, err
+		return containerID, "", "", containerArch, false, 0, "", err
 	}
 
 	vimFileName := filepath.Base(vimFilePath)
@@ -153,26 +166,13 @@ func setupContainer(
 	configDirForCdr := filepath.Join(configDirForDocker, containerID)
 	err = os.MkdirAll(configDirForCdr, 0744)
 	if err != nil {
-		return containerID, vimFileName, "", containerArch, false, err
+		return containerID, vimFileName, "", containerArch, false, 0, configDirForCdr,  err
 	}
 	pid, port, err := tools.RunCdr(cdrPath, configDirForCdr)
 	if err != nil {
-		return containerID, vimFileName, "", containerArch, false, err
+		return containerID, vimFileName, "", containerArch, false, pid, configDirForCdr, err
 	}
 	fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
-
-	// clipboard-data-receiver を停止
-	defer func() {
-		err = tools.KillCdr(pid)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Container stop error: %s\n", err)
-		}
-
-		err = os.RemoveAll(configDirForCdr)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Cache remove error: %s\n", err)
-		}
-	}()
 
 	useSystemVim := false
 	fmt.Printf("Check system installed %s ... ", vimFileName)
@@ -201,7 +201,7 @@ func setupContainer(
 
 		err = docker.Cp("vim", vimFilePath, containerID, "/"+vimFileName)
 		if err != nil {
-			return containerID, vimFileName, "", containerArch, useSystemVim, err
+			return containerID, vimFileName, "", containerArch, useSystemVim, pid, configDirForCdr, err
 		}
 
 		// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> chmod +x /Vim-AppImage`
@@ -211,7 +211,7 @@ func setupContainer(
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "chmod error.")
 			fmt.Fprintln(os.Stderr, string(chmodResult))
-			return containerID, vimFileName, "", containerArch, useSystemVim, &ChmodError{msg: "chmod error."}
+			return containerID, vimFileName, "", containerArch, useSystemVim, pid, configDirForCdr, &ChmodError{msg: "chmod error."}
 		}
 		fmt.Printf(" done.\n")
 	}
@@ -219,20 +219,20 @@ func setupContainer(
 	// Vim 関連ファイルの転送(`SendToTcp.vim` と、追加の `vimrc`)
 	sendToTCP, err := tools.CreateSendToTCP(configDirForDocker, port, vimFileName == "nvim")
 	if err != nil {
-		return containerID, vimFileName, "", containerArch, useSystemVim, err
+		return containerID, vimFileName, "", containerArch, useSystemVim, pid, configDirForCdr, err
 	}
 
 	// コンテナへ SendToTcp.vim を転送
 	err = docker.Cp("SendToTcp.vim", sendToTCP, containerID, "/")
 	if err != nil {
-		return containerID, vimFileName, sendToTCP, containerArch, useSystemVim, err
+		return containerID, vimFileName, sendToTCP, containerArch, useSystemVim, pid, configDirForCdr, err
 	}
 
 	// コンテナへ vimrc を転送
 	err = docker.Cp("vimrc", vimrc, containerID, "/")
 	if err != nil {
-		return containerID, vimFileName, sendToTCP, containerArch, useSystemVim, err
+		return containerID, vimFileName, sendToTCP, containerArch, useSystemVim, pid, configDirForCdr, err
 	}
 
-	return containerID, vimFileName, sendToTCP, containerArch, useSystemVim, nil
+	return containerID, vimFileName, sendToTCP, containerArch, useSystemVim, pid, configDirForCdr, nil
 }
