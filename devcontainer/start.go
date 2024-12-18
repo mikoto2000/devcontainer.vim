@@ -18,13 +18,13 @@ import (
 )
 
 type DevcontainerStartUseService interface {
-	StartVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, sendToTCP string, containerArch string, useSystemVim bool, shell string) error
+	StartVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, sendToTCP string, containerArch string, useSystemVim bool, shell string, configFilePathForDevcontainer string) error
 }
 
 type DefaultDevcontainerStartUseService struct{}
 
-func (s DefaultDevcontainerStartUseService) StartVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, sendToTCP string, containerArch string, useSystemVim bool, shell string) error {
-	return startVim(containerID, devcontainerPath, workspaceFolder, vimFileName, sendToTCP, containerArch, useSystemVim, shell)
+func (s DefaultDevcontainerStartUseService) StartVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, sendToTCP string, containerArch string, useSystemVim bool, shell string, configDirForDevcontainer string) error {
+	return startVim(containerID, devcontainerPath, workspaceFolder, vimFileName, sendToTCP, containerArch, useSystemVim, shell, configDirForDevcontainer)
 }
 
 var devcontainreArgsPrefix = []string{"up"}
@@ -268,7 +268,7 @@ func Start(
 	}
 
 	// コンテナへ接続
-	services.StartVim(containerID, devcontainerPath, workspaceFolder, vimFileName, sendToTCP, containerArch, useSystemVim, shell)
+	services.StartVim(containerID, devcontainerPath, workspaceFolder, vimFileName, sendToTCP, containerArch, useSystemVim, shell, configDirForDevcontainer)
 
 	// コンテナ停止は別途 down コマンドで行う
 	return nil
@@ -276,12 +276,12 @@ func Start(
 
 // コンテナへ接続
 // `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> /Vim-AppImage`
-func startVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, sendToTCP string, containerArch string, useSystemVim bool, shell string) error {
+func startVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, sendToTCP string, containerArch string, useSystemVim bool, shell string, configFilePathForDevcontainer string) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
 	sendToTCPName := filepath.Base(sendToTCP)
-	devcontainerStartVimArgs := devcontainerStartVimArgs(containerID, workspaceFolder, vimFileName, sendToTCPName, containerArch, useSystemVim, shell)
+	devcontainerStartVimArgs := devcontainerStartVimArgs(containerID, workspaceFolder, vimFileName, sendToTCPName, containerArch, useSystemVim, shell, configFilePathForDevcontainer)
 	fmt.Printf("Start vim: `%s \"%s\"`\n", devcontainerPath, strings.Join(devcontainerStartVimArgs, "\" \""))
 	dockerExec := exec.CommandContext(ctx, devcontainerPath, devcontainerStartVimArgs...)
 	dockerExec.Stdin = os.Stdin

@@ -167,7 +167,7 @@ func setupContainer(
 	configDirForCdr := filepath.Join(configDirForDocker, containerID)
 	err = os.MkdirAll(configDirForCdr, 0744)
 	if err != nil {
-		return containerID, vimFileName, "", containerArch, false, 0, configDirForCdr,  err
+		return containerID, vimFileName, "", containerArch, false, 0, configDirForCdr, err
 	}
 	pid, port, err := tools.RunCdr(cdrPath, configDirForCdr)
 	if err != nil {
