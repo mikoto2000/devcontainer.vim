@@ -17,6 +17,10 @@
   // ※ コンテナ側で Listen する際は、 `127.0.0.1` **ではなく** `0.0.0.0` で Listen すること。
   // "appPort": [
   // ],
+  // Linux で実行する場合には、 runArgs をコメントアウトし、コンテナからホストへの接続ができるようにしてください
+  //"runArgs": [
+  //  "--add-host=host.docker.internal:host-gateway"
+  //],
   "mounts": [
     {
       "type": "bind",

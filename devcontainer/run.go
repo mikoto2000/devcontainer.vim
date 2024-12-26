@@ -15,7 +15,7 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
-var devcontainerRunArgsPrefix = []string{"run", "-d", "--rm"}
+var devcontainerRunArgsPrefix = []string{"run", "-d", "--rm", "--add-host=host.docker.internal:host-gateway"}
 var devcontainerRunArgsSuffix = []string{"sh", "-c", "trap \"exit 0\" TERM; sleep infinity & wait"}
 
 type ContainerStartError struct {
