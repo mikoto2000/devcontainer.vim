@@ -3,6 +3,7 @@ package devcontainer
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -164,8 +165,11 @@ func Start(
 					port = strings.TrimSpace(port)
 					fmt.Printf("port-forwarder started: %s:%s %s\n", containerIp, port, fc.Host+":"+fc.Port)
 
-					// forwardPorts の内容を `/pf` ディテク取りに「<転送先>_<リッスンアドレス＆ポート>」の形式で配置する
-					docker.Exec(containerID, "sh", "-c", "mkdir -p /pf && touch /pf/"+fc.Host+":"+fc.Port+"_"+containerIp+":"+port)
+					// forwardPorts の内容を `~/.config/devcontainer.vim/pf` ディテク取りに「<転送先>_<リッスンアドレス＆ポート>」の形式で配置する
+					_, err = docker.Exec(containerID, "sh", "-c", "mkdir -p ~/.config/devcontainer.vim/pf && touch ~/.config/devcontainer.vim/pf/"+fc.Host+":"+fc.Port+"_"+containerIp+":"+port)
+					if err != nil {
+						panic(err)
+					}
 
 					util.StartForwarding("0.0.0.0:"+fc.Port, containerIp+":"+port)
 				}
@@ -175,10 +179,10 @@ func Start(
 	} else {
 		fmt.Println("port-forwarder already running.")
 
-		// `/pf` ディレクトリの内容からフォワードするポートを解釈し、フォワードする
-		lspfOut, err := docker.Exec(containerID, "sh", "-c", "ls --zero /pf")
+		// `~/.config/devcontainer.vim/pf` ディレクトリの内容からフォワードするポートを解釈し、フォワードする
+		lspfOut, err := docker.Exec(containerID, "sh", "-c", "ls --zero ~/.config/devcontainer.vim/pf")
 		if err != nil {
-			return err
+			return errors.New("port-forwarder の設定ファイルが見つかりません")
 		}
 		forwardConfigs := strings.Split(lspfOut, "\x00")
 		for _, forwardConfig := range forwardConfigs {
