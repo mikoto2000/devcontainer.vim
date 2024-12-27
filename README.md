@@ -351,6 +351,20 @@ devcontainer.vim start .
 
 ## Migration:
 
+### x.x.x to 3.5.1
+
+Docker Desktop を使用しない環境では、 `host.docker.internal` が使用できず、クリップボード連携が失敗していた。
+`start` コマンドでは、それを回避するための設定を `devcontainer.vim.json` に追加しなければいけない。
+v3.5.1 移行は、 `config -g` で生成されるひな形にコメントアウトした状態で記載されているが、 v3.5.1 よりもまえに生成した `vim.json` の場合、以下設定を追記してください。
+
+これを追記することにより、 `host.docker.internal` が使えるようになり、クリップボード連携も正しく機能します。
+
+```json
+  "runArgs": [
+    "--add-host=host.docker.internal:host-gateway"
+  ],
+```
+
 ### 2.x.x to 3.x.x
 
 devcontainer.vim 2.x.x で Vim を利用しており、devcontainer.vim 3.x.x から NeoVim を利用する場合、`devcontainer.vim vimrc -o` で表示される vimrc のマッピングを削除するか、以下のように `if !has("nvim")` でマッピングを囲むかの対応をしてください。
