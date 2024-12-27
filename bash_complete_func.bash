@@ -45,7 +45,8 @@ _completion_devcontainer_vim(){
                 COMPREPLY=( $(compgen -W "${subcommands_index}" -- "${cur}") )
                 ;;
             *)
-                COMPREPLY=()
+                COMPREPLY=( $(compgen -o default -- "${cur}") )
+                compopt -o nospace
                 ;;
         esac
     fi
