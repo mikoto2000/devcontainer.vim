@@ -398,7 +398,7 @@ endif
 - NeoVim AppImage が使えず、システムインストールの NeoVim も存在しない場合、 NeoVim の代わりに Vim が起動します
 - macOS で NeoVim を利用する場合は、システムインストールの NeoVim しか利用できません
   システムインストールの NeoVim が検出できなかった場合、代わりに Vim が起動します
-- WSL2 では `forwardPorts` が上手く動かないため、 `appPort` を使用してください
+- Docker Desktop で WSL2 Integration を利用している場合、 `forwardPorts` が上手く動かないため、 `appPort` を使用してください
 
 
 ## Install:

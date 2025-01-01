@@ -410,7 +410,7 @@ endif
 - If the NeoVim AppImage is not available and there is no system-installed NeoVim, Vim will start instead of NeoVim
 - When using NeoVim on macOS, only the system-installed NeoVim can be used
   If the system-installed NeoVim cannot be detected, Vim will start instead
-- `forwardPorts` doesn't work well in WSL2, so use `appPort`
+- If you are using WSL2 Integration with Docker Desktop, forwardPorts may not work properly, so please use appPort instead.
 
 
 ## Install:
