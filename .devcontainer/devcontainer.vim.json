@@ -22,4 +22,7 @@
       "target": "/home/vscode/.ssh"
     },
   ],
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {}
+  }
 }
