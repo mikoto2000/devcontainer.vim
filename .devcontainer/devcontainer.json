@@ -1,6 +1,6 @@
 {
   "name": "devcontainer.vim",
-  "image": "mcr.microsoft.com/devcontainers/go:1.22-bookworm",
+  "image": "mcr.microsoft.com/devcontainers/go:1.23-bookworm",
   "remoteUser": "vscode",
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
