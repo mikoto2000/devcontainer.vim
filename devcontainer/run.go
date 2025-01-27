@@ -147,11 +147,7 @@ func setupContainer(
 	}
 	fmt.Printf("Container Arch: '%s'.\n", containerArch)
 
-	vimFilePath, err := tools.InstallVim(vimInstallDir, nvim, containerArch)
-	if err != nil {
-		return containerID, "", "", containerArch, false, 0, "", err
-	}
-
+	// port- forwarder のインストール
 	portForwarderContainerPath, err := tools.PortForwarderContainer(tools.DefaultInstallerUseServices{}).Install(vimInstallDir, containerArch, false)
 	if err != nil {
 		return containerID, "", "", containerArch, false, 0, "", err
@@ -161,19 +157,23 @@ func setupContainer(
 		return containerID, "", "", containerArch, false, 0, "", err
 	}
 
-	vimFileName := filepath.Base(vimFilePath)
-
 	// clipboard-data-receiver を起動
 	configDirForCdr := filepath.Join(configDirForDocker, containerID)
 	err = os.MkdirAll(configDirForCdr, 0744)
 	if err != nil {
-		return containerID, vimFileName, "", containerArch, false, 0, configDirForCdr, err
+		return containerID, "", "", containerArch, false, 0, configDirForCdr, err
 	}
 	pid, port, err := tools.RunCdr(cdrPath, configDirForCdr)
 	if err != nil {
-		return containerID, vimFileName, "", containerArch, false, pid, configDirForCdr, err
+		return containerID, "", "", containerArch, false, pid, configDirForCdr, err
 	}
 	fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
+
+	// Vim/Neovim がシステムインストールされているか確認する
+	vimFileName := "vim"
+	if nvim {
+		vimFileName = "nvim"
+	}
 
 	useSystemVim := false
 	fmt.Printf("Check system installed %s ... ", vimFileName)
@@ -181,6 +181,10 @@ func setupContainer(
 	if out != "" {
 		fmt.Printf("found.\n")
 		useSystemVim = true
+
+		if nvim {
+			vimFileName = "nvim"
+		}
 	} else {
 		fmt.Printf("not found.\n")
 
@@ -197,8 +201,11 @@ func setupContainer(
 	fmt.Printf("docker exec output: \"%s\".\n", strings.TrimSpace(out))
 
 	if !useSystemVim {
-		// コンテナへ appimage を転送して実行権限を追加
-		// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
+		// コンテナへ Vim/Neovim を転送して実行権限を追加
+		vimFilePath, err := tools.InstallVim(vimInstallDir, nvim, containerArch)
+		if err != nil {
+			return containerID, "", "", containerArch, false, 0, "", err
+		}
 
 		err = docker.Cp("vim", vimFilePath, containerID, "/"+vimFileName)
 		if err != nil {

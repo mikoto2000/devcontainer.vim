@@ -204,13 +204,11 @@ func Start(
 		}
 	}
 
-	vimFilePath, err := tools.InstallVim(vimInstallDir, nvim, containerArch)
-	if err != nil {
-		return err
+	// Vim/Neovim がシステムインストールされているか確認する
+	vimFileName := "vim"
+	if nvim {
+		vimFileName = "nvim"
 	}
-	// vim_<ARCH>, nvim_<ARCH> の形式でパスがわたってくるので、
-	// vim/nvim の部分を抽出する。
-	vimFileName := strings.Split(filepath.Base(vimFilePath), "_")[0]
 
 	useSystemVim := false
 	fmt.Printf("Check system installed %s ... ", vimFileName)
@@ -236,6 +234,14 @@ func Start(
 	if !useSystemVim {
 		// コンテナへ appimage を転送して実行権限を追加
 		// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
+		vimFilePath, err := tools.InstallVim(vimInstallDir, nvim, containerArch)
+		if err != nil {
+			return err
+		}
+		// vim_<ARCH>, nvim_<ARCH> の形式でパスがわたってくるので、
+		// vim/nvim の部分を抽出する。
+		vimFileName := strings.Split(filepath.Base(vimFilePath), "_")[0]
+
 		err = docker.Cp("vim", vimFilePath, containerID, "/"+vimFileName)
 		if err != nil {
 			return err
