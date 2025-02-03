@@ -103,7 +103,7 @@ func Start(
 	// コンテナの IP アドレスを取得
 	containerIp, err := docker.Exec(containerID, "sh", "-c", "hostname -i")
 	if err != nil {
-		return err
+		return errors.New("コンテナ上での hostname 実行に失敗しました。コンテナに hostname コマンドがインストールされている必要があります")
 	}
 	containerIp = strings.TrimSpace(containerIp)
 
