@@ -39,6 +39,7 @@ The following commands are installed and in the PATH.
 The following commands must exist in the container and be in the PATH.
 
 - which
+- hostname
 
 
 For ARM, the `tar` command must be present in the container.
