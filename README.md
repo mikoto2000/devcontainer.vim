@@ -38,6 +38,7 @@ VSCode 向けに作成された `devcontainer.json` に追加する形で Vim �
 コンテナ内に以下コマンドが存在し、 PATH が通っていること。
 
 - which
+- hostname
 
 
 ARM の場合、コンテナ内に `tar` コマンドが存在していること
