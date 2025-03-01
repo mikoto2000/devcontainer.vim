@@ -9,7 +9,7 @@ import (
 )
 
 // NeoVim のダウンロード URL
-const nvimAppImageDownloadURLPattern = "https://github.com/neovim/neovim/releases/download/{{ .TagName }}/nvim.appimage"
+const nvimAppImageDownloadURLPattern = "https://github.com/neovim/neovim/releases/download/{{ .TagName }}/nvim-linux-x86_64.appimage"
 const nvimArmStaticDownloadURLPattern = "https://github.com/mikoto2000/vim-static/releases/download/{{ .TagName }}/vim-{{ .TagName }}-aarch64.tar.gz"
 
 // NeoVim のツール情報
