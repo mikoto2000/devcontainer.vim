@@ -5,7 +5,7 @@ _completion_devcontainer_vim(){
     local commands="run templates start stop down config vimrc runargs tool clean index self-update help"
     local subcommands_run=""
     local subcommands_templates="apply"
-    local subcommands_tool="vim devcontainer clipboard-data-receiver"
+    local subcommands_tool="vim nvim devcontainer clipboard-data-receiver"
     local subcommands_tool_vim="download"
     local subcommands_tool_nvim="download"
     local subcommands_tool_devcontainer="download"
