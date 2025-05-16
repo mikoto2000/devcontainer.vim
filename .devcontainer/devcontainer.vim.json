@@ -5,6 +5,7 @@
     "SHELL": "bash",
     "TERM": "xterm-256color",
   },
+  "postCreateCommand": "npm install -g @anthropic-ai/claude-code",
   "mounts": [
     {
       "type": "bind",
@@ -20,6 +21,11 @@
       "type": "bind",
       "source": "${localEnv:HOME}/.ssh",
       "target": "/home/vscode/.ssh"
+    },
+    {
+      "type": "bind",
+      "source": "${localEnv:HOME}/.claude.json",
+      "target": "/home/vscode/.claude.json"
     },
   ],
   "features": {

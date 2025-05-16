@@ -12,6 +12,8 @@
     // "XDG_RUNTIME_DIR": "${localEnv:XDG_RUNTIME_DIR}",
     // "PULSE_SERVER": "${localEnv:PULSE_SERVER}",
   },
+  // If use claude code
+  // "postCreateCommand": "npm install -g @anthropic-ai/claude-code",
   // devcontainer/cli はまだ forwardPorts に対応していないため、
   // 必要に応じて forwardPorts の定義を appPort に転記する。
   // ※ コンテナ側で Listen する際は、 `127.0.0.1` **ではなく** `0.0.0.0` で Listen すること。
@@ -53,6 +55,12 @@
     //  "type": "bind",
     //  "source": "/mnt/wslg",
     //  "target": "/mnt/wslg"
+    //},
+    // If use claude code
+    //{
+    //  "type": "bind",
+    //  "source": "${localEnv:HOME}/.claude.json",
+    //  "target": "/home/vscode/.claude.json"
     //},
   ],
   // denops など、別の実行環境が必要な場合や、
