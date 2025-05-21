@@ -66,6 +66,12 @@
     //  "source": "${localEnv:HOME}/.claude.json",
     //  "target": "/home/vscode/.claude.json"
     //},
+    // If use codex
+    //{
+    //  "type": "bind",
+    //  "source": "${localEnv:HOME}/.codex",
+    //  "target": "/home/vscode/.codex"
+    //},
   ],
   // denops など、別の実行環境が必要な場合や、
   // 後乗せで追加したいツールがある場合には以下の対象行をコメントアウトするか
