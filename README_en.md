@@ -10,6 +10,8 @@ It's a tool that adds and starts settings for Vim-based Dev Container developmen
 ## Getting Started
 
 - [devcontainer.vim で、コンテナ上の Vim に引きこもって作業を行う(ゼロから環境構築をしてみよう編) - mikoto2000 の日記](https://mikoto2000.blogspot.com/2024/10/devcontainervim-vim.html)
+- [devcontainer.vim と codex cli を使って Go プログラミング！ - YouTube](https://www.youtube.com/watch?v=grFA12Mwsy0)
+- [devcontainer.vim と Claude Code を使って Java プログラミング！ - YouTube](https://www.youtube.com/watch?v=d5m9DaqNhLA)
 - [？「えっ！1分でGo言語の環境構築を！？」 devcontainer.vim「できらぁ！」 - YouTube](https://www.youtube.com/shorts/v0h6AfRIyvs)
 
 
