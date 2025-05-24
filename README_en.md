@@ -467,11 +467,9 @@ TODO:
 
 ## License:
 
-Copyright (C) 2024 mikoto2000
+Copyright (C) 2025 mikoto2000
 
 This software is released under the MIT License, see LICENSE
-
-This software is released under the MIT license. Please refer to LICENSE.
 
 
 ## Author:

@@ -455,7 +455,7 @@ TODO:
 
 ## License:
 
-Copyright (C) 2024 mikoto2000
+Copyright (C) 2025 mikoto2000
 
 This software is released under the MIT License, see LICENSE
 
