@@ -77,13 +77,14 @@
   // 後乗せで追加したいツールがある場合には以下の対象行をコメントアウトするか
   // https://containers.dev/features から必要な feature を探して追加してください。
   //"features": {
-  //  "ghcr.io/devcontainers-community/features/deno:1": {}
-  //  "ghcr.io/devcontainers/features/node:1": {}
-  //  "ghcr.io/devcontainers/features/python:1": {}
-  //  "ghcr.io/devcontainers/features/ruby:1": {}
-  //  "ghcr.io/devcontainers-extra/features/fzf:1": {}
-  //  "ghcr.io/jungaretti/features/ripgrep:1": {}
+  //  "ghcr.io/devcontainers-community/features/deno:1": {},
+  //  "ghcr.io/devcontainers/features/node:1": {},
+  //  "ghcr.io/devcontainers/features/python:1": {},
+  //  "ghcr.io/devcontainers/features/ruby:1": {},
+  //  "ghcr.io/devcontainers-extra/features/fzf:1": {},
+  //  "ghcr.io/jungaretti/features/ripgrep:1": {},
   //  "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
-  //  "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  //  "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+  //  "ghcr.io/robbert229/devcontainer-features/postgresql-client:1": {},
   //}
 }
