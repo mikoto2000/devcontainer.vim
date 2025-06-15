@@ -1,5 +1,5 @@
 {
   "name": "TestStartWithDockerCompose",
   "dockerComposeFile": ["../docker-compose.yaml"],
-  "service": "app",
+  "service": "app"
 }

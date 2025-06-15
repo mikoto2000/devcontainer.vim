@@ -36,7 +36,7 @@ func startDevcontainer(devcontainerPath string, args []string, configFilePath st
 	userArgs = append(userArgs, "--override-config", configFilePath, "--workspace-folder", workspaceFolder)
 	devcontainerArgs := append(devcontainreArgsPrefix, userArgs...)
 	fmt.Printf("run container: `%s \"%s\"`\n", devcontainerPath, strings.Join(devcontainerArgs, "\" \""))
-	
+
 	dockerRunCommand := exec.Command(devcontainerPath, devcontainerArgs...)
 	dockerRunCommand.Stderr = os.Stderr
 
@@ -53,7 +53,7 @@ func startDevcontainer(devcontainerPath string, args []string, configFilePath st
 
 	containerID := upCommandResult.ContainerID
 	fmt.Printf("finished devcontainer up: %s\n", upCommandResult)
-	
+
 	return containerID, nil
 }
 
@@ -172,10 +172,9 @@ func setupPortForwarding(containerID, devcontainerPath, workspaceFolder string) 
 			}()
 		}
 	}
-	
+
 	return nil
 }
-
 
 // devcontainer でコンテナを立ち上げ、 Vim を転送し、実行する。
 // 既存実装の都合上、configFilePath から configDirForDevcontainer を抽出している
