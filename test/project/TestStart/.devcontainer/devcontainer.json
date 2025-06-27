@@ -1,5 +1,5 @@
 {
   "name": "TestStart",
   "image": "mcr.microsoft.com/devcontainers/base:bookworm",
-  "forwardPorts": [8888],
+  "forwardPorts": [8888]
 }

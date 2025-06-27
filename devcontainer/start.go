@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/mikoto2000/devcontainer.vim/v3/docker"
@@ -30,76 +29,46 @@ func (s DefaultDevcontainerStartUseService) StartVim(containerID string, devcont
 
 var devcontainreArgsPrefix = []string{"up"}
 
-// devcontainer でコンテナを立ち上げ、 Vim を転送し、実行する。
-// 既存実装の都合上、configFilePath から configDirForDevcontainer を抽出している
-func Start(
-	services DevcontainerStartUseService,
-	args []string,
-	devcontainerPath string,
-	cdrPath string,
-	vimInstallDir string,
-	nvim bool,
-	shell string,
-	configFilePath string,
-	vimrc string) error {
-
-	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
-	workspaceFolder := args[len(args)-1]
-
-	// `devcontainer up` でコンテナを起動
-
+// devcontainer up でコンテナを起動し、コンテナIDを返す
+func startDevcontainer(devcontainerPath string, args []string, configFilePath string, workspaceFolder string) (string, error) {
 	// 末尾以外のものはそのまま `devcontainer up` への引数として渡す
 	userArgs := args[0 : len(args)-1]
 	userArgs = append(userArgs, "--override-config", configFilePath, "--workspace-folder", workspaceFolder)
 	devcontainerArgs := append(devcontainreArgsPrefix, userArgs...)
 	fmt.Printf("run container: `%s \"%s\"`\n", devcontainerPath, strings.Join(devcontainerArgs, "\" \""))
+
 	dockerRunCommand := exec.Command(devcontainerPath, devcontainerArgs...)
 	dockerRunCommand.Stderr = os.Stderr
 
 	stdout, err := dockerRunCommand.Output()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Container start error.")
-		return err
+		return "", err
 	}
 
 	upCommandResult, err := UnmarshalUpCommandResult(stdout)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	containerID := upCommandResult.ContainerID
-
 	fmt.Printf("finished devcontainer up: %s\n", upCommandResult)
 
-	// コンテナ内に入り、コンテナの Arch を確認
-	containerArch, err := docker.Exec(containerID, "uname", "-m")
-	if err != nil {
-		return err
-	}
-	containerArch = strings.TrimSpace(containerArch)
-	containerArch, err = util.NormalizeContainerArch(containerArch)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Container Arch: '%s'.\n", containerArch)
+	return containerID, nil
+}
 
-	portForwarderContainerPath, err := tools.PortForwarderContainer(tools.DefaultInstallerUseServices{}).Install(vimInstallDir, containerArch, false)
-	if err != nil {
-		return err
-	}
-	err = docker.Cp("port-forwarder-container", portForwarderContainerPath, containerID, "/port-forwarder")
-	if err != nil {
-		return err
-	}
-
-	// clipboard-data-receiver を起動
-	configDirForDevcontainer := filepath.Dir(configFilePath)
+// devcontainer用のclipboard-data-receiverを起動する
+func startClipboardReceiverForDevcontainer(cdrPath, configDirForDevcontainer string) (int, int, error) {
 	pid, port, err := tools.RunCdr(cdrPath, configDirForDevcontainer)
 	if err != nil {
-		return err
+		return 0, 0, err
 	}
 	fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
+	return pid, port, nil
+}
 
+// port-forwardingの設定を行う
+func setupPortForwarding(containerID, devcontainerPath, workspaceFolder string) error {
 	// コンテナの IP アドレスを取得
 	containerIp, err := docker.Exec(containerID, "sh", "-c", "hostname -i")
 	if err != nil {
@@ -204,80 +173,69 @@ func Start(
 		}
 	}
 
-	// Vim/Neovim がシステムインストールされているか確認する
-	vimFileName := "vim"
-	if nvim {
-		vimFileName = "nvim"
-	}
+	return nil
+}
 
-	useSystemVim := false
-	fmt.Printf("Check system installed %s ... ", vimFileName)
-	out, _ := docker.Exec(containerID, "which", vimFileName)
-	if out != "" {
-		fmt.Printf("found.\n")
-		useSystemVim = true
-	} else {
-		fmt.Printf("not found.\n")
+// devcontainer でコンテナを立ち上げ、 Vim を転送し、実行する。
+// 既存実装の都合上、configFilePath から configDirForDevcontainer を抽出している
+func Start(
+	services DevcontainerStartUseService,
+	args []string,
+	devcontainerPath string,
+	cdrPath string,
+	vimInstallDir string,
+	nvim bool,
+	shell string,
+	configFilePath string,
+	vimrc string) error {
 
-		if runtime.GOARCH == "arm64" {
-			// arm の場合スタティックリンクの nvim を作れないため、 vim にフォールバック
-			vimFileName = "vim"
-			nvim = false
-		} else if runtime.GOOS == "darwin" && runtime.GOARCH == "amd64" && nvim {
-			// M1 Mac で amd64 のコンテナを動かすと、なぜか AppImage が動かないので vim にフォールバック
-			vimFileName = "vim"
-			nvim = false
-		}
-	}
-	fmt.Printf("docker exec output: \"%s\".\n", strings.TrimSpace(out))
+	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
+	workspaceFolder := args[len(args)-1]
 
-	if !useSystemVim {
-		// コンテナへ appimage を転送して実行権限を追加
-		// `docker cp <os.UserCacheDir/devcontainer.vim/Vim-AppImage> <dockerrun 時に標準出力に表示される CONTAINER ID>:/`
-		vimFilePath, err := tools.InstallVim(vimInstallDir, nvim, containerArch)
-		if err != nil {
-			return err
-		}
-		// vim_<ARCH>, nvim_<ARCH> の形式でパスがわたってくるので、
-		// vim/nvim の部分を抽出する。
-		vimFileName := strings.Split(filepath.Base(vimFilePath), "_")[0]
-
-		err = docker.Cp("vim", vimFilePath, containerID, "/"+vimFileName)
-		if err != nil {
-			return err
-		}
-
-		// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> chmod +x /Vim-AppImage`
-		dockerChownArgs := []string{"exec", "--user", "root", containerID, "sh", "-c", "chmod +x /" + vimFileName}
-		fmt.Printf("Chown AppImage: `%s \"%s\"` ...", containerCommand, strings.Join(dockerChownArgs, "\" \""))
-		chmodResult, err := exec.Command(containerCommand, dockerChownArgs...).CombinedOutput()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "chmod error.")
-			fmt.Fprintln(os.Stderr, string(chmodResult))
-			return err
-		}
-		fmt.Printf(" done.\n")
-	}
-
-	// Vim 関連ファイルの転送(`SendToTcp.vim` と、追加の `vimrc`)
-	sendToTCP, err := tools.CreateSendToTCP(configDirForDevcontainer, port, vimFileName == "nvim")
+	// 1. devcontainer up でコンテナを起動
+	containerID, err := startDevcontainer(devcontainerPath, args, configFilePath, workspaceFolder)
 	if err != nil {
 		return err
 	}
 
-	// コンテナへ SendToTcp.vim を転送
-	err = docker.Cp("SendToTcp.vim", sendToTCP, containerID, "/")
+	// 2. コンテナアーキテクチャを取得
+	containerArch, err := getContainerArch(containerID)
 	if err != nil {
 		return err
 	}
 
-	// コンテナへ vimrc を転送
-	err = docker.Cp("vimrc", vimrc, containerID, "/")
+	// 3. port-forwarderをインストール
+	err = installPortForwarder(containerID, vimInstallDir, containerArch)
 	if err != nil {
 		return err
 	}
 
-	// コンテナへ接続
+	// 4. clipboard-data-receiverを起動
+	configDirForDevcontainer := filepath.Dir(configFilePath)
+	_, port, err := startClipboardReceiverForDevcontainer(cdrPath, configDirForDevcontainer)
+	if err != nil {
+		return err
+	}
+
+	// 5. port-forwardingの設定
+	err = setupPortForwarding(containerID, devcontainerPath, workspaceFolder)
+	if err != nil {
+		return err
+	}
+
+	// 6. Vimの検出とインストール
+	vimFileName, useSystemVim, err := setupVim(containerID, vimInstallDir, nvim, containerArch)
+	if err != nil {
+		return err
+	}
+
+	// 7. Vimファイルの転送
+	sendToTCP, err := transferVimFiles(containerID, configDirForDevcontainer, vimrc, port, vimFileName == "nvim")
+	if err != nil {
+		return err
+	}
+
+	// 8. コンテナへ接続
 	services.StartVim(containerID, devcontainerPath, workspaceFolder, vimFileName, sendToTCP, containerArch, useSystemVim, shell, configDirForDevcontainer)
 
 	// コンテナ停止は別途 down コマンドで行う

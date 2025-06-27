@@ -1,5 +1,5 @@
 
 {
   "name": "test",
-  "image": "debian:bookworm-slim",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
 }
