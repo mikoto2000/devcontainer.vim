@@ -6,7 +6,7 @@
     "TERM": "xterm-256color",
     "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}",
   },
-  "postCreateCommand": "npm install -g @anthropic-ai/claude-code; npm install -g @openai/codex",
+  "postCreateCommand": "npm install -g @anthropic-ai/claude-code; npm install -g @openai/codex; npm install -g @google/gemini-cli",
   "mounts": [
     {
       "type": "bind",
@@ -27,6 +27,11 @@
       "type": "bind",
       "source": "${localEnv:HOME}/.claude.json",
       "target": "/home/vscode/.claude.json"
+    },
+    {
+      "type": "bind",
+      "source": "${localEnv:HOME}/.gemini",
+      "target": "/home/vscode/.gemini"
     },
   ],
   "features": {

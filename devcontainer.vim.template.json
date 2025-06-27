@@ -18,6 +18,8 @@
   // "postCreateCommand": "npm install -g @anthropic-ai/claude-code",
   // If use codex
   // "postCreateCommand": "npm install -g @openai/codex",
+  // If use Gemini
+  // "postCreateCommand": "npm install -g @google/gemini-cli",
   // devcontainer/cli はまだ forwardPorts に対応していないため、
   // 必要に応じて forwardPorts の定義を appPort に転記する。
   // ※ コンテナ側で Listen する際は、 `127.0.0.1` **ではなく** `0.0.0.0` で Listen すること。
@@ -71,6 +73,12 @@
     //  "type": "bind",
     //  "source": "${localEnv:HOME}/.codex",
     //  "target": "/home/vscode/.codex"
+    //},
+    // If use gemini
+    //{
+    //  "type": "bind",
+    //  "source": "${localEnv:HOME}/.gemini",
+    //  "target": "/home/vscode/.gemini"
     //},
   ],
   // denops など、別の実行環境が必要な場合や、
