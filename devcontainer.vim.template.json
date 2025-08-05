@@ -66,19 +66,19 @@
     //{
     //  "type": "bind",
     //  "source": "${localEnv:HOME}/.claude.json",
-    //  "target": "/home/vscode/.claude.json"
+    //  "target": "{{ remoteEnv:HOME }}/.claude.json"
     //},
     // If use codex
     //{
     //  "type": "bind",
     //  "source": "${localEnv:HOME}/.codex",
-    //  "target": "/home/vscode/.codex"
+    //  "target": "{{ remoteEnv:HOME }}/.codex"
     //},
     // If use gemini
     //{
     //  "type": "bind",
     //  "source": "${localEnv:HOME}/.gemini",
-    //  "target": "/home/vscode/.gemini"
+    //  "target": "{{ remoteEnv:HOME }}/.gemini"
     //},
   ],
   // denops など、別の実行環境が必要な場合や、
