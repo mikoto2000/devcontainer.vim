@@ -55,7 +55,7 @@ func Ps(workspaceFolder string) (string, error) {
 		return "", &PsCommandError{msg: "ワークスペースへの移動に失敗しました。指定したディレクトリが存在するか・パーミッションが正しいかの確認をしてください。 "}
 	}
 
-	dockerComposePsCommand := exec.Command(containerCommand, "compose", "ps", "--format", "json")
+	dockerComposePsCommand := exec.Command(containerCommand, "compose", "ps", "--all", "--format", "json")
 	stdout, err := dockerComposePsCommand.Output()
 	if err != nil {
 		return "", &PsCommandError{msg: "docker compose ps コマンドの実行に失敗しました。docker がインストールされているか・docker エンジンが起動しているかの確認をしてください。 "}
