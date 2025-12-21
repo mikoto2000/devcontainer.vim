@@ -32,6 +32,12 @@ const vimScriptTemplateSendToCdr = `if !has("nvim")
   endfunction
 endif`
 
+const vimNoCdrScriptTemplateSendToCdr = `if !has("nvim")
+  function! SendToCdr(register) abort
+    " nop
+  endfunction
+endif`
+
 const luaScriptTemplateSendToCdr = `function SendToCdr(register)
   local text = vim.fn.getreg(register)
   local uv = vim.loop
@@ -71,6 +77,10 @@ const luaScriptTemplateSendToCdr = `function SendToCdr(register)
       end)
     end)
   end)
+end
+`
+const luaNoCdrScriptTemplateSendToCdr = `function SendToCdr(register)
+  -- nop
 end
 `
 
@@ -242,19 +252,35 @@ func KillCdr(pid int) error {
 	return nil
 }
 
-func CreateSendToTCP(configDir string, port int, nvim bool) (string, error) {
+func CreateSendToTCP(configDir string, port int, noCdr bool, nvim bool) (string, error) {
 	// SendToTcp.vim の文字列を組み立て
 	var tmpl *template.Template
 	var err error
-	if nvim {
-		tmpl, err = template.New("SendToTcp").Parse(luaScriptTemplateSendToCdr)
-		if err != nil {
-			return "", err
+	if !noCdr {
+		// cdr 有効
+		if nvim {
+			tmpl, err = template.New("SendToTcp").Parse(luaScriptTemplateSendToCdr)
+			if err != nil {
+				return "", err
+			}
+		} else {
+			tmpl, err = template.New("SendToTcp").Parse(vimScriptTemplateSendToCdr)
+			if err != nil {
+				return "", err
+			}
 		}
 	} else {
-		tmpl, err = template.New("SendToTcp").Parse(vimScriptTemplateSendToCdr)
-		if err != nil {
-			return "", err
+		// cdr 無効
+		if nvim {
+			tmpl, err = template.New("SendToTcp").Parse(luaNoCdrScriptTemplateSendToCdr)
+			if err != nil {
+				return "", err
+			}
+		} else {
+			tmpl, err = template.New("SendToTcp").Parse(vimNoCdrScriptTemplateSendToCdr)
+			if err != nil {
+				return "", err
+			}
 		}
 	}
 

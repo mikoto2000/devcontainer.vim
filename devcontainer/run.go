@@ -35,6 +35,7 @@ func (e *ChmodError) Error() string {
 // docker run で、ワンショットでコンテナを立ち上げる
 func Run(
 	args []string,
+	noCdr bool,
 	cdrPath string,
 	vimInstallDir string,
 	nvim bool,
@@ -46,6 +47,7 @@ func Run(
 	// コンテナのセットアップ
 	containerID, vimFileName, sendToTCP, containerArch, useSystemVim, cdrPid, cdrConfigDir, err := setupContainer(
 		args,
+		noCdr,
 		cdrPath,
 		vimInstallDir,
 		nvim,
@@ -147,6 +149,7 @@ func startClipboardReceiver(cdrPath, configDirForDocker, containerID string) (in
 
 func setupContainer(
 	args []string,
+	noCdr bool,
 	cdrPath string,
 	vimInstallDir string,
 	nvim bool,
@@ -173,9 +176,14 @@ func setupContainer(
 	}
 
 	// 4. clipboard-data-receiverを起動
-	pid, port, configDirForCdr, err := startClipboardReceiver(cdrPath, configDirForDocker, containerID)
-	if err != nil {
-		return containerID, "", "", containerArch, false, pid, configDirForCdr, err
+	pid := 0;
+	port := 0;
+	configDirForCdr := "";
+	if !noCdr {
+		pid, port, configDirForCdr, err = startClipboardReceiver(cdrPath, configDirForDocker, containerID)
+		if err != nil {
+			return containerID, "", "", containerArch, false, pid, configDirForCdr, err
+		}
 	}
 
 	// 5. Vimの検出とインストール
@@ -185,7 +193,7 @@ func setupContainer(
 	}
 
 	// 6. Vimファイルを転送
-	sendToTCP, err := transferVimFiles(containerID, configDirForDocker, vimrc, port, vimFileName == "nvim")
+	sendToTCP, err := transferVimFiles(containerID, configDirForDocker, vimrc, noCdr, port, vimFileName == "nvim")
 	if err != nil {
 		return containerID, vimFileName, sendToTCP, containerArch, useSystemVim, pid, configDirForCdr, err
 	}

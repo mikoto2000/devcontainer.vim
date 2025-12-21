@@ -182,6 +182,7 @@ func Start(
 	services DevcontainerStartUseService,
 	args []string,
 	devcontainerPath string,
+	noCdr bool,
 	cdrPath string,
 	vimInstallDir string,
 	nvim bool,
@@ -211,10 +212,13 @@ func Start(
 	}
 
 	// 4. clipboard-data-receiverを起動
+	port := 0;
 	configDirForDevcontainer := filepath.Dir(configFilePath)
-	_, port, err := startClipboardReceiverForDevcontainer(cdrPath, configDirForDevcontainer)
-	if err != nil {
-		return err
+	if !noCdr {
+		_, port, err = startClipboardReceiverForDevcontainer(cdrPath, configDirForDevcontainer)
+		if err != nil {
+			return err
+		}
 	}
 
 	// 5. port-forwardingの設定
@@ -230,7 +234,7 @@ func Start(
 	}
 
 	// 7. Vimファイルの転送
-	sendToTCP, err := transferVimFiles(containerID, configDirForDevcontainer, vimrc, port, vimFileName == "nvim")
+	sendToTCP, err := transferVimFiles(containerID, configDirForDevcontainer, vimrc, noCdr, port, vimFileName == "nvim")
 	if err != nil {
 		return err
 	}

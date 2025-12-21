@@ -110,9 +110,9 @@ func setupVim(containerID, vimInstallDir string, nvim bool, containerArch string
 }
 
 // Vimファイル（SendToTcp.vimとvimrc）をコンテナに転送する
-func transferVimFiles(containerID, configDir, vimrc string, port int, isNvim bool) (string, error) {
+func transferVimFiles(containerID, configDir, vimrc string, noCdr bool, port int, isNvim bool) (string, error) {
 	// Vim 関連ファイルの転送(`SendToTcp.vim` と、追加の `vimrc`)
-	sendToTCP, err := tools.CreateSendToTCP(configDir, port, isNvim)
+	sendToTCP, err := tools.CreateSendToTCP(configDir, port, noCdr, isNvim)
 	if err != nil {
 		return "", err
 	}
