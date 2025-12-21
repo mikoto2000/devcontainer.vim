@@ -56,7 +56,7 @@ USAGE:
    devcontainer.vim [global options] command [command options] 
 
 VERSION:
-   3.6.0
+   3.7.0
 
 COMMANDS:
    run                 Run container use `docker run`
@@ -77,6 +77,7 @@ COMMANDS:
 GLOBAL OPTIONS:
    --license, -l  show licensesa.
    --nvim         use NeoVim.
+   --nocdr        disable clipboard-data-receiver.
    --shell value  start with shell.
    --help, -h     show help
    --version, -v  print the version
