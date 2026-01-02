@@ -44,6 +44,7 @@ const envDevcontainerShellType = "DEVCONTAINER_SHELL_TYPE"
 const flagNameLicense = "license"
 const flagNameNeoVim = "nvim"
 const flagNameNoCdr = "nocdr"
+const flagNameNoPf = "nopf"
 const flagNameShell = "shell"
 const flagNameArch = "arch"
 
@@ -144,6 +145,12 @@ func main() {
 				DisableDefaultText: true,
 				Usage:              "disable clipboard-data-receiver.",
 			},
+			&cli.BoolFlag{
+				Name:               flagNameNoPf,
+				Value:              false,
+				DisableDefaultText: true,
+				Usage:              "disable port-forwarder.",
+			},
 			&cli.StringFlag{
 				Name:  flagNameShell,
 				Value: "",
@@ -193,6 +200,12 @@ func main() {
 						noCdr = cCtx.Bool(flagNameNoCdr)
 					}
 
+					// port-forwarder 使用判定
+					noPf := false
+					if cCtx.String(flagNameNoPf) != "" {
+						noPf = cCtx.Bool(flagNameNoPf)
+					}
+
 					// 必要なファイルのダウンロード
 
 					nvim := false
@@ -216,7 +229,7 @@ func main() {
 					if runtime.GOOS == "windows" {
 						// コンテナ起動
 						// windows はシェル変数展開が上手くいかないので runargs を使用しない
-						err = devcontainer.Run(cCtx.Args().Slice(), noCdr, cdrPath, binDir, nvim, shell, configDirForDocker, vimrc, []string{})
+						err = devcontainer.Run(cCtx.Args().Slice(), noCdr, noPf, cdrPath, binDir, nvim, shell, configDirForDocker, vimrc, []string{})
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Error running docker: %v\n", err)
 							os.Exit(1)
@@ -237,7 +250,7 @@ func main() {
 						}
 
 						// コンテナ起動
-						err = devcontainer.Run(cCtx.Args().Slice(), noCdr, cdrPath, binDir, nvim, shell, configDirForDocker, vimrc, defaultRunargs)
+						err = devcontainer.Run(cCtx.Args().Slice(), noCdr, noPf, cdrPath, binDir, nvim, shell, configDirForDocker, vimrc, defaultRunargs)
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Error running docker: %v\n", err)
 							os.Exit(1)
@@ -370,6 +383,12 @@ func main() {
 						noCdr = cCtx.Bool(flagNameNoCdr)
 					}
 
+					// port-forwarder 使用判定
+					noPf := false
+					if cCtx.String(flagNameNoCdr) != "" {
+						noPf = cCtx.Bool(flagNameNoPf)
+					}
+
 					// 必要なファイルのダウンロード
 					nvim := false
 					if cCtx.Bool(flagNameNeoVim) || os.Getenv(envDevcontainerVimType) == "nvim" {
@@ -395,7 +414,7 @@ func main() {
 					}
 
 					// devcontainer を用いたコンテナ立ち上げ
-					err = devcontainer.Start(devcontainer.DefaultDevcontainerStartUseService{}, args, devcontainerPath, noCdr, cdrPath, binDir, nvim, shell, configFilePath, vimrc)
+					err = devcontainer.Start(devcontainer.DefaultDevcontainerStartUseService{}, args, devcontainerPath, noCdr, noPf, cdrPath, binDir, nvim, shell, configFilePath, vimrc)
 					if err != nil {
 						if errors.Is(err, os.ErrPermission) {
 							fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)

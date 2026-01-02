@@ -183,6 +183,7 @@ func Start(
 	args []string,
 	devcontainerPath string,
 	noCdr bool,
+	noPf bool,
 	cdrPath string,
 	vimInstallDir string,
 	nvim bool,
@@ -222,9 +223,11 @@ func Start(
 	}
 
 	// 5. port-forwardingの設定
-	err = setupPortForwarding(containerID, devcontainerPath, workspaceFolder)
-	if err != nil {
-		return err
+	if !noPf {
+		err = setupPortForwarding(containerID, devcontainerPath, workspaceFolder)
+		if err != nil {
+			return err
+		}
 	}
 
 	// 6. Vimの検出とインストール

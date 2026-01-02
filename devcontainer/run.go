@@ -36,6 +36,7 @@ func (e *ChmodError) Error() string {
 func Run(
 	args []string,
 	noCdr bool,
+	noPf bool,
 	cdrPath string,
 	vimInstallDir string,
 	nvim bool,
@@ -48,6 +49,7 @@ func Run(
 	containerID, vimFileName, sendToTCP, containerArch, useSystemVim, cdrPid, cdrConfigDir, err := setupContainer(
 		args,
 		noCdr,
+		noPf,
 		cdrPath,
 		vimInstallDir,
 		nvim,
@@ -150,6 +152,7 @@ func startClipboardReceiver(cdrPath, configDirForDocker, containerID string) (in
 func setupContainer(
 	args []string,
 	noCdr bool,
+	noPf bool,
 	cdrPath string,
 	vimInstallDir string,
 	nvim bool,
@@ -170,9 +173,11 @@ func setupContainer(
 	}
 
 	// 3. port-forwarderをインストール
-	err = installPortForwarder(containerID, vimInstallDir, containerArch)
-	if err != nil {
-		return containerID, "", "", containerArch, false, 0, "", err
+	if !noPf {
+		err = installPortForwarder(containerID, vimInstallDir, containerArch)
+		if err != nil {
+			return containerID, "", "", containerArch, false, 0, "", err
+		}
 	}
 
 	// 4. clipboard-data-receiverを起動
