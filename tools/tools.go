@@ -214,13 +214,9 @@ func SelfUpdate(services InstallerUseServices) error {
 	}
 
 	// Construct the download URL for the latest release
-	var downloadURL string
+	downloadURL := fmt.Sprintf("https://github.com/mikoto2000/devcontainer.vim/releases/download/%s/devcontainer.vim-%s-%s", latestTagName, runtime.GOOS, runtime.GOARCH)
 	if runtime.GOOS == "windows" {
-		downloadURL = fmt.Sprintf("https://github.com/mikoto2000/devcontainer.vim/releases/download/%s/devcontainer.vim-windows-amd64.exe", latestTagName)
-	} else if runtime.GOOS == "darwin" {
-		downloadURL = fmt.Sprintf("https://github.com/mikoto2000/devcontainer.vim/releases/download/%s/devcontainer.vim-darwin-arm64", latestTagName)
-	} else {
-		downloadURL = fmt.Sprintf("https://github.com/mikoto2000/devcontainer.vim/releases/download/%s/devcontainer.vim-linux-amd64", latestTagName)
+		downloadURL = downloadURL + ".exe"
 	}
 
 	// Download the latest release

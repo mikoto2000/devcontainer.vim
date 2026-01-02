@@ -1,9 +1,12 @@
 APP_NAME := devcontainer.vim
-GOARCH_AMD64 := amd64
-GOARCH_ARM64 := arm64
-WINDOWS_BINARY_NAME := ${APP_NAME}-windows-${GOARCH_AMD64}.exe
-LINUX_BINARY_NAME := ${APP_NAME}-linux-${GOARCH_AMD64}
-DARWIN_BINARY_NAME := ${APP_NAME}-darwin-${GOARCH_ARM64}
+
+PLATFORMS := \
+	darwin/amd64 \
+	darwin/arm64 \
+	linux/amd64 \
+	linux/arm64 \
+	windows/amd64 \
+	windows/arm64
 
 GO_BIN := ${GOPATH}/bin
 VERSION := 3.7.0
@@ -48,19 +51,17 @@ build: build/devcontainer.vim
 build/devcontainer.vim: ${WATCH_SRC}
 	go build -ldflags=${LD_FLAGS} -trimpath -o ./build/${APP_NAME}
 
-build-all: build-windows build-linux build-darwin
+build-all:
+	@mkdir -p $(DEST)
+	@set -e; \
+	for platform in $(PLATFORMS); do \
+		GOOS=$${platform%/*}; GOARCH=$${platform#*/}; \
+		ext=""; [ $$GOOS = "windows" ] && ext=".exe"; \
+		out="$(DEST)/$(APP_NAME)-$${GOOS}-$${GOARCH}$$ext"; \
+		echo "Building $$out"; \
+		GOOS=$$GOOS GOARCH=$$GOARCH go build -ldflags "-s -w -X main.version=$(VERSION)" -o $$out $(PKG); \
+	done
 
-build-windows: build/${WINDOWS_BINARY_NAME}
-build/${WINDOWS_BINARY_NAME}: ${WATCH_SRC}
-	GOOS=windows GOARCH=${GOARCH_AMD64} go build -ldflags=${LD_FLAGS} -trimpath -o build/${WINDOWS_BINARY_NAME}
-
-build-linux: build/${LINUX_BINARY_NAME}
-build/${LINUX_BINARY_NAME}: ${WATCH_SRC}
-	GOOS=linux GOARCH=${GOARCH_AMD64} go build -ldflags=${LD_FLAGS} -trimpath -o build/${LINUX_BINARY_NAME}
-
-build-darwin: build/${DARWIN_BINARY_NAME}
-build/${DARWIN_BINARY_NAME}: ${WATCH_SRC}
-	GOOS=darwin GOARCH=${GOARCH_ARM64} go build -ldflags=${LD_FLAGS} -trimpath -o build/${DARWIN_BINARY_NAME}
 
 .PHONY: lint
 lint:
