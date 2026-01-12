@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"runtime"
 	"strings"
 	"text/template"
 )
@@ -22,7 +23,10 @@ var DEVCONTAINER = func(services InstallerUseServices) Tool {
 				return "", err
 			}
 
-			tmplParams := map[string]string{"TagName": latestTagName}
+			tmplParams := map[string]string{
+				"TagName": latestTagName,
+				"Arch": runtime.GOARCH,
+			}
 			var downloadURL strings.Builder
 			err = tmpl.Execute(&downloadURL, tmplParams)
 			if err != nil {
