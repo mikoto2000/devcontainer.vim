@@ -462,7 +462,11 @@ rm -rf ~/.cache/devcontainer.vim
 
 ### MacOS
 
-TODO:
+```sh
+rm PATH_TO/devcontainer.vim
+rm -rf ~/Library/Application Support/devcontainer.vim
+rm -rf ~/Library/Caches/devcontainer.vim
+```
 
 
 ## License:
