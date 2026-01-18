@@ -68,7 +68,7 @@ func startClipboardReceiverForDevcontainer(cdrPath, configDirForDevcontainer str
 }
 
 // port-forwardingの設定を行う
-func setupPortForwarding(containerID, devcontainerPath, workspaceFolder string) error {
+func setupPortForwarding(ctx context.Context, containerID, devcontainerPath, workspaceFolder string) error {
 	// コンテナの IP アドレスを取得
 	containerIp, err := docker.Exec(containerID, "sh", "-c", "hostname -i")
 	if err != nil {
@@ -102,10 +102,8 @@ func setupPortForwarding(containerID, devcontainerPath, workspaceFolder string) 
 		for _, fc := range forwardConfigs {
 
 			// コンテナ側の port-forwarder の起動
-			portForwarderCtx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-			defer cancel()
 			fmt.Printf("%s %s %s %s %s %s %s.\n", devcontainerPath, "exec", "--workspace-folder", ".", "sh", "-c", "/port-forwarder -l 0.0.0.0:0 -f "+fc.Host+":"+fc.Port)
-			dockerExecPortForwarder := exec.CommandContext(portForwarderCtx, devcontainerPath, "exec", "--workspace-folder", ".", "sh", "-c", "/port-forwarder -l 0.0.0.0:0 -f "+fc.Host+":"+fc.Port)
+			dockerExecPortForwarder := exec.CommandContext(ctx, devcontainerPath, "exec", "--workspace-folder", ".", "sh", "-c", "/port-forwarder -l 0.0.0.0:0 -f "+fc.Host+":"+fc.Port)
 			portOut, err := dockerExecPortForwarder.StdoutPipe()
 			if err != nil {
 				return err
@@ -223,8 +221,11 @@ func Start(
 	}
 
 	// 5. port-forwardingの設定
+	var pfCancel context.CancelFunc
 	if !noPf {
-		err = setupPortForwarding(containerID, devcontainerPath, workspaceFolder)
+		var pfCtx context.Context
+		pfCtx, pfCancel = context.WithCancel(context.Background())
+		err = setupPortForwarding(pfCtx, containerID, devcontainerPath, workspaceFolder)
 		if err != nil {
 			return err
 		}
@@ -244,6 +245,9 @@ func Start(
 
 	// 8. コンテナへ接続
 	services.StartVim(containerID, devcontainerPath, workspaceFolder, vimFileName, sendToTCP, containerArch, useSystemVim, shell, configDirForDevcontainer)
+	if pfCancel != nil {
+		pfCancel()
+	}
 
 	// コンテナ停止は別途 down コマンドで行う
 	return nil
