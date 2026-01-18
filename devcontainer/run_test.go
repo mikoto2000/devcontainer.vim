@@ -31,9 +31,13 @@ func TestSetupContainer(t *testing.T) {
 	}
 
 	vimrc := "../test/resource/TestRun/vimrc"
+	noCdr := false
+	noPf := false
 
 	containerID, _, _, _, _, _, _, err := setupContainer(
 		[]string{"alpine:latest"},
+		noCdr,
+		noPf,
 		cdrPath,
 		binDir,
 		nvim,
@@ -259,6 +263,8 @@ func TestRunIntegration(t *testing.T) {
 	args := []string{"alpine:latest"}
 	vimrc := "../test/resource/TestRun/vimrc"
 	defaultRunargs := []string{}
+	noCdr := false
+	noPf := false
 
 	// Run関数を別のgoroutineで実行し、タイムアウトを設定
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -272,6 +278,8 @@ func TestRunIntegration(t *testing.T) {
 		// setupContainer部分のみをテスト
 		containerID, _, _, _, _, cdrPid, cdrConfigDir, err := setupContainer(
 			args,
+			noCdr,
+			noPf,
 			cdrPath,
 			binDir,
 			nvim,
