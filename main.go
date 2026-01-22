@@ -250,6 +250,11 @@ func main() {
 						}
 
 						// コンテナ起動
+						args := cCtx.Args().Slice()
+						if len(args) == 0 {
+							fmt.Fprintf(os.Stderr, "Usage: devcontainer.vim run <IMAGE_OR_CONTAINER>\n")
+							os.Exit(1)
+						}
 						err = devcontainer.Run(cCtx.Args().Slice(), noCdr, noPf, cdrPath, binDir, nvim, shell, configDirForDocker, vimrc, defaultRunargs)
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Error running docker: %v\n", err)
@@ -402,6 +407,11 @@ func main() {
 
 					// コマンドライン引数の末尾は `--workspace-folder` の値として使う
 					args := cCtx.Args().Slice()
+					if len(args) == 0 {
+						fmt.Fprintf(os.Stderr, "Error: missing workspace folder.\n")
+						fmt.Fprintf(os.Stderr, "Usage: devcontainer.vim start <WORKSPACE_FOLDER>\n")
+						os.Exit(1)
+					}
 					workspaceFolder := args[len(args)-1]
 					configFilePath, err := devcontainer.CreateConfigFile(devcontainerPath, workspaceFolder, configDirForDevcontainer)
 					if err != nil {
