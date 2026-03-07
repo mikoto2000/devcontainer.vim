@@ -232,7 +232,10 @@ func TestCreateConfigFileForDevcontainer(t *testing.T) {
 func TestGetConfigDir(t *testing.T) {
 	configDir := "test/resource/TestGetConfigDir/config"
 	workspaceFolder := "test/resource/TestGetConfigDir"
-	got := GetConfigDir(configDir, workspaceFolder)
+	got, err := GetConfigDir(configDir, workspaceFolder)
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
 
 	want := "test/resource/TestGetConfigDir/config/c6f98b7a913a4e3c094b7ba70d2e0f00"
 	if want != got {

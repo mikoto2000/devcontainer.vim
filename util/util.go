@@ -35,7 +35,7 @@ func CreateConfigDirectory(pathFunc GetDirFunc, dirName string) (string, error) 
 	}
 	var appConfigDir = filepath.Join(baseDir, dirName)
 	if err := os.MkdirAll(appConfigDir, 0766); err != nil {
-		panic(err)
+		return "", err
 	}
 	return appConfigDir, nil
 }
@@ -168,7 +168,10 @@ func CreateConfigFileForDevcontainer(configDirForDevcontainer string, workspaceF
 	}
 
 	// 設定管理フォルダに JSON を配置
-	generateConfigDir := GetConfigDir(configDirForDevcontainer, workspaceFolder)
+	generateConfigDir, err := GetConfigDir(configDirForDevcontainer, workspaceFolder)
+	if err != nil {
+		return "", err
+	}
 	generateConfigFilePath := filepath.Join(generateConfigDir, "devcontainer.json")
 	err = os.MkdirAll(generateConfigDir, 0777)
 	if err != nil {
@@ -183,15 +186,15 @@ func CreateConfigFileForDevcontainer(configDirForDevcontainer string, workspaceF
 
 // devcontainer.vim 用の devcontainer.json 格納先ディレクトリを計算して返却する。
 // `<devcontainer.vim のキャッシュディレクトリ>/config/<workspaceFolder の絶対パスを md5 播種化した文字列>` のディレクトリを返却
-func GetConfigDir(configDirForDevcontainer string, workspaceFolder string) string {
+func GetConfigDir(configDirForDevcontainer string, workspaceFolder string) (string, error) {
 	workspaceFolderAbs, err := filepath.Abs(workspaceFolder)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	workspaceFolderHash := md5.Sum([]byte(workspaceFolderAbs))
 
 	workspaceFolderHashString := hex.EncodeToString(workspaceFolderHash[:])
-	return filepath.Join(configDirForDevcontainer, workspaceFolderHashString)
+	return filepath.Join(configDirForDevcontainer, workspaceFolderHashString), nil
 }
 
 // WSL 上で動いているかを判定する
@@ -228,7 +231,7 @@ func CreateFileWithContents(file string, content string, permission fs.FileMode)
 func ExtractShellVariables(str string) (string, error) {
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
-		panic("ExtractShellVariables no support windows.")
+		return "", errors.New("ExtractShellVariables no support windows")
 	} else {
 		cmd = exec.Command("sh", "-c", "echo "+str)
 	}

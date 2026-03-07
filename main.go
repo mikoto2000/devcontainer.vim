@@ -89,11 +89,13 @@ func main() {
 	//    `os.UserCacheDir` + `devcontainer.vim`
 	appConfigDir, err := util.CreateConfigDirectory(os.UserConfigDir, appName)
 	if err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "Error creating config directory: %v\n", err)
+		os.Exit(1)
 	}
 	appCacheDir, binDir, configDirForDocker, configDirForDevcontainer, err := util.CreateCacheDirectory(os.UserCacheDir, appName)
 	if err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "Error creating cache directory: %v\n", err)
+		os.Exit(1)
 	}
 
 	// vimrc ファイルの出力先を組み立て
@@ -508,7 +510,15 @@ func main() {
 					// コマンドライン引数の末尾は `--workspace-folder` の値として使う
 					args := cCtx.Args().Slice()
 					workspaceFolder := args[len(args)-1]
-					configDir := util.GetConfigDir(appCacheDir, workspaceFolder)
+						configDir, err := util.GetConfigDir(appCacheDir, workspaceFolder)
+						if err != nil {
+							if errors.Is(err, os.ErrPermission) {
+								fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
+							} else {
+								fmt.Fprintf(os.Stderr, "Error getting configuration file path: %v\n", err)
+							}
+							os.Exit(1)
+						}
 
 					fmt.Printf("Remove configuration file: `%s`\n", configDir)
 					err = os.RemoveAll(configDir)
@@ -939,7 +949,7 @@ func main() {
 				Usage:     "Show bash complete func",
 				UsageText: "devcontainer.vim bash-complete-func",
 				Action: func(cCtx *cli.Context) error {
-					fmt.Printf(bash_complete_func)
+						fmt.Print(bash_complete_func)
 					return nil
 				},
 			},

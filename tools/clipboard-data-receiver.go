@@ -103,7 +103,16 @@ var CDR = func(services InstallerUseServices) Tool {
 		tmpl, err = template.New("ducp").Parse(downloadURLCdrPattern)
 	}
 	if err != nil {
-		panic(err)
+		return Tool{
+			FileName: cdrFileName,
+			CalculateDownloadURL: func(_ string) (string, error) {
+				return "", err
+			},
+			installFunc: func(downloadFunc func(downloadURL string, destPath string) error, downloadURL string, filePath string, containerArch string) (string, error) {
+				return "", err
+			},
+			DownloadFunc: download,
+		}
 	}
 
 	// 実際に使用する cdr の構造体を返却

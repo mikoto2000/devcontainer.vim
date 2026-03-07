@@ -35,10 +35,10 @@ var PortForwarderContainer = func(services InstallerUseServices) Tool {
 
 			tmplParams := map[string]string{"TagName": latestTagName}
 			var downloadURL strings.Builder
-			err = tmpl.Execute(&downloadURL, tmplParams)
-			if err != nil {
-				panic(err)
-			}
+				err = tmpl.Execute(&downloadURL, tmplParams)
+				if err != nil {
+					return "", err
+				}
 			return downloadURL.String(), nil
 		},
 		installFunc: func(downloadFunc func(downloadURL string, destPath string) error, downloadURL string, filePath string, containerArch string) (string, error) {

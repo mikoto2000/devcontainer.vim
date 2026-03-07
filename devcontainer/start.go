@@ -135,7 +135,8 @@ func setupPortForwarding(ctx context.Context, containerID, devcontainerPath, wor
 					// forwardPorts の内容を `~/.config/devcontainer.vim/pf` ディテク取りに「<転送先>_<リッスンアドレス＆ポート>」の形式で配置する
 					_, err = docker.Exec(containerID, "sh", "-c", "mkdir -p ~/.config/devcontainer.vim/pf && touch ~/.config/devcontainer.vim/pf/"+fc.Host+":"+fc.Port+"_"+containerIp+":"+port)
 					if err != nil {
-						panic(err)
+						fmt.Fprintf(os.Stderr, "Error creating port-forwarder marker file: %v\n", err)
+						continue
 					}
 
 					util.StartForwarding("0.0.0.0:"+fc.Port, containerIp+":"+port)
@@ -260,7 +261,10 @@ func startVim(containerID string, devcontainerPath string, workspaceFolder strin
 	defer cancel()
 
 	sendToTCPName := filepath.Base(sendToTCP)
-	devcontainerStartVimArgs := devcontainerStartVimArgs(containerID, workspaceFolder, vimFileName, sendToTCPName, containerArch, useSystemVim, shell, configFilePathForDevcontainer)
+	devcontainerStartVimArgs, err := devcontainerStartVimArgs(containerID, workspaceFolder, vimFileName, sendToTCPName, containerArch, useSystemVim, shell, configFilePathForDevcontainer)
+	if err != nil {
+		return err
+	}
 	fmt.Printf("Start vim: `%s \"%s\"`\n", devcontainerPath, strings.Join(devcontainerStartVimArgs, "\" \""))
 	dockerExec := exec.CommandContext(ctx, devcontainerPath, devcontainerStartVimArgs...)
 	dockerExec.Stdin = os.Stdin
@@ -271,7 +275,7 @@ func startVim(containerID string, devcontainerPath string, workspaceFolder strin
 		return dockerExec.Process.Signal(os.Interrupt)
 	}
 
-	err := dockerExec.Run()
+	err = dockerExec.Run()
 	if err != nil {
 		return err
 	} else {

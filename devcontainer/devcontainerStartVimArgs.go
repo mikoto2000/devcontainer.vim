@@ -21,7 +21,7 @@ import (
 // Return:
 //
 //	`devcontainer exec` に使うコマンドライン引数の配列
-func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFileName string, sendToTCP string, containerArch string, useSystemVim bool, shell string, configDirForDevcontainer string) []string {
+func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFileName string, sendToTCP string, containerArch string, useSystemVim bool, shell string, configDirForDevcontainer string) ([]string, error) {
 
 	pattern := "pattern"
 	var tmpl *template.Template
@@ -29,7 +29,7 @@ func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFil
 	if useSystemVim {
 		tmpl, err = template.New(pattern).Parse(vimRunX8664System)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 
 	} else {
@@ -38,19 +38,19 @@ func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFil
 			if runtime.GOOS != "darwin" {
 				tmpl, err = template.New(pattern).Parse(vimRunX8664AppImage)
 				if err != nil {
-					panic(err)
+					return nil, err
 				}
 
 			} else {
 				tmpl, err = template.New(pattern).Parse(vimRunX8664Static)
 				if err != nil {
-					panic(err)
+					return nil, err
 				}
 			}
 		} else {
 			tmpl, err = template.New(pattern).Parse(vimRunAarch64)
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 		}
 	}
@@ -62,7 +62,7 @@ func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFil
 	}
 	err = tmpl.Execute(&vimRunScript, tmplParams)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// Vim 起動スクリプトを出力
@@ -70,7 +70,7 @@ func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFil
 	os.RemoveAll(vimLaunchScript)
 	err = os.WriteFile(vimLaunchScript, []byte(vimRunScript.String()), 0766)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	docker.Cp("Vim launch script", vimLaunchScript, containerID, "/VimRun.sh")
@@ -83,7 +83,7 @@ func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFil
 			"--workspace-folder",
 			workspaceFolder,
 			"/VimRun.sh",
-		}
+		}, nil
 	} else {
 		return []string{
 			"exec",
@@ -92,6 +92,6 @@ func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFil
 			"--workspace-folder",
 			workspaceFolder,
 			shell,
-		}
+		}, nil
 	}
 }
