@@ -15,10 +15,10 @@ func TestRenderVimRunScriptWrapsWithTmux(t *testing.T) {
 		t.Fatalf("renderVimRunScript error: %v", err)
 	}
 
-	if !strings.Contains(script, `exec /tmux new-session -A -s devcontainer.vim "/VimRun.sh --inside-tmux${tmux_args}"`) {
+	if !strings.Contains(script, `/tmux -u set-option -g status off \; new-session`) {
 		t.Fatalf("tmux launch command not found in script: %s", script)
 	}
-	if !strings.Contains(script, `exec vim --cmd "let g:devcontainer_vim = v:true" -S /SendToTcp.vim -S /vimrc "$@"`) {
+	if !strings.Contains(script, `vim --cmd "let g:devcontainer_vim = v:true" -S /SendToTcp.vim -S /vimrc $*`) {
 		t.Fatalf("vim launch command not found in script: %s", script)
 	}
 }

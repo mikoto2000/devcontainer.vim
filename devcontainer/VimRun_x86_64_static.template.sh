@@ -7,5 +7,4 @@ cd ~
 chmod -R +w ~/vim-static
 rm -rf ~/vim-static
 mv $(ls -d ~/vim-*-x86_64) ~/vim-static
-{{ .TmuxCommand }} -u new-session -s "devcontainer.vim" -A ~/vim-static/AppRun --cmd "let g:devcontainer_vim = v:true" -S /{{ .SendToTcp }} -S /vimrc
-
+{{ .TmuxCommand }} -u set-option -g status off \; new-session -s "devcontainer.vim" -A ~/vim-static/AppRun --cmd "let g:devcontainer_vim = v:true" -S /{{ .SendToTcp }} -S /vimrc
