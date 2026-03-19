@@ -9,7 +9,7 @@ PLATFORMS := \
 	windows/arm64
 
 GO_BIN := ${GOPATH}/bin
-VERSION := 3.7.6
+VERSION := 4.0.0-alpha
 LD_FLAGS := "-s -w -X main.version=${VERSION}"
 
 DEST := ./build
