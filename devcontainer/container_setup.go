@@ -41,6 +41,46 @@ func installPortForwarder(containerID, vimInstallDir, containerArch string) erro
 	return nil
 }
 
+// tmuxの検出とインストールを行う
+func setupTmux(containerID, vimInstallDir string, containerArch string) (string, bool, error) {
+	useSystemTmux := false
+	fmt.Printf("Check system installed tmux ... ")
+	out, _ := docker.Exec(containerID, "which", "tmux")
+	if out != "" {
+		fmt.Printf("found.\n")
+		useSystemTmux = true
+	} else {
+		fmt.Printf("not found.\n")
+	}
+	fmt.Printf("docker exec output: \"%s\".\n", strings.TrimSpace(out))
+
+	if useSystemTmux {
+		return "tmux", true, nil
+	}
+
+	tmuxFilePath, err := tools.InstallTmux(vimInstallDir, containerArch)
+	if err != nil {
+		return "", false, err
+	}
+
+	err = docker.Cp("tmux", tmuxFilePath, containerID, "/tmux")
+	if err != nil {
+		return "", false, err
+	}
+
+	dockerChownArgs := []string{"exec", "--user", "root", containerID, "sh", "-c", "chmod +x /tmux"}
+	fmt.Printf("Chown tmux: `%s \"%s\"` ...", containerCommand, strings.Join(dockerChownArgs, "\" \""))
+	chmodResult, err := exec.Command(containerCommand, dockerChownArgs...).CombinedOutput()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "chmod error.")
+		fmt.Fprintln(os.Stderr, string(chmodResult))
+		return "", false, &ChmodError{msg: "chmod error."}
+	}
+	fmt.Printf(" done.\n")
+
+	return "tmux", false, nil
+}
+
 // Vimの検出とインストールを行う
 func setupVim(containerID, vimInstallDir string, nvim bool, containerArch string) (string, bool, error) {
 	vimFileName := "vim"
@@ -102,7 +142,7 @@ func setupVim(containerID, vimInstallDir string, nvim bool, containerArch string
 			return actualVimFileName, useSystemVim, &ChmodError{msg: "chmod error."}
 		}
 		fmt.Printf(" done.\n")
-		
+
 		return actualVimFileName, useSystemVim, nil
 	}
 

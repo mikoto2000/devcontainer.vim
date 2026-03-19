@@ -166,6 +166,10 @@ func InstallVim(installDir string, nvim bool, containerArch string) (string, err
 	return vimPath, err
 }
 
+func InstallTmux(installDir string, containerArch string) (string, error) {
+	return Tmux(DefaultInstallerUseServices{}).Install(installDir, containerArch, false)
+}
+
 // start サブコマンド用のツールインストール
 // 戻り値は、 devcontainerPath, cdrPath, error
 func InstallStartTools(services InstallerUseServices, installDir string) (string, string, error) {

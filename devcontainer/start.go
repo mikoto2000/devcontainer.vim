@@ -18,13 +18,13 @@ import (
 )
 
 type DevcontainerStartUseService interface {
-	StartVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, sendToTCP string, containerArch string, useSystemVim bool, shell string, configFilePathForDevcontainer string) error
+	StartVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, tmuxFileName string, sendToTCP string, containerArch string, useSystemVim bool, useSystemTmux bool, shell string, configFilePathForDevcontainer string) error
 }
 
 type DefaultDevcontainerStartUseService struct{}
 
-func (s DefaultDevcontainerStartUseService) StartVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, sendToTCP string, containerArch string, useSystemVim bool, shell string, configDirForDevcontainer string) error {
-	return startVim(containerID, devcontainerPath, workspaceFolder, vimFileName, sendToTCP, containerArch, useSystemVim, shell, configDirForDevcontainer)
+func (s DefaultDevcontainerStartUseService) StartVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, tmuxFileName string, sendToTCP string, containerArch string, useSystemVim bool, useSystemTmux bool, shell string, configDirForDevcontainer string) error {
+	return startVim(containerID, devcontainerPath, workspaceFolder, vimFileName, tmuxFileName, sendToTCP, containerArch, useSystemVim, useSystemTmux, shell, configDirForDevcontainer)
 }
 
 var devcontainreArgsPrefix = []string{"up"}
@@ -212,7 +212,7 @@ func Start(
 	}
 
 	// 4. clipboard-data-receiverを起動
-	port := 0;
+	port := 0
 	configDirForDevcontainer := filepath.Dir(configFilePath)
 	if !noCdr {
 		_, port, err = startClipboardReceiverForDevcontainer(cdrPath, configDirForDevcontainer)
@@ -238,6 +238,11 @@ func Start(
 		return err
 	}
 
+	tmuxFileName, useSystemTmux, err := setupTmux(containerID, vimInstallDir, containerArch)
+	if err != nil {
+		return err
+	}
+
 	// 7. Vimファイルの転送
 	sendToTCP, err := transferVimFiles(containerID, configDirForDevcontainer, vimrc, noCdr, port, vimFileName == "nvim")
 	if err != nil {
@@ -245,7 +250,7 @@ func Start(
 	}
 
 	// 8. コンテナへ接続
-	services.StartVim(containerID, devcontainerPath, workspaceFolder, vimFileName, sendToTCP, containerArch, useSystemVim, shell, configDirForDevcontainer)
+	services.StartVim(containerID, devcontainerPath, workspaceFolder, vimFileName, tmuxFileName, sendToTCP, containerArch, useSystemVim, useSystemTmux, shell, configDirForDevcontainer)
 	if pfCancel != nil {
 		pfCancel()
 	}
@@ -256,12 +261,12 @@ func Start(
 
 // コンテナへ接続
 // `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> /Vim-AppImage`
-func startVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, sendToTCP string, containerArch string, useSystemVim bool, shell string, configFilePathForDevcontainer string) error {
+func startVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, tmuxFileName string, sendToTCP string, containerArch string, useSystemVim bool, useSystemTmux bool, shell string, configFilePathForDevcontainer string) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
 	sendToTCPName := filepath.Base(sendToTCP)
-	devcontainerStartVimArgs, err := devcontainerStartVimArgs(containerID, workspaceFolder, vimFileName, sendToTCPName, containerArch, useSystemVim, shell, configFilePathForDevcontainer)
+	devcontainerStartVimArgs, err := devcontainerStartVimArgs(containerID, workspaceFolder, vimFileName, tmuxFileName, sendToTCPName, containerArch, useSystemVim, useSystemTmux, shell, configFilePathForDevcontainer)
 	if err != nil {
 		return err
 	}

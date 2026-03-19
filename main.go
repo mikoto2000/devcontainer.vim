@@ -510,15 +510,15 @@ func main() {
 					// コマンドライン引数の末尾は `--workspace-folder` の値として使う
 					args := cCtx.Args().Slice()
 					workspaceFolder := args[len(args)-1]
-						configDir, err := util.GetConfigDir(appCacheDir, workspaceFolder)
-						if err != nil {
-							if errors.Is(err, os.ErrPermission) {
-								fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
-							} else {
-								fmt.Fprintf(os.Stderr, "Error getting configuration file path: %v\n", err)
-							}
-							os.Exit(1)
+					configDir, err := util.GetConfigDir(appCacheDir, workspaceFolder)
+					if err != nil {
+						if errors.Is(err, os.ErrPermission) {
+							fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
+						} else {
+							fmt.Fprintf(os.Stderr, "Error getting configuration file path: %v\n", err)
 						}
+						os.Exit(1)
+					}
 
 					fmt.Printf("Remove configuration file: `%s`\n", configDir)
 					err = os.RemoveAll(configDir)
@@ -770,6 +770,40 @@ func main() {
 						},
 					},
 					{
+						Name:            "tmux",
+						Usage:           "Management tmux",
+						UsageText:       "devcontainer.vim tool tmux SUB_COMMAND",
+						HideHelp:        false,
+						SkipFlagParsing: false,
+						Subcommands: []*cli.Command{
+							{
+								Name:            "download",
+								Usage:           "Download newly tmux",
+								UsageText:       "devcontainer.vim tool tmux download",
+								HideHelp:        false,
+								SkipFlagParsing: false,
+								Flags: []cli.Flag{
+									&cli.StringFlag{
+										Name:  flagNameArch,
+										Value: runtime.GOARCH,
+										Usage: "download cpu archtecture.",
+									},
+								},
+								Action: func(cCtx *cli.Context) error {
+
+									// tmux のダウンロード
+									_, err := tools.Tmux(tools.DefaultInstallerUseServices{}).Install(binDir, cCtx.String(flagNameArch), true)
+									if err != nil {
+										fmt.Fprintf(os.Stderr, "Error installing tmux: %v\n", err)
+										os.Exit(1)
+									}
+
+									return nil
+								},
+							},
+						},
+					},
+					{
 						Name:            "devcontainer",
 						Usage:           "Management devcontainer cli",
 						UsageText:       "devcontainer.vim tool devcontainer SUB_COMMAND",
@@ -949,7 +983,7 @@ func main() {
 				Usage:     "Show bash complete func",
 				UsageText: "devcontainer.vim bash-complete-func",
 				Action: func(cCtx *cli.Context) error {
-						fmt.Print(bash_complete_func)
+					fmt.Print(bash_complete_func)
 					return nil
 				},
 			},

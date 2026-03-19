@@ -13,7 +13,7 @@ import (
 
 type TestDevcontainerStartUseService struct{}
 
-func (s TestDevcontainerStartUseService) StartVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, sendToTCP string, containerArch string, useSystemVim bool, shell string, configFilePathForDevcontainer string) error {
+func (s TestDevcontainerStartUseService) StartVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, tmuxFileName string, sendToTCP string, containerArch string, useSystemVim bool, useSystemTmux bool, shell string, configFilePathForDevcontainer string) error {
 	return nil
 }
 

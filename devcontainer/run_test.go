@@ -34,7 +34,7 @@ func TestSetupContainer(t *testing.T) {
 	noCdr := false
 	noPf := false
 
-	containerID, _, _, _, _, _, _, err := setupContainer(
+	containerID, _, _, _, _, _, _, _, _, err := setupContainer(
 		[]string{"alpine:latest"},
 		noCdr,
 		noPf,
@@ -276,7 +276,7 @@ func TestRunIntegration(t *testing.T) {
 		// 実際のテストでは、コンテナが起動してVimが実行可能な状態になることを確認
 
 		// setupContainer部分のみをテスト
-		containerID, _, _, _, _, cdrPid, cdrConfigDir, err := setupContainer(
+		containerID, _, _, _, _, _, _, cdrPid, cdrConfigDir, err := setupContainer(
 			args,
 			noCdr,
 			noPf,

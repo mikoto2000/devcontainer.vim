@@ -17,19 +17,19 @@ func TestStartDevcontainerMock(t *testing.T) {
 	if len(args) < 2 {
 		t.Fatal("args should have at least 2 elements")
 	}
-	
+
 	if devcontainerPath == "" {
 		t.Fatal("devcontainerPath should not be empty")
 	}
-	
+
 	if configFilePath == "" {
 		t.Fatal("configFilePath should not be empty")
 	}
-	
+
 	if workspaceFolder == "" {
 		t.Fatal("workspaceFolder should not be empty")
 	}
-	
+
 	t.Logf("startDevcontainer parameters validated successfully")
 }
 
@@ -43,11 +43,11 @@ func TestStartClipboardReceiverForDevcontainerMock(t *testing.T) {
 	if cdrPath == "" {
 		t.Fatal("cdrPath should not be empty")
 	}
-	
+
 	if configDirForDevcontainer == "" {
 		t.Fatal("configDirForDevcontainer should not be empty")
 	}
-	
+
 	t.Logf("startClipboardReceiverForDevcontainer parameters validated successfully")
 }
 
@@ -62,15 +62,15 @@ func TestSetupPortForwardingMock(t *testing.T) {
 	if containerID == "" {
 		t.Fatal("containerID should not be empty")
 	}
-	
+
 	if devcontainerPath == "" {
 		t.Fatal("devcontainerPath should not be empty")
 	}
-	
+
 	if workspaceFolder == "" {
 		t.Fatal("workspaceFolder should not be empty")
 	}
-	
+
 	t.Logf("setupPortForwarding parameters validated successfully")
 }
 
@@ -105,7 +105,7 @@ func TestStartParameterValidation(t *testing.T) {
 	}
 
 	t.Logf("Start function parameters validated: args=%v, workspace=%s, nvim=%v", args, workspaceFolder, nvim)
-	
+
 	// サービスインターフェースも検証
 	_ = services
 }

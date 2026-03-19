@@ -1,11 +1,9 @@
 package devcontainer
 
 import (
-	"html/template"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/mikoto2000/devcontainer.vim/v3/docker"
 )
@@ -20,46 +18,32 @@ import (
 // Return:
 //
 //	`docker exec` に使うコマンドライン引数の配列
-func dockerRunVimArgs(containerID string, vimFileName string, sendToTCP string, containerArch string, useSystemVim bool, shell string, configFilePath string) ([]string, error) {
-
-	pattern := "pattern"
-	var tmpl *template.Template
+func dockerRunVimArgs(containerID string, vimFileName string, tmuxFileName string, sendToTCP string, containerArch string, useSystemVim bool, useSystemTmux bool, shell string, configFilePath string) ([]string, error) {
+	var templateSource string
 	var err error
 	if useSystemVim {
-		tmpl, err = template.New(pattern).Parse(vimRunX8664System)
-		if err != nil {
-			return nil, err
-		}
-
+		templateSource = vimRunX8664System
 	} else {
-		// vim 起動シェルスクリプトを組み立てて転送
 		if containerArch == "amd64" {
 			if runtime.GOOS != "darwin" {
-				tmpl, err = template.New(pattern).Parse(vimRunX8664AppImage)
-				if err != nil {
-					return nil, err
-				}
-
+				templateSource = vimRunX8664AppImage
 			} else {
-				tmpl, err = template.New(pattern).Parse(vimRunX8664Static)
-				if err != nil {
-					return nil, err
-				}
+				templateSource = vimRunX8664Static
 			}
 		} else {
-			tmpl, err = template.New(pattern).Parse(vimRunAarch64)
-			if err != nil {
-				return nil, err
-			}
+			templateSource = vimRunAarch64
 		}
 	}
 
-	var vimRunScript strings.Builder
-	tmplParams := map[string]string{
-		"VimFileName": vimFileName,
-		"SendToTcp":   sendToTCP,
+	tmuxCommand := "/" + tmuxFileName
+	if useSystemTmux {
+		tmuxCommand = tmuxFileName
 	}
-	err = tmpl.Execute(&vimRunScript, tmplParams)
+	vimRunScript, err := renderVimRunScript(templateSource, vimRunScriptParams{
+		VimFileName: vimFileName,
+		SendToTcp:   sendToTCP,
+		TmuxCommand: tmuxCommand,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +51,7 @@ func dockerRunVimArgs(containerID string, vimFileName string, sendToTCP string, 
 	// Vim 起動スクリプトを出力
 	vimLaunchScript := filepath.Join(configFilePath, "VimRun.sh")
 	os.RemoveAll(vimLaunchScript)
-	err = os.WriteFile(vimLaunchScript, []byte(vimRunScript.String()), 0766)
+	err = os.WriteFile(vimLaunchScript, []byte(vimRunScript), 0766)
 	if err != nil {
 		return nil, err
 	}

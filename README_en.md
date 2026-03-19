@@ -17,7 +17,7 @@ It's a tool that adds and starts settings for Vim-based Dev Container developmen
 
 ## Features:
 
-- Set up a development container, transfer Vim/NeoVim to it, and start it.
+- Set up a development container, transfer Vim/NeoVim and tmux to it, and start Vim inside tmux.
     - For projects without `devcontainer.json`, launch a development container in a single shot
         - You can customize the arguments passed to docker.
     - Add a template for `devcontainer.json` to projects that don't have a `devcontainer.json` file
@@ -141,6 +141,9 @@ To update the tools used internally by `devcontainer.vim`, use the `tool` subcom
 ```sh
 # update Vim
 devcontainer.vim tool vim download
+
+# update tmux
+devcontainer.vim tool tmux download
 
 # update devcontainer CLI 
 devcontainer.vim tool devcontainer download
@@ -359,7 +362,7 @@ export DEVCONTAINER_SHELL_TYPE=bash
 devcontainer.vim start .
 ```
 
-If you want to use the transferred Vim/Neovim, run `/VimRun.sh`.
+If you want to use the transferred Vim/Neovim inside tmux, run `/VimRun.sh`.
 
 
 ## Migration:
@@ -479,4 +482,3 @@ This software is released under the MIT License, see LICENSE
 ## Author:
 
 mikoto2000 <mikoto2000@gmail.com>
-
