@@ -5,3 +5,8 @@ else
   nnoremap <silent> "*yy yy:lua SendToCdr('"')<CR>
   vnoremap <silent> "*y y:lua SendToCdr('"')<CR>
 endif
+
+augroup Tmux
+    autocmd!
+    autocmd VimEnter * silent !tmux set status off
+augroup END

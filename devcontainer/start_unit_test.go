@@ -1,7 +1,10 @@
 package devcontainer
 
 import (
+	"context"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -108,4 +111,50 @@ func TestStartParameterValidation(t *testing.T) {
 
 	// サービスインターフェースも検証
 	_ = services
+}
+
+func TestCreateStartVimCommandUsesScriptOnWsl(t *testing.T) {
+	tempDir := t.TempDir()
+	scriptPath := filepath.Join(tempDir, "script")
+	err := os.WriteFile(scriptPath, []byte("#!/bin/sh\n"), 0755)
+	if err != nil {
+		t.Fatalf("failed to create mock script command: %v", err)
+	}
+
+	t.Setenv("WSL_DISTRO_NAME", "Ubuntu")
+	t.Setenv("PATH", tempDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	cmd := createStartVimCommand(context.Background(), "/mock/devcontainer", []string{"exec", "--workspace-folder", ".", "/VimRun.sh"})
+
+	if filepath.Base(cmd.Path) != "script" {
+		t.Fatalf("expected script wrapper, got path: %s", cmd.Path)
+	}
+	if len(cmd.Args) != 4 {
+		t.Fatalf("unexpected script args: %#v", cmd.Args)
+	}
+	if cmd.Args[1] != "-qefc" {
+		t.Fatalf("expected -qefc, got: %s", cmd.Args[1])
+	}
+	if !strings.Contains(cmd.Args[2], "'/mock/devcontainer' 'exec' '--workspace-folder' '.' '/VimRun.sh'") {
+		t.Fatalf("unexpected wrapped command: %s", cmd.Args[2])
+	}
+	if cmd.Args[3] != "/dev/null" {
+		t.Fatalf("expected /dev/null output file, got: %s", cmd.Args[3])
+	}
+}
+
+func TestCreateStartVimCommandUsesDirectExecOutsideWsl(t *testing.T) {
+	t.Setenv("WSL_DISTRO_NAME", "")
+
+	cmd := createStartVimCommand(context.Background(), "/mock/devcontainer", []string{"exec", "--workspace-folder", ".", "/VimRun.sh"})
+
+	if cmd.Path != "/mock/devcontainer" {
+		t.Fatalf("expected direct exec path, got: %s", cmd.Path)
+	}
+	if len(cmd.Args) != 4 {
+		t.Fatalf("unexpected direct exec args: %#v", cmd.Args)
+	}
+	if cmd.Args[1] != "exec" {
+		t.Fatalf("expected direct exec args, got: %#v", cmd.Args)
+	}
 }

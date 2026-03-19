@@ -250,9 +250,12 @@ func Start(
 	}
 
 	// 8. コンテナへ接続
-	services.StartVim(containerID, devcontainerPath, workspaceFolder, vimFileName, tmuxFileName, sendToTCP, containerArch, useSystemVim, useSystemTmux, shell, configDirForDevcontainer)
+	err = services.StartVim(containerID, devcontainerPath, workspaceFolder, vimFileName, tmuxFileName, sendToTCP, containerArch, useSystemVim, useSystemTmux, shell, configDirForDevcontainer)
 	if pfCancel != nil {
 		pfCancel()
+	}
+	if err != nil {
+		return err
 	}
 
 	// コンテナ停止は別途 down コマンドで行う
@@ -271,7 +274,7 @@ func startVim(containerID string, devcontainerPath string, workspaceFolder strin
 		return err
 	}
 	fmt.Printf("Start vim: `%s \"%s\"`\n", devcontainerPath, strings.Join(devcontainerStartVimArgs, "\" \""))
-	dockerExec := exec.CommandContext(ctx, devcontainerPath, devcontainerStartVimArgs...)
+	dockerExec := createStartVimCommand(ctx, devcontainerPath, devcontainerStartVimArgs)
 	dockerExec.Stdin = os.Stdin
 	dockerExec.Stdout = os.Stdout
 	dockerExec.Stderr = os.Stderr
@@ -286,4 +289,21 @@ func startVim(containerID string, devcontainerPath string, workspaceFolder strin
 	} else {
 		return nil
 	}
+}
+
+func createStartVimCommand(ctx context.Context, devcontainerPath string, devcontainerStartVimArgs []string) *exec.Cmd {
+	if util.IsWsl() && util.IsExistsCommand("script") {
+		scriptArgs := []string{"-qefc", shellQuote(devcontainerPath)}
+		for _, arg := range devcontainerStartVimArgs {
+			scriptArgs[1] += " " + shellQuote(arg)
+		}
+		scriptArgs = append(scriptArgs, "/dev/null")
+		return exec.CommandContext(ctx, "script", scriptArgs...)
+	}
+
+	return exec.CommandContext(ctx, devcontainerPath, devcontainerStartVimArgs...)
+}
+
+func shellQuote(arg string) string {
+	return "'" + strings.ReplaceAll(arg, "'", `'\''`) + "'"
 }
