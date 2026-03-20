@@ -17,6 +17,8 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
+const portForwarderMarkerDir = "~/.config/devcontainer.vim/pf"
+
 type DevcontainerStartUseService interface {
 	StartVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, tmuxFileName string, sendToTCP string, containerArch string, useSystemVim bool, useSystemTmux bool, shell string, configFilePathForDevcontainer string) error
 }
@@ -67,6 +69,128 @@ func startClipboardReceiverForDevcontainer(cdrPath, configDirForDevcontainer str
 	return pid, port, nil
 }
 
+func listRunningPortForwarders(containerID string) ([]string, error) {
+	psOut, err := docker.Exec(containerID, "sh", "-c", "grep --files-with-matches port-forwarder /proc/*/comm || true")
+	if err != nil {
+		return nil, err
+	}
+
+	portForwarders := strings.Split(strings.TrimSpace(psOut), "\n")
+	portForwarders = util.RemoveEmptyString(portForwarders)
+
+	fmt.Printf("Running port-forwarders: %s\n", portForwarders)
+	return portForwarders, nil
+}
+
+func listPortForwarderMarkers(containerID string) ([]string, error) {
+	lspfOut, err := docker.Exec(containerID, "sh", "-c", "ls --zero "+portForwarderMarkerDir+" 2>/dev/null || true")
+	if err != nil {
+		return nil, err
+	}
+
+	forwardConfigs := strings.Split(lspfOut, "\x00")
+	forwardConfigs = util.RemoveEmptyString(forwardConfigs)
+	return forwardConfigs, nil
+}
+
+func startPortForwarders(ctx context.Context, containerID, containerIp, devcontainerPath, workspaceFolder string) error {
+	fmt.Println("Start port-forwarder in container.")
+
+	// forwardPorts を解釈
+	configurationString, err := ReadConfiguration(devcontainerPath, "--workspace-folder", workspaceFolder)
+	if err != nil {
+		return err
+	}
+	forwardConfigs, err := GetForwardPorts(configurationString)
+	if err != nil {
+		return err
+	}
+
+	// 解釈した forwardPort ごとに port-forwarder を起動する
+	for _, fc := range forwardConfigs {
+
+		// コンテナ側の port-forwarder の起動
+		fmt.Printf("%s %s %s %s %s %s %s.\n", devcontainerPath, "exec", "--workspace-folder", ".", "sh", "-c", "/port-forwarder -l 0.0.0.0:0 -f "+fc.Host+":"+fc.Port)
+		dockerExecPortForwarder := exec.CommandContext(ctx, devcontainerPath, "exec", "--workspace-folder", ".", "sh", "-c", "/port-forwarder -l 0.0.0.0:0 -f "+fc.Host+":"+fc.Port)
+		portOut, err := dockerExecPortForwarder.StdoutPipe()
+		if err != nil {
+			return err
+		}
+
+		dockerExecPortForwarder.Cancel = func() error {
+			fmt.Fprintf(os.Stderr, "Receive SIGINT.\n")
+			return dockerExecPortForwarder.Process.Signal(os.Interrupt)
+		}
+
+		err = dockerExecPortForwarder.Start()
+		if err != nil {
+			return err
+		}
+
+		go func(host string, containerPort string) {
+			reader := bufio.NewReader(portOut)
+			for {
+				port, err := reader.ReadString('\n')
+				if err != nil {
+					if err != io.EOF {
+						fmt.Println("Error reading from stdout:", err)
+					}
+					break
+				}
+				port = strings.TrimSpace(port)
+				fmt.Printf("port-forwarder started: %s:%s %s\n", containerIp, port, host+":"+containerPort)
+
+				// forwardPorts の内容を `~/.config/devcontainer.vim/pf` ディテク取りに「<転送先>_<リッスンアドレス＆ポート>」の形式で配置する
+				_, err = docker.Exec(containerID, "sh", "-c", "mkdir -p "+portForwarderMarkerDir+" && touch "+portForwarderMarkerDir+"/"+host+":"+containerPort+"_"+containerIp+":"+port)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error creating port-forwarder marker file: %v\n", err)
+					continue
+				}
+
+				util.StartForwarding("0.0.0.0:"+containerPort, containerIp+":"+port)
+			}
+		}(fc.Host, fc.Port)
+	}
+
+	return nil
+}
+
+func restorePortForwarders(containerIp string, forwardConfigs []string) {
+	for _, forwardConfig := range forwardConfigs {
+		containerSrcPort, containerDestPort, err := parsePortForwarderMarker(forwardConfig)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Skip invalid port-forwarder marker: %s: %v\n", forwardConfig, err)
+			continue
+		}
+
+		go func() {
+			fmt.Printf("listen: %s, forward: %s.\n", "0.0.0.0:"+containerSrcPort, containerIp+":"+containerDestPort)
+			util.StartForwarding("0.0.0.0:"+containerSrcPort, containerIp+":"+containerDestPort)
+		}()
+	}
+}
+
+func parsePortForwarderMarker(forwardConfig string) (string, string, error) {
+	splitedForwardConfig := strings.Split(forwardConfig, "_")
+	if len(splitedForwardConfig) != 2 {
+		return "", "", errors.New("marker must contain source and destination")
+	}
+
+	containerSrc := splitedForwardConfig[0]
+	scs := strings.Split(containerSrc, ":")
+	if len(scs) != 2 {
+		return "", "", errors.New("source marker must contain host and port")
+	}
+
+	containerDest := splitedForwardConfig[1]
+	scd := strings.Split(containerDest, ":")
+	if len(scd) != 2 {
+		return "", "", errors.New("destination marker must contain host and port")
+	}
+
+	return scs[1], scd[1], nil
+}
+
 // port-forwardingの設定を行う
 func setupPortForwarding(ctx context.Context, containerID, devcontainerPath, workspaceFolder string) error {
 	// コンテナの IP アドレスを取得
@@ -76,101 +200,26 @@ func setupPortForwarding(ctx context.Context, containerID, devcontainerPath, wor
 	}
 	containerIp = strings.TrimSpace(containerIp)
 
-	// すでに port-forwarder が起動しているなら実行しない
-	psOut, err := docker.Exec(containerID, "sh", "-c", "grep --files-with-matches port-forwarder /proc/*/comm || true")
+	portForwarders, err := listRunningPortForwarders(containerID)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Running port-forwarders: %s\n", strings.Split(strings.TrimSpace(psOut), "\n"))
-
-	pfCount := strings.Split(strings.TrimSpace(psOut), "\n")
-	pfCount = util.RemoveEmptyString(pfCount)
-
-	if len(pfCount) == 0 {
-		fmt.Println("Start port-forwarder in container.")
-
-		// forwardPorts を解釈してport-forwarder を実行
-
-		// forwardPorts を解釈
-		configurationString, err := ReadConfiguration(devcontainerPath, "--workspace-folder", workspaceFolder)
-		if err != nil {
-			return err
-		}
-		forwardConfigs, err := GetForwardPorts(configurationString)
-
-		// 解釈した forwardPort ごとに port-forwarder を起動する
-		for _, fc := range forwardConfigs {
-
-			// コンテナ側の port-forwarder の起動
-			fmt.Printf("%s %s %s %s %s %s %s.\n", devcontainerPath, "exec", "--workspace-folder", ".", "sh", "-c", "/port-forwarder -l 0.0.0.0:0 -f "+fc.Host+":"+fc.Port)
-			dockerExecPortForwarder := exec.CommandContext(ctx, devcontainerPath, "exec", "--workspace-folder", ".", "sh", "-c", "/port-forwarder -l 0.0.0.0:0 -f "+fc.Host+":"+fc.Port)
-			portOut, err := dockerExecPortForwarder.StdoutPipe()
-			if err != nil {
-				return err
-			}
-
-			dockerExecPortForwarder.Cancel = func() error {
-				fmt.Fprintf(os.Stderr, "Receive SIGINT.\n")
-				return dockerExecPortForwarder.Process.Signal(os.Interrupt)
-			}
-
-			err = dockerExecPortForwarder.Start()
-			if err != nil {
-				return err
-			}
-
-			go func() {
-				reader := bufio.NewReader(portOut)
-				for {
-					port, err := reader.ReadString('\n')
-					if err != nil {
-						if err != io.EOF {
-							fmt.Println("Error reading from stdout:", err)
-						}
-						break
-					}
-					port = strings.TrimSpace(port)
-					fmt.Printf("port-forwarder started: %s:%s %s\n", containerIp, port, fc.Host+":"+fc.Port)
-
-					// forwardPorts の内容を `~/.config/devcontainer.vim/pf` ディテク取りに「<転送先>_<リッスンアドレス＆ポート>」の形式で配置する
-					_, err = docker.Exec(containerID, "sh", "-c", "mkdir -p ~/.config/devcontainer.vim/pf && touch ~/.config/devcontainer.vim/pf/"+fc.Host+":"+fc.Port+"_"+containerIp+":"+port)
-					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error creating port-forwarder marker file: %v\n", err)
-						continue
-					}
-
-					util.StartForwarding("0.0.0.0:"+fc.Port, containerIp+":"+port)
-				}
-
-			}()
-		}
-	} else {
-		fmt.Println("port-forwarder already running.")
-
-		// `~/.config/devcontainer.vim/pf` ディレクトリの内容からフォワードするポートを解釈し、フォワードする
-		lspfOut, err := docker.Exec(containerID, "sh", "-c", "ls --zero ~/.config/devcontainer.vim/pf")
-		if err != nil {
-			return errors.New("port-forwarder の設定ファイルが見つかりません")
-		}
-		forwardConfigs := strings.Split(lspfOut, "\x00")
-		for _, forwardConfig := range forwardConfigs {
-			if len(forwardConfig) == 0 {
-				continue
-			}
-			splitedForwardConfig := strings.Split(forwardConfig, "_")
-			containerSrc := splitedForwardConfig[0]
-			scs := strings.Split(containerSrc, ":")
-			containerSrcPort := scs[1]
-			containerDest := splitedForwardConfig[1]
-			scd := strings.Split(containerDest, ":")
-			containerDestPort := scd[1]
-
-			go func() {
-				fmt.Printf("listen: %s, forward: %s.\n", "0.0.0.0:"+containerSrcPort, containerIp+":"+containerDestPort)
-				util.StartForwarding("0.0.0.0:"+containerSrcPort, containerIp+":"+containerDestPort)
-			}()
-		}
+	forwardConfigs, err := listPortForwarderMarkers(containerID)
+	if err != nil {
+		return err
 	}
+
+	if len(portForwarders) == 0 {
+		return startPortForwarders(ctx, containerID, containerIp, devcontainerPath, workspaceFolder)
+	}
+
+	if len(forwardConfigs) == 0 {
+		fmt.Fprintf(os.Stderr, "port-forwarder process exists but marker files are missing. Restart port-forwarder setup.\n")
+		return startPortForwarders(ctx, containerID, containerIp, devcontainerPath, workspaceFolder)
+	}
+
+	fmt.Println("port-forwarder already running.")
+	restorePortForwarders(containerIp, forwardConfigs)
 
 	return nil
 }
