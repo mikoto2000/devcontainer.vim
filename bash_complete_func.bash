@@ -5,9 +5,10 @@ _completion_devcontainer_vim(){
     local commands="run templates start stop down config vimrc runargs tool clean index self-update help"
     local subcommands_run=""
     local subcommands_templates="apply"
-    local subcommands_tool="vim nvim devcontainer clipboard-data-receiver"
+    local subcommands_tool="vim nvim tmux devcontainer clipboard-data-receiver"
     local subcommands_tool_vim="download"
     local subcommands_tool_nvim="download"
+    local subcommands_tool_tmux="download"
     local subcommands_tool_devcontainer="download"
     local subcommands_tool_clipboard_data_receiver="download"
     local subcommands_tool_port_forwarder="download"
@@ -31,6 +32,9 @@ _completion_devcontainer_vim(){
                 ;;
             nvim)
                 COMPREPLY=( $(compgen -W "${subcommands_tool_nvim}" -- "${cur}") )
+                ;;
+            tmux)
+                COMPREPLY=( $(compgen -W "${subcommands_tool_tmux}" -- "${cur}") )
                 ;;
             devcontainer)
                 COMPREPLY=( $(compgen -W "${subcommands_tool_devcontainer}" -- "${cur}") )
