@@ -8,6 +8,24 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/v3/docker"
 )
 
+func buildDockerRunVimExecArgs(containerID string, shell string) []string {
+	if shell == "" {
+		return []string{
+			"exec",
+			"-it",
+			containerID,
+			"/VimRun.sh",
+		}
+	}
+
+	return []string{
+		"exec",
+		"-it",
+		containerID,
+		shell,
+	}
+}
+
 // `devcontainer.vim run` 時の `docker exec` の引数を組み立てる
 //
 // Args:
@@ -58,19 +76,5 @@ func dockerRunVimArgs(containerID string, vimFileName string, tmuxFileName strin
 
 	docker.Cp("Vim launch script", vimLaunchScript, containerID, "/VimRun.sh")
 
-	if shell == "" {
-		return []string{
-			"exec",
-			"-it",
-			containerID,
-			"/VimRun.sh",
-		}, nil
-	} else {
-		return []string{
-			"exec",
-			"-it",
-			containerID,
-			shell,
-		}, nil
-	}
+	return buildDockerRunVimExecArgs(containerID, shell), nil
 }

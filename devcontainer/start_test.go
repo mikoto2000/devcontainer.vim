@@ -6,9 +6,6 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
-
-	"github.com/mikoto2000/devcontainer.vim/v3/tools"
-	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
 type TestDevcontainerStartUseService struct{}
@@ -29,22 +26,12 @@ func TestStart(t *testing.T) {
 		t.Skip("docker command not found, skipping integration test")
 	}
 
-	appName := "devcontainer.vim"
-	_, err = util.CreateConfigDirectory(os.UserConfigDir, appName)
-	if err != nil {
-		t.Fatalf("Failed to create config directory: %v", err)
-	}
-	_, binDir, _, configDirForDevcontainer, err := util.CreateCacheDirectory(os.UserCacheDir, appName)
-	if err != nil {
-		t.Fatalf("Failed to create cache directory: %v", err)
-	}
+	_, binDir, _, configDirForDevcontainer := createTempAppDirs(t)
 
 	// 必要なファイルのダウンロード
 	nvim := false
-	devcontainerPath, cdrPath, err := tools.InstallStartTools(tools.DefaultInstallerUseServices{}, binDir)
-	if err != nil {
-		t.Fatalf("Error installing start tools: %v", err)
-	}
+	devcontainerPath := requireTestBinary(t, "devcontainer")
+	cdrPath := requireTestBinary(t, "clipboard-data-receiver")
 
 	// devcontainerコマンドが動作するかテスト
 	testCmd := exec.Command(devcontainerPath, "--version")
@@ -147,22 +134,12 @@ func TestStart(t *testing.T) {
 func TestStartWithDockerCompose(t *testing.T) {
 	// TODO: chdir しなくても成功するように修正
 	os.Chdir("../test/project/TestStartWithDockerCompose")
-	appName := "devcontainer.vim"
-	_, err := util.CreateConfigDirectory(os.UserConfigDir, appName)
-	if err != nil {
-		t.Fatalf("Failed to create config directory: %v", err)
-	}
-	_, binDir, _, configDirForDevcontainer, err := util.CreateCacheDirectory(os.UserCacheDir, appName)
-	if err != nil {
-		t.Fatalf("Failed to create cache directory: %v", err)
-	}
+	_, binDir, _, configDirForDevcontainer := createTempAppDirs(t)
 
 	// 必要なファイルのダウンロード
 	nvim := false
-	devcontainerPath, cdrPath, err := tools.InstallStartTools(tools.DefaultInstallerUseServices{}, binDir)
-	if err != nil {
-		t.Fatalf("Error installing start tools: %v", err)
-	}
+	devcontainerPath := requireTestBinary(t, "devcontainer")
+	cdrPath := requireTestBinary(t, "clipboard-data-receiver")
 
 	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
 	configFilePath, err := CreateConfigFile(devcontainerPath, ".", configDirForDevcontainer)

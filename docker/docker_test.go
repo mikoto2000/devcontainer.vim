@@ -6,12 +6,20 @@ import (
 	"testing"
 )
 
-func TestPs(t *testing.T) {
-	// DockerがインストールされていることをチェックするためのHelperコマンド
-	_, err := exec.LookPath("docker")
-	if err != nil {
+func requireDockerPsJSONSupport(t *testing.T) {
+	t.Helper()
+
+	if _, err := exec.LookPath("docker"); err != nil {
 		t.Skip("docker command not found, skipping test")
 	}
+
+	if err := exec.Command("docker", "ps", "--format", "json").Run(); err != nil {
+		t.Skipf("docker ps --format json not available in this environment: %v", err)
+	}
+}
+
+func TestPs(t *testing.T) {
+	requireDockerPsJSONSupport(t)
 
 	// 基本的なdocker psコマンドがエラーなく実行できることをテスト
 	result, err := Ps("status=running")
@@ -36,11 +44,7 @@ func TestPs(t *testing.T) {
 }
 
 func TestPsWithInvalidFilter(t *testing.T) {
-	// DockerがインストールされていることをチェックするためのHelperコマンド
-	_, err := exec.LookPath("docker")
-	if err != nil {
-		t.Skip("docker command not found, skipping test")
-	}
+	requireDockerPsJSONSupport(t)
 
 	// 無効なフィルタでテスト
 	result, err := Ps("invalid=filter")
@@ -60,11 +64,7 @@ func TestPsWithInvalidFilter(t *testing.T) {
 }
 
 func TestPsWithEmptyFilter(t *testing.T) {
-	// DockerがインストールされていることをチェックするためのHelperコマンド
-	_, err := exec.LookPath("docker")
-	if err != nil {
-		t.Skip("docker command not found, skipping test")
-	}
+	requireDockerPsJSONSupport(t)
 
 	// 空のフィルタでテスト
 	result, err := Ps("")
@@ -81,11 +81,7 @@ func TestPsWithEmptyFilter(t *testing.T) {
 }
 
 func TestPsWithValidLabel(t *testing.T) {
-	// DockerがインストールされていることをチェックするためのHelperコマンド
-	_, err := exec.LookPath("docker")
-	if err != nil {
-		t.Skip("docker command not found, skipping test")
-	}
+	requireDockerPsJSONSupport(t)
 
 	// ラベルフィルタでテスト（存在しないラベルを使用）
 	result, err := Ps("label=devcontainer.local_folder=/nonexistent/path")

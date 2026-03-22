@@ -144,15 +144,27 @@ func TestCreateStartVimCommandUsesScriptOnWsl(t *testing.T) {
 }
 
 func TestCreateStartVimCommandUsesDirectExecOutsideWsl(t *testing.T) {
-	t.Setenv("WSL_DISTRO_NAME", "")
+	originalValue, hadValue := os.LookupEnv("WSL_DISTRO_NAME")
+	err := os.Unsetenv("WSL_DISTRO_NAME")
+	if err != nil {
+		t.Fatalf("failed to unset WSL_DISTRO_NAME: %v", err)
+	}
+	t.Cleanup(func() {
+		if hadValue {
+			_ = os.Setenv("WSL_DISTRO_NAME", originalValue)
+		}
+	})
 
 	cmd := createStartVimCommand(context.Background(), "/mock/devcontainer", []string{"exec", "--workspace-folder", ".", "/VimRun.sh"})
 
 	if cmd.Path != "/mock/devcontainer" {
 		t.Fatalf("expected direct exec path, got: %s", cmd.Path)
 	}
-	if len(cmd.Args) != 4 {
+	if len(cmd.Args) != 5 {
 		t.Fatalf("unexpected direct exec args: %#v", cmd.Args)
+	}
+	if cmd.Args[0] != "/mock/devcontainer" {
+		t.Fatalf("expected command path as first arg, got: %#v", cmd.Args)
 	}
 	if cmd.Args[1] != "exec" {
 		t.Fatalf("expected direct exec args, got: %#v", cmd.Args)

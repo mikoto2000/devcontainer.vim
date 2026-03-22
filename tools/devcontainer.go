@@ -25,7 +25,7 @@ var DEVCONTAINER = func(services InstallerUseServices) Tool {
 
 			tmplParams := map[string]string{
 				"TagName": latestTagName,
-				"Arch": runtime.GOARCH,
+				"Arch":    runtime.GOARCH,
 			}
 			var downloadURL strings.Builder
 			err = tmpl.Execute(&downloadURL, tmplParams)
@@ -37,6 +37,6 @@ var DEVCONTAINER = func(services InstallerUseServices) Tool {
 		installFunc: func(downloadFunc func(downloadURL string, destPath string) error, downloadURL string, filePath string, containerArch string) (string, error) {
 			return simpleInstall(downloadFunc, downloadURL, filePath)
 		},
-		DownloadFunc: download,
+		DownloadFunc: services.Download,
 	}
 }

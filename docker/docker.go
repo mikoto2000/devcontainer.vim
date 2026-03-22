@@ -57,7 +57,11 @@ func Exec(containerID string, command ...string) (string, error) {
 
 // `docker ps --format json` コマンドを実行する。
 func Ps(filter string) (string, error) {
-	dockerPsCommand := exec.Command(containerCommand, "ps", "--format", "json", "--filter", filter)
+	args := []string{"ps", "--format", "json"}
+	if filter != "" {
+		args = append(args, "--filter", filter)
+	}
+	dockerPsCommand := exec.Command(containerCommand, args...)
 	stdout, err := dockerPsCommand.Output()
 	return string(stdout), err
 }

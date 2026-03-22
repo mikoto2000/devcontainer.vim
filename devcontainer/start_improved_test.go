@@ -1,12 +1,10 @@
 package devcontainer
 
 import (
-	"os"
 	"os/exec"
 	"strings"
 	"testing"
 
-	"github.com/mikoto2000/devcontainer.vim/v3/tools"
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
@@ -20,21 +18,11 @@ func TestStartStepByStep(t *testing.T) {
 
 	// 1. 環境準備の検証
 	t.Run("Environment Setup", func(t *testing.T) {
-		appName := "devcontainer.vim"
-		_, err := util.CreateConfigDirectory(os.UserConfigDir, appName)
-		if err != nil {
-			t.Fatalf("Failed to create config directory: %v", err)
-		}
-		_, binDir, _, _, err := util.CreateCacheDirectory(os.UserCacheDir, appName)
-		if err != nil {
-			t.Fatalf("Failed to create cache directory: %v", err)
-		}
+		_, _, _, _ = createTempAppDirs(t)
 
 		// 必要なファイルのダウンロード
-		devcontainerPath, cdrPath, err := tools.InstallStartTools(tools.DefaultInstallerUseServices{}, binDir)
-		if err != nil {
-			t.Fatalf("Error installing start tools: %v", err)
-		}
+		devcontainerPath := requireTestBinary(t, "devcontainer")
+		cdrPath := requireTestBinary(t, "clipboard-data-receiver")
 
 		// バイナリが正常に配置されているか確認
 		if !util.IsExists(devcontainerPath) {
@@ -49,16 +37,9 @@ func TestStartStepByStep(t *testing.T) {
 
 	// 2. 設定ファイルの作成と検証
 	t.Run("Config File Creation", func(t *testing.T) {
-		appName := "devcontainer.vim"
-		_, binDir, _, configDirForDevcontainer, err := util.CreateCacheDirectory(os.UserCacheDir, appName)
-		if err != nil {
-			t.Fatalf("Failed to create cache directory: %v", err)
-		}
+		_, _, _, configDirForDevcontainer := createTempAppDirs(t)
 
-		devcontainerPath, _, err := tools.InstallStartTools(tools.DefaultInstallerUseServices{}, binDir)
-		if err != nil {
-			t.Fatalf("Error installing start tools: %v", err)
-		}
+		devcontainerPath := requireTestBinary(t, "devcontainer")
 
 		// 設定ファイルが作成できるか確認
 		configFilePath, err := CreateConfigFile(devcontainerPath, "../test/project/TestStart", configDirForDevcontainer)
@@ -159,16 +140,9 @@ func TestStartConditional(t *testing.T) {
 	}
 
 	// devcontainerバイナリの確認
-	appName := "devcontainer.vim"
-	_, binDir, _, _, err := util.CreateCacheDirectory(os.UserCacheDir, appName)
-	if err != nil {
-		t.Skip("Failed to create cache directory")
-	}
+	_, _, _, _ = createTempAppDirs(t)
 
-	devcontainerPath, _, err := tools.InstallStartTools(tools.DefaultInstallerUseServices{}, binDir)
-	if err != nil {
-		t.Skip("Failed to install devcontainer tools")
-	}
+	devcontainerPath := requireTestBinary(t, "devcontainer")
 
 	// devcontainerコマンドが動作するかテスト
 	testCmd := exec.Command(devcontainerPath, "--version")
