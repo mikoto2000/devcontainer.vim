@@ -8,6 +8,22 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/v3/docker"
 )
 
+func buildDevcontainerStartVimExecArgs(containerID string, workspaceFolder string, shell string) []string {
+	args := []string{
+		"exec",
+		"--container-id",
+		containerID,
+		"--workspace-folder",
+		workspaceFolder,
+	}
+
+	if shell == "" {
+		return append(args, "/VimRun.sh")
+	}
+
+	return append(args, shell)
+}
+
 // `devcontainer.vim start` 時の `devcontainer exec` の引数を組み立てる
 //
 // Args:
@@ -59,23 +75,5 @@ func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFil
 
 	docker.Cp("Vim launch script", vimLaunchScript, containerID, "/VimRun.sh")
 
-	if shell == "" {
-		return []string{
-			"exec",
-			"--container-id",
-			containerID,
-			"--workspace-folder",
-			workspaceFolder,
-			"/VimRun.sh",
-		}, nil
-	} else {
-		return []string{
-			"exec",
-			"--container-id",
-			containerID,
-			"--workspace-folder",
-			workspaceFolder,
-			shell,
-		}, nil
-	}
+	return buildDevcontainerStartVimExecArgs(containerID, workspaceFolder, shell), nil
 }
