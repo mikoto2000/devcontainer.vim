@@ -7,4 +7,4 @@ cd ~
 chmod -R +w ~/vim-static
 rm -rf ~/vim-static
 mv $(ls -d ~/vim-*-x86_64) ~/vim-static
-{{ .TmuxCommand }} -u set-option -g status off \; set-option -g set-clipboard on \; new-session -s "devcontainer.vim" -A ~/vim-static/AppRun --cmd "let g:devcontainer_vim = v:true" -S /{{ .SendToTcp }} -S /vimrc
+{{ .TmuxCommand }} -u set-option -g prefix None \; unbind-key C-b \; set-option -g status off \; set-option -g set-clipboard on \; new-session -s "devcontainer.vim" -A ~/vim-static/AppRun --cmd "let g:devcontainer_vim = v:true" -S /{{ .SendToTcp }} -S /vimrc
