@@ -8,10 +8,14 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/v3/docker"
 )
 
+const dockerDetachKeys = "ctrl-\\\\"
+
 func buildDockerRunVimExecArgs(containerID string, shell string) []string {
 	if shell == "" {
 		return []string{
 			"exec",
+			"--detach-keys",
+			dockerDetachKeys,
 			"-it",
 			containerID,
 			"/VimRun.sh",
@@ -20,6 +24,8 @@ func buildDockerRunVimExecArgs(containerID string, shell string) []string {
 
 	return []string{
 		"exec",
+		"--detach-keys",
+		dockerDetachKeys,
 		"-it",
 		containerID,
 		shell,

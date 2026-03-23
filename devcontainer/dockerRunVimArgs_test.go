@@ -5,10 +5,10 @@ import "testing"
 func TestBuildDockerRunVimExecArgsUsesInteractiveTTYForVimRunScript(t *testing.T) {
 	args := buildDockerRunVimExecArgs("test-container", "")
 
-	if len(args) != 4 {
+	if len(args) != 6 {
 		t.Fatalf("unexpected args length: %#v", args)
 	}
-	if args[0] != "exec" || args[1] != "-it" || args[2] != "test-container" || args[3] != "/VimRun.sh" {
+	if args[0] != "exec" || args[1] != "--detach-keys" || args[2] != dockerDetachKeys || args[3] != "-it" || args[4] != "test-container" || args[5] != "/VimRun.sh" {
 		t.Fatalf("unexpected docker exec args: %#v", args)
 	}
 }
@@ -16,10 +16,10 @@ func TestBuildDockerRunVimExecArgsUsesInteractiveTTYForVimRunScript(t *testing.T
 func TestBuildDockerRunVimExecArgsUsesInteractiveTTYForShell(t *testing.T) {
 	args := buildDockerRunVimExecArgs("test-container", "bash")
 
-	if len(args) != 4 {
+	if len(args) != 6 {
 		t.Fatalf("unexpected args length: %#v", args)
 	}
-	if args[0] != "exec" || args[1] != "-it" || args[2] != "test-container" || args[3] != "bash" {
+	if args[0] != "exec" || args[1] != "--detach-keys" || args[2] != dockerDetachKeys || args[3] != "-it" || args[4] != "test-container" || args[5] != "bash" {
 		t.Fatalf("unexpected docker exec args: %#v", args)
 	}
 }
