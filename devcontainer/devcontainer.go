@@ -238,7 +238,7 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 		tools.KillCdr(pid)
 	}
 
-	err = os.RemoveAll(configDir)
+	err := os.RemoveAll(configDir)
 	if err != nil {
 		return err
 	}
