@@ -39,6 +39,15 @@ func (e *UnknownTypeError) Error() string {
 	return e.msg
 }
 
+func hasNoCdrOption(args []string) bool {
+	for _, arg := range args {
+		if arg == "--nocdr" {
+			return true
+		}
+	}
+	return false
+}
+
 func Stop(args []string, devcontainerPath string, configDirForDevcontainer string) error {
 
 	// `devcontainer read-configuration` で docker compose の利用判定
@@ -213,19 +222,21 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 		}
 	}
 
-	// clipboard-data-receiver を停止
-	pidFile := filepath.Join(configDir, "pid")
-	fmt.Printf("Read PID file: %s\n", pidFile)
-	pidStringBytes, err := os.ReadFile(pidFile)
-	if err != nil {
-		return err
+	if !hasNoCdrOption(args) {
+		// clipboard-data-receiver を停止
+		pidFile := filepath.Join(configDir, "pid")
+		fmt.Printf("Read PID file: %s\n", pidFile)
+		pidStringBytes, err := os.ReadFile(pidFile)
+		if err != nil {
+			return err
+		}
+		pid, err := strconv.Atoi(string(pidStringBytes))
+		if err != nil {
+			return err
+		}
+		fmt.Printf("clipboard-data-receiver PID: %d\n", pid)
+		tools.KillCdr(pid)
 	}
-	pid, err := strconv.Atoi(string(pidStringBytes))
-	if err != nil {
-		return err
-	}
-	fmt.Printf("clipboard-data-receiver PID: %d\n", pid)
-	tools.KillCdr(pid)
 
 	err = os.RemoveAll(configDir)
 	if err != nil {
