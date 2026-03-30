@@ -78,6 +78,8 @@ COMMANDS:
 GLOBAL OPTIONS:
    --license, -l  show licensesa.
    --nvim         use NeoVim.
+   --nocdr        disable clipboard-data-receiver.
+   --notmux       disable tmux.
    --shell value  start with shell.
    --help, -h     show help
    --version, -v  print the version
@@ -105,6 +107,12 @@ For example, if you want to search for `devcontainer.json` in the current direct
 
 ```sh
 devcontainer.vim start .
+```
+
+If you want to launch Vim/NeoVim directly without tmux, add `--notmux`.
+
+```sh
+devcontainer.vim --notmux start .
 ```
 
 You can use arguments to `devcontainer` (except for `--workspace-folder`) as they are, so if you want to bind `.vim`, specify it as follows.

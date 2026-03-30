@@ -35,7 +35,7 @@ func buildDevcontainerStartVimExecArgs(containerID string, workspaceFolder strin
 // Return:
 //
 //	`devcontainer exec` に使うコマンドライン引数の配列
-func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFileName string, tmuxFileName string, sendToTCP string, containerArch string, useSystemVim bool, useSystemTmux bool, shell string, configDirForDevcontainer string) ([]string, error) {
+func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFileName string, tmuxFileName string, sendToTCP string, containerArch string, useSystemVim bool, useSystemTmux bool, noTmux bool, shell string, configDirForDevcontainer string) ([]string, error) {
 	var templateSource string
 	var err error
 	if useSystemVim {
@@ -59,6 +59,7 @@ func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFil
 	vimRunScript, err := renderVimRunScript(templateSource, vimRunScriptParams{
 		VimFileName: vimFileName,
 		SendToTcp:   sendToTCP,
+		UseTmux:     !noTmux,
 		TmuxCommand: tmuxCommand,
 	})
 	if err != nil {

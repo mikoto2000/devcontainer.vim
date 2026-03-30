@@ -42,7 +42,7 @@ func buildDockerRunVimExecArgs(containerID string, shell string) []string {
 // Return:
 //
 //	`docker exec` に使うコマンドライン引数の配列
-func dockerRunVimArgs(containerID string, vimFileName string, tmuxFileName string, sendToTCP string, containerArch string, useSystemVim bool, useSystemTmux bool, shell string, configFilePath string) ([]string, error) {
+func dockerRunVimArgs(containerID string, vimFileName string, tmuxFileName string, sendToTCP string, containerArch string, useSystemVim bool, useSystemTmux bool, noTmux bool, shell string, configFilePath string) ([]string, error) {
 	var templateSource string
 	var err error
 	if useSystemVim {
@@ -66,6 +66,7 @@ func dockerRunVimArgs(containerID string, vimFileName string, tmuxFileName strin
 	vimRunScript, err := renderVimRunScript(templateSource, vimRunScriptParams{
 		VimFileName: vimFileName,
 		SendToTcp:   sendToTCP,
+		UseTmux:     !noTmux,
 		TmuxCommand: tmuxCommand,
 	})
 	if err != nil {

@@ -78,6 +78,7 @@ GLOBAL OPTIONS:
    --license, -l  show licensesa.
    --nvim         use NeoVim.
    --nocdr        disable clipboard-data-receiver.
+   --notmux       disable tmux.
    --shell value  start with shell.
    --help, -h     show help
    --version, -v  print the version
@@ -105,6 +106,12 @@ devcontainer.vim run -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim
 
 ```sh
 devcontainer.vim start .
+```
+
+tmux を使わずに直接 Vim/NeoVim を起動したい場合は、`--notmux` を付ける。
+
+```sh
+devcontainer.vim --notmux start .
 ```
 
 `devcontainer` への引数を(`--workspace-folder` 以外は) そのまま利用できるため、

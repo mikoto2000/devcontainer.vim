@@ -37,6 +37,7 @@ func Run(
 	args []string,
 	noCdr bool,
 	noPf bool,
+	noTmux bool,
 	cdrPath string,
 	vimInstallDir string,
 	nvim bool,
@@ -50,6 +51,7 @@ func Run(
 		args,
 		noCdr,
 		noPf,
+		noTmux,
 		cdrPath,
 		vimInstallDir,
 		nvim,
@@ -88,7 +90,7 @@ func Run(
 	defer cancel()
 
 	sendToTCPName := filepath.Base(sendToTCP)
-	dockerRunVimArgs, err := dockerRunVimArgs(containerID, vimFileName, tmuxFileName, sendToTCPName, containerArch, useSystemVim, useSystemTmux, shell, configDirForDocker)
+	dockerRunVimArgs, err := dockerRunVimArgs(containerID, vimFileName, tmuxFileName, sendToTCPName, containerArch, useSystemVim, useSystemTmux, noTmux, shell, configDirForDocker)
 	if err != nil {
 		return err
 	}
@@ -156,6 +158,7 @@ func setupContainer(
 	args []string,
 	noCdr bool,
 	noPf bool,
+	noTmux bool,
 	cdrPath string,
 	vimInstallDir string,
 	nvim bool,
@@ -200,9 +203,13 @@ func setupContainer(
 		return containerID, vimFileName, "", "", containerArch, useSystemVim, false, pid, configDirForCdr, err
 	}
 
-	tmuxFileName, useSystemTmux, err := setupTmux(containerID, vimInstallDir, containerArch)
-	if err != nil {
-		return containerID, vimFileName, "", "", containerArch, useSystemVim, false, pid, configDirForCdr, err
+	tmuxFileName := ""
+	useSystemTmux := false
+	if !noTmux {
+		tmuxFileName, useSystemTmux, err = setupTmux(containerID, vimInstallDir, containerArch)
+		if err != nil {
+			return containerID, vimFileName, "", "", containerArch, useSystemVim, false, pid, configDirForCdr, err
+		}
 	}
 
 	// 6. Vimファイルを転送

@@ -10,7 +10,7 @@ import (
 
 type TestDevcontainerStartUseService struct{}
 
-func (s TestDevcontainerStartUseService) StartVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, tmuxFileName string, sendToTCP string, containerArch string, useSystemVim bool, useSystemTmux bool, shell string, configFilePathForDevcontainer string) error {
+func (s TestDevcontainerStartUseService) StartVim(containerID string, devcontainerPath string, workspaceFolder string, vimFileName string, tmuxFileName string, sendToTCP string, containerArch string, useSystemVim bool, useSystemTmux bool, noTmux bool, shell string, configFilePathForDevcontainer string) error {
 	return nil
 }
 
@@ -57,7 +57,7 @@ func TestStart(t *testing.T) {
 	// devcontainer を用いたコンテナ立ち上げ
 	noCdr := false
 	noPf := false
-	err = Start(TestDevcontainerStartUseService{}, args, devcontainerPath, noCdr, noPf, cdrPath, binDir, nvim, "", configFilePath, "../test/resource/TestStart/vimrc")
+	err = Start(TestDevcontainerStartUseService{}, args, devcontainerPath, noCdr, noPf, false, cdrPath, binDir, nvim, "", configFilePath, "../test/resource/TestStart/vimrc")
 	if err != nil {
 		if errors.Is(err, os.ErrPermission) {
 			t.Skipf("Permission error: %v", err)
@@ -158,7 +158,7 @@ func TestStartWithDockerCompose(t *testing.T) {
 	// devcontainer を用いたコンテナ立ち上げ
 	noCdr := false
 	noPf := false
-	err = Start(TestDevcontainerStartUseService{}, args, devcontainerPath, noCdr, noPf, cdrPath, binDir, nvim, "", configFilePath, "../../resource/TestStartWithDockerCompose/vimrc")
+	err = Start(TestDevcontainerStartUseService{}, args, devcontainerPath, noCdr, noPf, false, cdrPath, binDir, nvim, "", configFilePath, "../../resource/TestStartWithDockerCompose/vimrc")
 	if err != nil {
 		if errors.Is(err, os.ErrPermission) {
 			t.Skipf("Permission error: %v", err)

@@ -8,6 +8,7 @@ import (
 type vimRunScriptParams struct {
 	VimFileName string
 	SendToTcp   string
+	UseTmux     bool
 	TmuxCommand string
 }
 
