@@ -23,9 +23,15 @@ var DEVCONTAINER = func(services InstallerUseServices) Tool {
 				return "", err
 			}
 
+			// GOARCH が amd64 だった場合、 x64 に変換する
+			arch := runtime.GOARCH
+			if arch == "amd64" {
+				arch = "x64"
+			}
+
 			tmplParams := map[string]string{
 				"TagName": latestTagName,
-				"Arch":    runtime.GOARCH,
+				"Arch":    arch,
 			}
 			var downloadURL strings.Builder
 			err = tmpl.Execute(&downloadURL, tmplParams)
