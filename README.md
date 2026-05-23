@@ -56,7 +56,7 @@ USAGE:
    devcontainer.vim [global options] command [command options] 
 
 VERSION:
-   4.0.0
+   4.0.1
 
 COMMANDS:
    run                 Run container use `docker run`
