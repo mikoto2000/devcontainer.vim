@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -17,6 +18,14 @@ import (
 const CdrFileName = "clipboard-data-receiver"
 const CdrFileNameForMac = "clipboard-data-receiver"
 const cdrFileNameForWindows = "clipboard-data-receiver.exe"
+
+var errCdrStartupTimeout = errors.New("clipboard-data-receiver startup timed out")
+var cdrStartupTimeout = 10 * time.Second
+var cdrPollInterval = 1 * time.Second
+
+func IsCdrStartupTimeout(err error) bool {
+	return errors.Is(err, errCdrStartupTimeout)
+}
 
 // clipboard-data-receiver のダウンロード URL
 const downloadURLCdrPattern = "https://github.com/mikoto2000/clipboard-data-receiver/releases/download/{{ .TagName }}/clipboard-data-receiver.linux-amd64"
@@ -162,27 +171,45 @@ func RunCdr(cdrPath string, configFileDir string) (int, int, error) {
 func runCdrForNative(cdrPath string, pidFile string, portFile string) (int, int, error) {
 	fmt.Println("\""+cdrPath+"\"", "--pid-file", pidFile, "--port-file", portFile, "--random-port")
 	cdrRunCommand := exec.Command(cdrPath, "--pid-file", pidFile, "--port-file", portFile, "--random-port")
-	var stdout strings.Builder
-	cdrRunCommand.Stdout = &stdout
+	var output strings.Builder
+	cdrRunCommand.Stdout = &output
+	cdrRunCommand.Stderr = &output
 	err := cdrRunCommand.Start()
 	if err != nil {
 		return 0, 0, err
 	}
 
-	// clipboard-data-receiver の出力を待つ
-	// タイムアウト 10 秒
-	var pid, port int
-	for i := 0; i < 10; i++ {
-		pid, _, port, err = GetProcessInfo(stdout.String())
-		if err != nil {
-			time.Sleep(1 * time.Second)
-			continue
+	waitCh := make(chan error, 1)
+	go func() {
+		waitCh <- cdrRunCommand.Wait()
+	}()
+
+	deadline := time.Now().Add(cdrStartupTimeout)
+	var lastErr error
+	for time.Now().Before(deadline) {
+		pid, _, port, parseErr := GetProcessInfo(output.String())
+		if parseErr == nil && pid > 0 && port > 0 {
+			return pid, port, nil
+		}
+		if parseErr == nil {
+			lastErr = fmt.Errorf("invalid clipboard-data-receiver output: pid=%d port=%d", pid, port)
 		} else {
-			break
+			lastErr = parseErr
+		}
+
+		select {
+		case waitErr := <-waitCh:
+			if waitErr != nil {
+				return 0, 0, fmt.Errorf("clipboard-data-receiver exited before startup completed: %w; output: %s", waitErr, strings.TrimSpace(output.String()))
+			}
+			return 0, 0, fmt.Errorf("clipboard-data-receiver exited without reporting pid/port; output: %s", strings.TrimSpace(output.String()))
+		case <-time.After(cdrPollInterval):
 		}
 	}
 
-	return pid, port, nil
+	_ = cdrRunCommand.Process.Kill()
+	<-waitCh
+	return 0, 0, fmt.Errorf("%w: %v; output: %s", errCdrStartupTimeout, lastErr, strings.TrimSpace(output.String()))
 }
 
 func runCdrForWsl(cdrPath string, pidFile string, portFile string) (int, int, error) {
@@ -203,10 +230,11 @@ func runCdrForWsl(cdrPath string, pidFile string, portFile string) (int, int, er
 	// 現状 Windows で PID ファイルとポートファイルの後始末ができないので、
 	// とりあえず 1 秒待てば生成されるでしょうという感じで待っている。
 	var pid int
-	for i := 0; i < 10; i++ {
+	deadline := time.Now().Add(cdrStartupTimeout)
+	for time.Now().Before(deadline) {
 		pidFileContentBytes, err := os.ReadFile(pidFile)
 		if err != nil {
-			time.Sleep(1 * time.Second)
+			time.Sleep(cdrPollInterval)
 			continue
 		}
 
@@ -214,17 +242,24 @@ func runCdrForWsl(cdrPath string, pidFile string, portFile string) (int, int, er
 		if err != nil {
 			return 0, 0, err
 		}
+		if pid > 0 {
+			break
+		}
 
-		break
+		time.Sleep(cdrPollInterval)
+	}
+	if pid <= 0 {
+		return 0, 0, fmt.Errorf("%w: pid file was not populated: %s", errCdrStartupTimeout, pidFile)
 	}
 
 	// ポートファイル出力まで待つ
 	var port int
-	for i := 0; i < 10; i++ {
+	deadline = time.Now().Add(cdrStartupTimeout)
+	for time.Now().Before(deadline) {
 		portFileContentBytes, err := os.ReadFile(portFile)
 		if err != nil {
 			// ポートファイル出力まで待つ
-			time.Sleep(1 * time.Second)
+			time.Sleep(cdrPollInterval)
 			continue
 		}
 
@@ -232,8 +267,14 @@ func runCdrForWsl(cdrPath string, pidFile string, portFile string) (int, int, er
 		if err != nil {
 			return 0, 0, err
 		}
+		if port > 0 {
+			break
+		}
 
-		break
+		time.Sleep(cdrPollInterval)
+	}
+	if port <= 0 {
+		return 0, 0, fmt.Errorf("%w: port file was not populated: %s", errCdrStartupTimeout, portFile)
 	}
 
 	return pid, port, nil

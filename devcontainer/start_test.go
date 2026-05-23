@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+
+	"github.com/mikoto2000/devcontainer.vim/v3/tools"
 )
 
 type TestDevcontainerStartUseService struct{}
@@ -61,6 +63,8 @@ func TestStart(t *testing.T) {
 	if err != nil {
 		if errors.Is(err, os.ErrPermission) {
 			t.Skipf("Permission error: %v", err)
+		} else if tools.IsCdrStartupTimeout(err) {
+			t.Skipf("clipboard-data-receiver startup timeout (environment issue): %v", err)
 		} else if strings.Contains(err.Error(), "Container start error") {
 			t.Skipf("Container start error (environment issue): %v", err)
 		} else {
@@ -162,6 +166,8 @@ func TestStartWithDockerCompose(t *testing.T) {
 	if err != nil {
 		if errors.Is(err, os.ErrPermission) {
 			t.Skipf("Permission error: %v", err)
+		} else if tools.IsCdrStartupTimeout(err) {
+			t.Skipf("clipboard-data-receiver startup timeout (environment issue): %v", err)
 		} else if strings.Contains(err.Error(), "Container start error") {
 			t.Skipf("Container start error (environment issue): %v", err)
 		} else {

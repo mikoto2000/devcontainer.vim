@@ -74,6 +74,18 @@ var additionalVimrc string
 const appName = "devcontainer.vim"
 
 func main() {
+	validateWorkspaceFolder := func(workspaceFolder string) {
+		fileInfo, err := os.Stat(workspaceFolder)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: workspace folder not found: %s\n", workspaceFolder)
+			os.Exit(1)
+		}
+		if !fileInfo.IsDir() {
+			fmt.Fprintf(os.Stderr, "Error: workspace folder is not a directory: %s\n", workspaceFolder)
+			os.Exit(1)
+		}
+	}
+
 	// Windows でも `${ localEnv:HOME }` でホームディレクトリの指定ができるように、
 	// 環境変数を更新
 	if runtime.GOOS == "windows" {
@@ -241,10 +253,11 @@ func main() {
 					}
 					defaultRunargsString := string(defaultRunargsBytes)
 
+					args := cCtx.Args().Slice()
 					if runtime.GOOS == "windows" {
 						// コンテナ起動
 						// windows はシェル変数展開が上手くいかないので runargs を使用しない
-						err = devcontainer.Run(cCtx.Args().Slice(), noCdr, noPf, noTmux, cdrPath, binDir, nvim, shell, configDirForDocker, vimrc, []string{})
+						err = devcontainer.Run(args, noCdr, noPf, noTmux, cdrPath, binDir, nvim, shell, configDirForDocker, vimrc, []string{})
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Error running docker: %v\n", err)
 							os.Exit(1)
@@ -265,12 +278,11 @@ func main() {
 						}
 
 						// コンテナ起動
-						args := cCtx.Args().Slice()
 						if len(args) == 0 {
 							fmt.Fprintf(os.Stderr, "Usage: devcontainer.vim run <IMAGE_OR_CONTAINER>\n")
 							os.Exit(1)
 						}
-						err = devcontainer.Run(cCtx.Args().Slice(), noCdr, noPf, noTmux, cdrPath, binDir, nvim, shell, configDirForDocker, vimrc, defaultRunargs)
+						err = devcontainer.Run(args, noCdr, noPf, noTmux, cdrPath, binDir, nvim, shell, configDirForDocker, vimrc, defaultRunargs)
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Error running docker: %v\n", err)
 							os.Exit(1)
@@ -283,13 +295,21 @@ func main() {
 			{
 				Name:      "templates",
 				Usage:     "Run `devcontainer templates`",
-				UsageText: "devcontainer.vim templates [DEVCONTAINER_OPTIONS...] WORKSPACE_FOLDER",
+				UsageText: "devcontainer.vim templates <SUBCOMMAND>",
 				Subcommands: []*cli.Command{
 					{
 						Name:      "apply",
 						Usage:     "Apply template.",
 						UsageText: "devcontainer.vim templates apply WORKSPACE_FOLDER",
 						Action: func(cCtx *cli.Context) error {
+
+							// 引数チェック
+							args := cCtx.Args().Slice()
+							if len(args) == 0 {
+								fmt.Fprintf(os.Stderr, "Usage: devcontainer.vim templates apply <WORKSPACE_FOLDER>\n")
+								os.Exit(1)
+							}
+							validateWorkspaceFolder(args[len(args)-1])
 
 							// Features の一覧をダウンロード
 							indexFileName := "devcontainer-index.json"
@@ -358,7 +378,6 @@ func main() {
 							}
 
 							// コマンドライン引数の末尾は `--workspace-folder` の値として使う
-							args := cCtx.Args().Slice()
 							workspaceFolder := args[len(args)-1]
 
 							templateID := selectedItem.ID + ":" + selectedItem.Version
@@ -388,6 +407,17 @@ func main() {
 				SkipFlagParsing: true,
 				Action: func(cCtx *cli.Context) error {
 					// devcontainer でコンテナを立てる
+
+					// 引数チェック
+					// コマンドライン引数の末尾は `--workspace-folder` の値として使う
+					args := cCtx.Args().Slice()
+					if len(args) == 0 {
+						fmt.Fprintf(os.Stderr, "Error: missing workspace folder.\n")
+						fmt.Fprintf(os.Stderr, "Usage: devcontainer.vim start <WORKSPACE_FOLDER>\n")
+						os.Exit(1)
+					}
+					// 引数の末尾が存在するディレクトリかどうか確認
+					validateWorkspaceFolder(args[len(args)-1])
 
 					// シェル使用判定
 					shell := ""
@@ -426,13 +456,6 @@ func main() {
 						os.Exit(1)
 					}
 
-					// コマンドライン引数の末尾は `--workspace-folder` の値として使う
-					args := cCtx.Args().Slice()
-					if len(args) == 0 {
-						fmt.Fprintf(os.Stderr, "Error: missing workspace folder.\n")
-						fmt.Fprintf(os.Stderr, "Usage: devcontainer.vim start <WORKSPACE_FOLDER>\n")
-						os.Exit(1)
-					}
 					workspaceFolder := args[len(args)-1]
 					configFilePath, err := devcontainer.CreateConfigFile(devcontainerPath, workspaceFolder, configDirForDevcontainer)
 					if err != nil {
@@ -465,7 +488,15 @@ func main() {
 				HideHelp:        true,
 				SkipFlagParsing: true,
 				Action: func(cCtx *cli.Context) error {
-					// devcontainer でコンテナを立てる
+					// devcontainer でコンテナを stop
+
+					// 引数チェック
+					args := cCtx.Args().Slice()
+					if len(args) == 0 {
+						fmt.Fprintf(os.Stderr, "Error: missing workspace folder.\n")
+						fmt.Fprintf(os.Stderr, "Usage: devcontainer.vim stop <WORKSPACE_FOLDER>\n")
+						os.Exit(1)
+					}
 
 					// 必要なファイルのダウンロード
 					devcontainerPath, err := tools.InstallStopTools(binDir)
@@ -479,7 +510,7 @@ func main() {
 					}
 
 					// devcontainer を用いたコンテナ終了
-					err = devcontainer.Stop(cCtx.Args().Slice(), devcontainerPath, configDirForDevcontainer)
+					err = devcontainer.Stop(args, devcontainerPath, configDirForDevcontainer)
 					if err != nil {
 						if errors.Is(err, os.ErrPermission) {
 							fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
@@ -503,6 +534,15 @@ func main() {
 				Action: func(cCtx *cli.Context) error {
 					// devcontainer でコンテナを立てる
 
+					// 引数チェック
+					args := cCtx.Args().Slice()
+					if len(args) == 0 {
+						fmt.Fprintf(os.Stderr, "Error: missing workspace folder.\n")
+						fmt.Fprintf(os.Stderr, "Usage: devcontainer.vim down <WORKSPACE_FOLDER>\n")
+						os.Exit(1)
+					}
+					validateWorkspaceFolder(args[len(args)-1])
+
 					// 必要なファイルのダウンロード
 					devcontainerPath, err := tools.InstallDownTools(binDir)
 					if err != nil {
@@ -515,7 +555,7 @@ func main() {
 					}
 
 					// devcontainer を用いたコンテナ終了
-					err = devcontainer.Down(cCtx.Args().Slice(), devcontainerPath, configDirForDevcontainer)
+					err = devcontainer.Down(args, devcontainerPath, configDirForDevcontainer)
 					if err != nil {
 						if errors.Is(err, os.ErrPermission) {
 							fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
@@ -527,7 +567,6 @@ func main() {
 
 					// 設定ファイルを削除
 					// コマンドライン引数の末尾は `--workspace-folder` の値として使う
-					args := cCtx.Args().Slice()
 					workspaceFolder := args[len(args)-1]
 					configDir, err := util.GetConfigDir(appCacheDir, workspaceFolder)
 					if err != nil {
