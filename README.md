@@ -241,6 +241,8 @@ PROJECT_ROOT/
 
 `devcontainer.vim config -g` で `devcontainer.vim` が使用するための追加設定ファイルのテンプレートを生成できる。
 
+元のテンプレートにある `{{ remoteEnv:HOME }}` は devcontainer.vim 独自のプレースホルダーで、生成時に `--home` の値（省略時は `/home/vscode`）へ置換される。元のテンプレートを手動でコピーする場合は、コンテナ内のホームディレクトリに置き換えてから使用する。
+
 ```sh
 devcontainer.vim config -g --home /home/containerUser > .devcontainer/devcontainer.vim.json
 ```
