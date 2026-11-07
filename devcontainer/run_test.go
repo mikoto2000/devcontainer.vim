@@ -2,6 +2,7 @@ package devcontainer
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -11,6 +12,9 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/v3/docker"
 	"github.com/mikoto2000/devcontainer.vim/v3/tools"
 )
+
+// Debian Bookworm provides glibc for the bundled amd64 Vim AppImage.
+const bundledVimTestImage = "debian:bookworm-slim"
 
 // setupContainer関数のテスト（既存のテストを継続使用）
 func TestSetupContainer(t *testing.T) {
@@ -23,8 +27,8 @@ func TestSetupContainer(t *testing.T) {
 	noCdr := false
 	noPf := false
 
-	containerID, _, _, _, _, _, _, cdrPID, _, err := setupContainer(
-		[]string{"alpine:latest"},
+	containerID, vimName, _, _, _, useSystemVim, _, cdrPID, _, err := setupContainer(
+		[]string{bundledVimTestImage},
 		noCdr,
 		noPf,
 		false,
@@ -58,14 +62,11 @@ func TestSetupContainer(t *testing.T) {
 		t.Fatalf("error: %s", err)
 	}
 
-	//     /vim
-	vimOutput, err := docker.Exec(containerID, "sh", "-c", "ls /vim*")
-	if err != nil {
-		t.Fatalf("error: %s", err)
+	if vimName != "vim" || useSystemVim {
+		t.Fatalf("setup selected %q (system=%v), want bundled Vim", vimName, useSystemVim)
 	}
-	vimWant := "vim"
-	if !strings.Contains(vimOutput, vimWant) {
-		t.Fatalf("error: want match %s, but got %s", vimWant, vimOutput)
+	if _, err := docker.Exec(containerID, "test", "-x", "/vim"); err != nil {
+		t.Fatalf("bundled Vim is not executable at /vim: %v", err)
 	}
 	//     /vimrc
 	vimrcOutput, err := docker.Exec(containerID, "sh", "-c", "ls /vimrc")
@@ -250,7 +251,7 @@ func TestRunIntegration(t *testing.T) {
 	nvim := false
 	cdrPath := requireTestBinary(t, "clipboard-data-receiver")
 
-	args := []string{"alpine:latest"}
+	args := []string{bundledVimTestImage}
 	vimrc := "../test/resource/TestRun/vimrc"
 	defaultRunargs := []string{}
 	noCdr := false
@@ -266,7 +267,7 @@ func TestRunIntegration(t *testing.T) {
 		// 実際のテストでは、コンテナが起動してVimが実行可能な状態になることを確認
 
 		// setupContainer部分のみをテスト
-		containerID, _, _, _, _, _, _, cdrPid, cdrConfigDir, err := setupContainer(
+		containerID, vimName, _, _, _, useSystemVim, _, cdrPid, cdrConfigDir, err := setupContainer(
 			args,
 			noCdr,
 			noPf,
@@ -288,6 +289,10 @@ func TestRunIntegration(t *testing.T) {
 		os.RemoveAll(cdrConfigDir)
 		exec.Command(containerCommand, "stop", containerID).Start()
 
+		if vimName != "vim" || useSystemVim {
+			done <- fmt.Errorf("setup selected %q (system=%v), want bundled Vim", vimName, useSystemVim)
+			return
+		}
 		done <- nil
 	}()
 
