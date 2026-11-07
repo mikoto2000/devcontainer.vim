@@ -439,6 +439,7 @@ endif
   If the system-installed NeoVim cannot be detected, Vim will start instead
 - Clipboard integration doesn't work when using docker on WSL2
 - If you are using WSL2 Integration with Docker Desktop, forwardPorts may not work properly, so please use appPort instead.
+- `forwardPorts` listens on all IPv4 interfaces (`0.0.0.0`) of the host running devcontainer.vim. Other machines may be able to connect, depending on the network and the host firewall.
 
 
 ## Install:

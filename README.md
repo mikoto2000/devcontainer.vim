@@ -427,6 +427,7 @@ endif
   システムインストールの NeoVim が検出できなかった場合、代わりに Vim が起動します
 - WSL2 の docker を利用している場合、クリップボード連携が動きません
 - Docker Desktop で WSL2 Integration を利用している場合、 `forwardPorts` が上手く動かないため、 `appPort` を使用してください
+- `forwardPorts` は devcontainer.vim が動くホストのすべての IPv4 インターフェース（`0.0.0.0`）で待ち受けます。ネットワーク構成とホストのファイアウォール設定によっては、他の端末からも接続できます。
 
 
 ## Install:
