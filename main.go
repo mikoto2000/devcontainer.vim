@@ -155,7 +155,7 @@ func newCLI(paths commandPaths) *cli.App {
 				Aliases:            []string{"l"},
 				Value:              false,
 				DisableDefaultText: true,
-				Usage:              "show licensesa.",
+				Usage:              "show licenses.",
 			},
 			&cli.BoolFlag{
 				Name:               flagNameNeoVim,
