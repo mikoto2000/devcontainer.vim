@@ -106,11 +106,11 @@ func (p Project) ps() (string, error) {
 	cmd := p.command("ps", "--all", "--format", "json")
 	output, err := cmd.Output()
 	if err != nil {
-		msg := fmt.Sprintf("docker compose ps: %v", err)
+		var diagnostic []byte
 		if exit, ok := err.(*exec.ExitError); ok {
-			msg += ": " + strings.TrimSpace(string(exit.Stderr))
+			diagnostic = exit.Stderr
 		}
-		return "", &PsCommandError{msg: msg, err: err}
+		return "", &PsCommandError{msg: composeCommandErrorMessage("ps", err, diagnostic), err: err}
 	}
 	return string(output), nil
 }
@@ -123,7 +123,7 @@ func Stop(projectName string) error {
 func (p Project) Stop() error {
 	output, err := p.command("-p", p.Name, "stop").CombinedOutput()
 	if err != nil {
-		return &StopCommandError{msg: fmt.Sprintf("docker compose stop: %v: %s", err, strings.TrimSpace(string(output))), err: err}
+		return &StopCommandError{msg: composeCommandErrorMessage("stop", err, output), err: err}
 	}
 	return nil
 }
@@ -136,9 +136,17 @@ func Down(projectName string) error {
 func (p Project) Down() error {
 	output, err := p.command("-p", p.Name, "down").CombinedOutput()
 	if err != nil {
-		return &DownCommandError{msg: fmt.Sprintf("docker compose down: %v: %s", err, strings.TrimSpace(string(output))), err: err}
+		return &DownCommandError{msg: composeCommandErrorMessage("down", err, output), err: err}
 	}
 	return nil
+}
+
+func composeCommandErrorMessage(command string, err error, output []byte) string {
+	message := fmt.Sprintf("docker compose %s: %v", command, err)
+	if detail := strings.TrimSpace(string(output)); detail != "" {
+		message += ": " + detail
+	}
+	return message
 }
 
 func (p Project) command(args ...string) *exec.Cmd {
