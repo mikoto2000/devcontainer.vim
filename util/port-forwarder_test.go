@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log"
 	"net"
+	"strings"
 	"syscall"
 	"testing"
 	"testing/synctest"
@@ -31,6 +33,53 @@ func TestForwardingDialTimeout(t *testing.T) {
 			t.Fatalf("dial returned %v after %s, want a five-second timeout", err, time.Since(start))
 		}
 	})
+}
+
+func TestForwardingLogsConnectionFailure(t *testing.T) {
+	messages := make(forwardingLogCapture, 1)
+	previous := log.Writer()
+	log.SetOutput(messages)
+	defer log.SetOutput(previous)
+
+	listener := listenTCPForTest(t)
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	done := make(chan error, 1)
+	const target = "invalid-target"
+	go func() { done <- ServeForwarding(ctx, listener, target) }()
+
+	client, err := net.DialTimeout("tcp", listener.Addr().String(), time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+	select {
+	case line := <-messages:
+		if !strings.Contains(line, "port forwarding to "+target+" failed:") || !strings.Contains(line, "missing port") {
+			t.Errorf("forwarding log = %q, want the destination and dial error", line)
+		}
+	case <-time.After(2 * time.Second):
+		t.Error("forwarder did not log the dial error")
+	}
+	cancel()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("forwarder did not return after cancellation")
+	}
+}
+
+type forwardingLogCapture chan string
+
+func (c forwardingLogCapture) Write(p []byte) (int, error) {
+	select {
+	case c <- string(p):
+	default:
+	}
+	return len(p), nil
 }
 
 func TestForwardingStopsOnCancellation(t *testing.T) {
