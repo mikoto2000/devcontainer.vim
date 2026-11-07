@@ -39,7 +39,13 @@ const vimScriptTemplateSendToCdr = `if !has("nvim")
   function! SendToCdr(register) abort
     let text = getreg(a:register)
     let l:channelToCdr = ch_open("host.docker.internal:{{ .Port }}", {"mode": "raw"})
-    call ch_sendraw(channelToCdr, l:text, {})
+    if ch_status(l:channelToCdr) !=# "open"
+      echohl WarningMsg
+      echomsg "Could not connect to clipboard-data-receiver."
+      echohl None
+      return
+    endif
+    call ch_sendraw(l:channelToCdr, l:text, {})
     call ch_close(l:channelToCdr)
   endfunction
 endif`
