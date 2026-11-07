@@ -21,7 +21,7 @@ make build-all
 ## Start dev container without devcontainer.vim
 
 ```sh
-docker run -it --rm -v "$(pwd):/work" --workdir /work --name devcontainer.vim golang:1.22.1-bookworm
+docker run -it --rm -v "$(pwd):/work" --workdir /work --name devcontainer.vim golang:1.26.0-bookworm
 ```
 
 ## Create project
