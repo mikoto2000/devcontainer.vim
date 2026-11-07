@@ -214,28 +214,9 @@ func InstallStartTools(services InstallerUseServices, installDir string) (string
 	return devcontainerPath, cdrPath, nil
 }
 
-// devcontainer サブコマンド用のツールインストール
+// InstallDevcontainerTools installs the Dev Container CLI.
 func InstallDevcontainerTools(installDir string) (string, error) {
-	devcontainerPath, err := DEVCONTAINER(DefaultInstallerUseServices{}).Install(installDir, "", false)
-	return devcontainerPath, err
-}
-
-// Templates サブコマンド用のツールインストール
-func InstallTemplatesTools(installDir string) (string, error) {
-	devcontainerPath, err := DEVCONTAINER(DefaultInstallerUseServices{}).Install(installDir, "", false)
-	return devcontainerPath, err
-}
-
-// Stop サブコマンド用のツールインストール
-func InstallStopTools(installDir string) (string, error) {
-	devcontainerPath, err := DEVCONTAINER(DefaultInstallerUseServices{}).Install(installDir, "", false)
-	return devcontainerPath, err
-}
-
-// Down サブコマンド用のツールインストール
-func InstallDownTools(installDir string) (string, error) {
-	devcontainerPath, err := DEVCONTAINER(DefaultInstallerUseServices{}).Install(installDir, "", false)
-	return devcontainerPath, err
+	return DEVCONTAINER(DefaultInstallerUseServices{}).Install(installDir, "", false)
 }
 
 // SelfUpdate downloads the latest release of devcontainer.vim from GitHub and replaces the current binary

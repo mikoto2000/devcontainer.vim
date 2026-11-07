@@ -348,7 +348,7 @@ func main() {
 							// devcontainer の template サブコマンド実行
 
 							// 必要なファイルのダウンロード
-							devcontainerFilePath, err := tools.InstallTemplatesTools(binDir)
+							devcontainerFilePath, err := tools.InstallDevcontainerTools(binDir)
 							if err != nil {
 								fmt.Fprintf(os.Stderr, "Error installing template tools: %v\n", err)
 								os.Exit(1)
@@ -473,7 +473,7 @@ func main() {
 					}
 
 					// 必要なファイルのダウンロード
-					devcontainerPath, err := tools.InstallStopTools(binDir)
+					devcontainerPath, err := tools.InstallDevcontainerTools(binDir)
 					if err != nil {
 						if errors.Is(err, os.ErrNotExist) {
 							fmt.Fprintf(os.Stderr, "Configuration file not found: %v\n", err)
@@ -518,7 +518,7 @@ func main() {
 					validateWorkspaceFolder(args[len(args)-1])
 
 					// 必要なファイルのダウンロード
-					devcontainerPath, err := tools.InstallDownTools(binDir)
+					devcontainerPath, err := tools.InstallDevcontainerTools(binDir)
 					if err != nil {
 						if errors.Is(err, os.ErrNotExist) {
 							fmt.Fprintf(os.Stderr, "Configuration file not found: %v\n", err)
