@@ -201,6 +201,7 @@ VSCode 等の他ツール向けに作成した `devcontainer.json` に devcontai
 
 そのため、別途 devcontainer.vim のみが読み込むファイルを `.devcontainer/devcontainer.vim.json` に配置する。
 devcontainer.vim は、 `.devcontainer/devcontainer.json` と `.devcontainer/devcontainer.vim.json` をマージして実行する。
+同じキーの値が両方ともオブジェクトなら再帰的にマージし、両方とも配列ならベース側の後ろに追加する。それ以外は `devcontainer.vim.json` の値を優先する。
 
 ```
 PROJECT_ROOT/

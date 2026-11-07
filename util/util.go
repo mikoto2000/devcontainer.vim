@@ -123,8 +123,19 @@ func readAndMergeConfig(baseConfigPath string, additionalConfigPath string) ([]b
 		return nil, err
 	}
 
-	// gabs を使って JSON をマージ
-	parsedBaseJSONGrabContainer.Merge(parsedAdditionalJSONGrabContainer)
+	// MergeFn merges nested objects. Append matching arrays and prefer the
+	// additional config for all other collisions.
+	err = parsedBaseJSONGrabContainer.MergeFn(parsedAdditionalJSONGrabContainer, func(base, additional any) any {
+		baseArray, baseIsArray := base.([]any)
+		additionalArray, additionalIsArray := additional.([]any)
+		if baseIsArray && additionalIsArray {
+			return append(baseArray, additionalArray...)
+		}
+		return additional
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	// 設定ファイルの内容を返却
 	return parsedBaseJSONGrabContainer.Bytes(), nil
