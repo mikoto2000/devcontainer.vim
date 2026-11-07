@@ -112,6 +112,24 @@ func TestArmContainerEditor(t *testing.T) {
 				}
 				return
 			}
+			if runtime.GOOS != "windows" {
+				// Compare with the expected mode under the same process umask.
+				ref := filepath.Join(dir, "launcher-mode-reference")
+				if err := os.WriteFile(ref, nil, 0755); err != nil {
+					t.Fatal(err)
+				}
+				want, err := os.Stat(ref)
+				if err != nil {
+					t.Fatal(err)
+				}
+				got, err := os.Stat(filepath.Join(dir, "VimRun.sh"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if got.Mode().Perm() != want.Mode().Perm() {
+					t.Errorf("launcher permissions = %04o, want %04o", got.Mode().Perm(), want.Mode().Perm())
+				}
+			}
 
 			read := func(dir, name string) string {
 				t.Helper()

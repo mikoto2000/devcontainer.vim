@@ -5,6 +5,10 @@ import (
 	"text/template"
 )
 
+// Docker copies the launcher into the container as root, but the editor may
+// run as the workspace user.
+const vimRunScriptMode = 0755
+
 type vimRunScriptParams struct {
 	VimFileName string
 	SendToTcp   string

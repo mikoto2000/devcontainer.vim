@@ -77,7 +77,7 @@ func dockerRunVimArgs(containerID string, vimFileName string, tmuxFileName strin
 	// Vim 起動スクリプトを出力
 	vimLaunchScript := filepath.Join(configFilePath, "VimRun.sh")
 	os.RemoveAll(vimLaunchScript)
-	err = os.WriteFile(vimLaunchScript, []byte(vimRunScript), 0766)
+	err = os.WriteFile(vimLaunchScript, []byte(vimRunScript), vimRunScriptMode)
 	if err != nil {
 		return nil, err
 	}
