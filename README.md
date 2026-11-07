@@ -422,7 +422,7 @@ endif
 
 ## Limitation:
 
-- alpine 系のコンテナでは amd64 アーキテクチャは使用できません
+- amd64 の Alpine コンテナでも、コンテナ内に Vim をインストールしておけば利用できます。devcontainer.vim が自動取得する [Vim AppImage](https://github.com/vim/vim-appimage/releases) を使う構成では、glibc 2.34 互換の実行環境が必要です。
 - aarch64 のコンテナで NeoVim を利用する場合はシステムインストールされたものを利用する必要があります
 - NeoVim AppImage が使えず、システムインストールの NeoVim も存在しない場合、 NeoVim の代わりに Vim が起動します
 - macOS で NeoVim を利用する場合は、システムインストールの NeoVim しか利用できません
