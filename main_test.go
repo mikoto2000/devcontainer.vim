@@ -141,7 +141,7 @@ func TestStartWithoutWorkspace(t *testing.T) {
 	}
 }
 
-func TestGeneratedConfigDoesNotOverrideEditorOrPager(t *testing.T) {
+func TestGeneratedConfigDoesNotOverrideEditorPagerOrShell(t *testing.T) {
 	dir := isolateCLIHome(t)
 	self, err := os.Executable()
 	if err != nil {
@@ -167,7 +167,7 @@ func TestGeneratedConfigDoesNotOverrideEditorOrPager(t *testing.T) {
 	if config.RemoteEnv["TERM"] != "xterm-256color" {
 		t.Fatalf("missing terminal setting in generated remoteEnv: %v", config.RemoteEnv)
 	}
-	for _, name := range []string{"EDITOR", "PAGER"} {
+	for _, name := range []string{"EDITOR", "PAGER", "SHELL"} {
 		if value, ok := config.RemoteEnv[name]; ok {
 			t.Errorf("generated config overrides %s with %q", name, value)
 		}
