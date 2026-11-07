@@ -88,9 +88,20 @@ func listRunningPortForwarders(containerID string) ([]string, error) {
 }
 
 func listPortForwarderMarkers(containerID string) ([]string, error) {
-	lspfOut, err := docker.Exec(containerID, "sh", "-c", `ls --zero "`+portForwarderMarkerDir+`" 2>/dev/null || true`)
+	const listMarkers = `dir="` + portForwarderMarkerDir + `"
+[ -e "$dir" ] || exit 0
+if ! [ -d "$dir" ] || ! [ -r "$dir" ] || ! [ -x "$dir" ]; then
+	printf 'Cannot read port-forwarder marker directory: %s\n' "$dir" >&2
+	exit 1
+fi
+for marker in "$dir"/*; do
+	[ -f "$marker" ] || continue
+	printf '%s\000' "${marker##*/}" || exit
+done
+exit 0`
+	lspfOut, err := docker.Exec(containerID, "sh", "-c", listMarkers)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list port-forwarder markers: %w", err)
 	}
 
 	forwardConfigs := strings.Split(lspfOut, "\x00")

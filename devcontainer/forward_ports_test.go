@@ -127,6 +127,51 @@ func TestSetupPortForwardingReportsChildStartupExit(t *testing.T) {
 	assertForwardChildReaped(t, dir, port)
 }
 
+func TestListPortForwarderMarkersWithoutLS(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("container shell fixture requires a POSIX host shell")
+	}
+	shell, err := exec.LookPath("sh")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, dir := installForwardTestCommands(t, "[]")
+	t.Setenv("DEVCONTAINER_VIM_FORWARD_TEST_MARKER_SHELL", shell)
+
+	markers, err := listPortForwarderMarkers("container-id")
+	if err != nil || len(markers) != 0 {
+		t.Fatalf("missing marker directory = %q, %v, want no markers", markers, err)
+	}
+
+	markerDir := filepath.Join(dir, "home", ".config", "devcontainer.vim", "pf")
+	if err := os.MkdirAll(filepath.Dir(markerDir), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(markerDir, nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	var exitErr *exec.ExitError
+	if _, err := listPortForwarderMarkers("container-id"); !errors.As(err, &exitErr) {
+		t.Errorf("marker directory replaced by file = %v, want command failure", err)
+	}
+	if err := os.Remove(markerDir); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(markerDir, "ignored-directory"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"api:8080_127.0.0.1:51001", "localhost:8081_127.0.0.1:51002", "name with a\nnewline"}
+	for _, marker := range want {
+		if err := os.WriteFile(filepath.Join(markerDir, marker), nil, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	markers, err = listPortForwarderMarkers("container-id")
+	if err != nil || !slices.Equal(markers, want) {
+		t.Fatalf("listPortForwarderMarkers = %q, %v, want %q", markers, err, want)
+	}
+}
+
 func TestSetupPortForwardingAcceptsNumberAndHostPort(t *testing.T) {
 	// Isolate the fake Docker and Dev Containers subprocesses.
 	const childEnv = "DEVCONTAINER_VIM_FORWARD_TEST_CHILD"
@@ -346,10 +391,20 @@ func runForwardTestCommand(dir string, argv []string) int {
 	if len(args) >= 4 && args[3] == "hostname" {
 		fmt.Println("127.0.0.1")
 	} else if len(args) == 6 {
+		if shell := os.Getenv("DEVCONTAINER_VIM_FORWARD_TEST_MARKER_SHELL"); shell != "" {
+			cmd := exec.Command(shell, "-c", args[5])
+			cmd.Env = append(os.Environ(), "HOME="+filepath.Join(dir, "home"), "PATH="+dir, "LC_ALL=C")
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			if err := cmd.Run(); err != nil {
+				return 99
+			}
+			return 0
+		}
 		if markers, err := os.ReadFile(filepath.Join(dir, "markers")); err == nil {
 			if strings.HasPrefix(args[5], "grep ") {
 				fmt.Println("/proc/123/comm")
-			} else if strings.HasPrefix(args[5], "ls ") {
+			} else {
 				os.Stdout.Write(markers)
 			}
 		}
