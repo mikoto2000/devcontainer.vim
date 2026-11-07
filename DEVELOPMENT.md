@@ -18,6 +18,10 @@ go fmt ./...
 make build-all
 ```
 
+## Lint
+
+Install the pinned Staticcheck release with `make install-lint-tools` and ensure your Go binary directory is on `PATH`. Run `make lint` to use the installed tool.
+
 ## Start dev container without devcontainer.vim
 
 ```sh

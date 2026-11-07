@@ -9,6 +9,7 @@ PLATFORMS := \
 	windows/arm64
 
 GO_BIN := ${GOPATH}/bin
+STATICCHECK_VERSION := v0.7.0
 VERSION := 4.0.1
 LD_FLAGS := "-s -w -X main.version=${VERSION}"
 
@@ -63,9 +64,11 @@ build-all:
 	done
 
 
-.PHONY: lint
+.PHONY: install-lint-tools lint
+install-lint-tools:
+	go install honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION}
+
 lint:
-	go install honnef.co/go/tools/cmd/staticcheck@latest
 	staticcheck -checks inherit,ST1003,ST1016 ./...
 
 .PHONY: fmt
