@@ -91,7 +91,7 @@ func TestArmContainerEditor(t *testing.T) {
 			}
 			script := read(containerDir, "launched")
 			if tc.systemNvim {
-				if !strings.Contains(script, "\nnvim --cmd ") || !strings.Contains(script, " -S /SendToTcp.lua ") {
+				if !strings.Contains(script, "\n'nvim' --cmd ") || !strings.Contains(script, " -S '/SendToTcp.lua' ") {
 					t.Errorf("system Neovim launch script = %q", script)
 				}
 				if clip := read(containerDir, "SendToTcp.lua"); !strings.Contains(clip, "function SendToCdr(register)") {
@@ -100,7 +100,7 @@ func TestArmContainerEditor(t *testing.T) {
 				return
 			}
 
-			for _, part := range []string{"tar zxf ./vim -C", "~/vim-static/AppRun --cmd ", " -S /SendToTcp.vim "} {
+			for _, part := range []string{"tar zxf './vim' -C", "~/vim-static/AppRun --cmd ", " -S '/SendToTcp.vim' "} {
 				if !strings.Contains(script, part) {
 					t.Errorf("Vim launch script missing %q: %s", part, script)
 				}

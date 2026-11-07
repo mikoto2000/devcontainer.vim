@@ -1,8 +1,8 @@
 package devcontainer
 
 import (
-	"html/template"
 	"strings"
+	"text/template"
 )
 
 type vimRunScriptParams struct {
@@ -13,8 +13,7 @@ type vimRunScriptParams struct {
 }
 
 func renderVimRunScript(templateSource string, params vimRunScriptParams) (string, error) {
-	pattern := "pattern"
-	tmpl, err := template.New(pattern).Parse(templateSource)
+	tmpl, err := template.New("vimRun").Funcs(template.FuncMap{"shellQuote": shellQuote}).Parse(templateSource)
 	if err != nil {
 		return "", err
 	}
