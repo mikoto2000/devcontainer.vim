@@ -330,7 +330,7 @@ func newCLI(paths commandPaths) *cli.App {
 									&cli.StringFlag{
 										Name:  flagNameArch,
 										Value: runtime.GOARCH,
-										Usage: "download cpu archtecture.",
+										Usage: "target CPU architecture.",
 									},
 								},
 								Action: paths.downloadVim,
@@ -354,7 +354,7 @@ func newCLI(paths commandPaths) *cli.App {
 									&cli.StringFlag{
 										Name:  flagNameArch,
 										Value: runtime.GOARCH,
-										Usage: "download cpu archtecture.",
+										Usage: "target CPU architecture.",
 									},
 								},
 								Action: paths.downloadNeovim,
@@ -378,7 +378,7 @@ func newCLI(paths commandPaths) *cli.App {
 									&cli.StringFlag{
 										Name:  flagNameArch,
 										Value: runtime.GOARCH,
-										Usage: "download cpu archtecture.",
+										Usage: "target CPU architecture.",
 									},
 								},
 								Action: paths.downloadTmux,
@@ -436,7 +436,7 @@ func newCLI(paths commandPaths) *cli.App {
 									&cli.StringFlag{
 										Name:  flagNameArch,
 										Value: runtime.GOARCH,
-										Usage: "download cpu archtecture.",
+										Usage: "target CPU architecture.",
 									},
 								},
 								Action: paths.downloadPortForwarder,
