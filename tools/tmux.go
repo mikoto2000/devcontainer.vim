@@ -6,7 +6,6 @@ import (
 	"errors"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 	"text/template"
 )
@@ -74,7 +73,7 @@ var Tmux = func(service InstallerUseServices) Tool {
 	}
 }
 
-func extractSingleFileFromTarGz(archivePath string, targetBaseName string, destPath string) error {
+func extractSingleFileFromTarGz(archivePath, targetName, destPath string) error {
 	f, err := os.Open(archivePath)
 	if err != nil {
 		return err
@@ -88,28 +87,34 @@ func extractSingleFileFromTarGz(archivePath string, targetBaseName string, destP
 	defer gzr.Close()
 
 	tr := tar.NewReader(gzr)
+	found := false
 	for {
 		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
 		if err != nil {
-			if errors.Is(err, io.EOF) {
-				return errors.New("target file not found in archive")
-			}
 			return err
 		}
-		if hdr.Typeflag != tar.TypeReg {
+		if hdr.Typeflag != tar.TypeReg || strings.TrimPrefix(hdr.Name, "./") != targetName {
 			continue
 		}
-		if filepath.Base(hdr.Name) != targetBaseName {
-			continue
+		if found {
+			return errors.New("multiple target files found at archive root")
 		}
 
 		out, err := os.Create(destPath)
 		if err != nil {
 			return err
 		}
-		defer out.Close()
-
-		_, err = io.Copy(out, tr)
-		return err
+		_, copyErr := io.Copy(out, tr)
+		if err := errors.Join(copyErr, out.Close()); err != nil {
+			return err
+		}
+		found = true
 	}
+	if !found {
+		return errors.New("target file not found at archive root")
+	}
+	return nil
 }
