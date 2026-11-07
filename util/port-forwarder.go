@@ -2,9 +2,11 @@ package util
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net"
 	"sync"
+	"time"
 )
 
 // forward relays traffic between an accepted client and the destination.
@@ -63,14 +65,28 @@ func serveForwarding(ctx context.Context, listener net.Listener, forwardAddr str
 		listener.Close()
 		workers.Wait()
 	}()
+	var retryDelay time.Duration
 	for {
 		client, err := listener.Accept()
 		if err != nil {
 			if ctx.Err() != nil {
 				return nil
 			}
+			var networkErr net.Error
+			if !errors.As(err, &networkErr) || !networkErr.Temporary() {
+				return err
+			}
+			retryDelay = min(time.Second, max(5*time.Millisecond, 2*retryDelay))
+			timer := time.NewTimer(retryDelay)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return nil
+			case <-timer.C:
+			}
 			continue
 		}
+		retryDelay = 0
 		workers.Go(func() { _ = forward(ctx, client, forwardAddr) })
 	}
 }
