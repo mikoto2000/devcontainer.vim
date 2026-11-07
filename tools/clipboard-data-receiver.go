@@ -150,6 +150,7 @@ var CDR = func(services InstallerUseServices) Tool {
 
 // clipboard-data-receiver を起動
 // pid ファイル、 port ファイルを configFileDir へ保存する。
+// エラー時も PID が判明していれば、呼び出し元で停止できるよう返す。
 func RunCdr(cdrPath string, configFileDir string) (int, int, error) {
 	// configFileDir から pid ファイルと port ファイルのパスを組み立てる
 	pidFile := filepath.Join(configFileDir, "pid")
@@ -265,7 +266,7 @@ func runCdrForWsl(cdrPath string, pidFile string, portFile string) (int, int, er
 
 		port, err = strconv.Atoi(string(portFileContentBytes))
 		if err != nil {
-			return 0, 0, err
+			return pid, 0, err
 		}
 		if port > 0 {
 			break
@@ -274,7 +275,7 @@ func runCdrForWsl(cdrPath string, pidFile string, portFile string) (int, int, er
 		time.Sleep(cdrPollInterval)
 	}
 	if port <= 0 {
-		return 0, 0, fmt.Errorf("%w: port file was not populated: %s", errCdrStartupTimeout, portFile)
+		return pid, 0, fmt.Errorf("%w: port file was not populated: %s", errCdrStartupTimeout, portFile)
 	}
 
 	return pid, port, nil
@@ -285,10 +286,7 @@ func KillCdr(pid int) error {
 		commandString := fmt.Sprintf("Stop-Process -Id %d -Force", pid)
 		fmt.Printf("Stop clipboard-data-receiver: %s\n", commandString)
 		cdrRunCommand := exec.Command("powershell.exe", "-Command", commandString)
-		err := cdrRunCommand.Start()
-		if err != nil {
-			return err
-		}
+		return cdrRunCommand.Run()
 	} else {
 		process, err := os.FindProcess(pid)
 		if err != nil {
