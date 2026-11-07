@@ -105,6 +105,12 @@ func TestRunCleansUpAfterSetupFailure(t *testing.T) {
 
 // Copies of the test executable act as Docker and CDR without either dependency.
 func TestMain(m *testing.M) {
+	if dir := os.Getenv(forwardTestDirEnv); dir != "" {
+		switch strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe") {
+		case "docker", "test-forward-devcontainer":
+			os.Exit(runForwardTestCommand(dir, os.Args))
+		}
+	}
 	if dir := os.Getenv(stopTestDirEnv); dir != "" {
 		switch strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe") {
 		case "docker", "test-devcontainer":
