@@ -50,6 +50,36 @@ func TestInstallStartTools(t *testing.T) {
 	}
 }
 
+func TestInstallStartToolsPreservesExistingTestDirectory(t *testing.T) {
+	// Model a repository root without putting the real test fixtures at risk.
+	root := t.TempDir()
+	fixture := filepath.Join(root, "test", "project", "devcontainer.json")
+	const contents = "{\"name\":\"existing fixture\"}\n"
+	if err := os.MkdirAll(filepath.Dir(fixture), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(fixture, []byte(contents), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	binary, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command(binary, "-test.run=^TestInstallStartTools$", "-test.v")
+	cmd.Dir = root
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("TestInstallStartTools failed: %v\n%s", err, output)
+	}
+	if !strings.Contains(string(output), "--- PASS: TestInstallStartTools ") {
+		t.Fatalf("TestInstallStartTools did not run:\n%s", output)
+	}
+	if data, err := os.ReadFile(fixture); err != nil || string(data) != contents {
+		t.Fatalf("existing test fixture after TestInstallStartTools = %q, %v, want %q", data, err, contents)
+	}
+}
+
 func TestDownloadPreservesExecutableOnFailure(t *testing.T) {
 	for _, tt := range []struct {
 		name   string
