@@ -15,10 +15,14 @@ import (
 )
 
 func TestIsExistsCommandOk(t *testing.T) {
-	got := IsExistsCommand("ls")
-	want := true
-	if got != want {
-		t.Fatalf("want %v, but %v:", want, got)
+	executable, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", filepath.Dir(executable))
+	name := filepath.Base(executable)
+	if !IsExistsCommand(name) {
+		t.Fatalf("IsExistsCommand(%q) did not find the test executable on PATH", name)
 	}
 }
 
