@@ -145,8 +145,7 @@ func startContainer(args []string, defaultRunargs []string) (string, error) {
 		return "", &ContainerStartError{msg: msg, err: err}
 	}
 
-	containerID := strings.ReplaceAll(string(containerIDRaw), "\n", "")
-	containerID = strings.ReplaceAll(containerID, "\r", "")
+	containerID := strings.TrimSpace(string(containerIDRaw))
 	fmt.Printf("Container started. id: %s\n", containerID)
 
 	return containerID, nil
