@@ -8,6 +8,7 @@ require (
 	github.com/manifoldco/promptui v0.9.0
 	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a
 	github.com/urfave/cli/v2 v2.27.7
+	golang.org/x/sys v0.41.0
 	oras.land/oras-go/v2 v2.6.0
 )
 
@@ -20,5 +21,4 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 // indirect
 	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
 )
