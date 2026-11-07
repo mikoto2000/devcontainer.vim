@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/md5"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -13,12 +15,31 @@ import (
 
 	"github.com/mikoto2000/devcontainer.vim/v3/devcontainer"
 	"github.com/mikoto2000/devcontainer.vim/v3/tools"
-	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
 const runDockerLogEnv = "DEVCONTAINER_VIM_TEST_DOCKER_LOG"
+const configCLIFixtureEnv = "DEVCONTAINER_VIM_TEST_CONFIG_CLI"
 
 func TestMain(m *testing.M) {
+	if os.Getenv(configCLIFixtureEnv) == "1" {
+		if len(os.Args) != 4 || os.Args[1] != "read-configuration" || os.Args[2] != "--workspace-folder" {
+			fmt.Fprintln(os.Stderr, "unexpected read-configuration arguments:", os.Args[1:])
+			os.Exit(99)
+		}
+		path, err := filepath.Abs(filepath.Join(os.Args[3], ".devcontainer", "devcontainer.json"))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(99)
+		}
+		response := devcontainer.ReadConfigurationCommandResult{
+			Configuration: devcontainer.Configuration{ConfigFilePath: devcontainer.ConfigFilePath{FsPath: path}},
+		}
+		if err := json.NewEncoder(os.Stdout).Encode(response); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(99)
+		}
+		os.Exit(0)
+	}
 	if log := os.Getenv(runDockerLogEnv); log != "" && strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe") == "docker" {
 		if err := os.WriteFile(log, []byte(strings.Join(os.Args[1:], "\n")), 0600); err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -183,31 +204,38 @@ func TestCLIProcess(t *testing.T) {
 }
 
 func TestCreateConfigFile(t *testing.T) {
-	_, binDir, _, configDirForDevcontainer, err := util.CreateCacheDirectory(func() (string, error) {
-		return "./test", nil
-	}, "resource")
+	root := t.TempDir()
+	t.Chdir(root)
+	t.Setenv(configCLIFixtureEnv, "1")
+	devcontainerPath, err := os.Executable()
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
+	}
+	workspaceFolder := filepath.Join("project", "workspace with spaces")
+	workspaceAbs, err := filepath.Abs(workspaceFolder)
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := filepath.Join(workspaceFolder, ".devcontainer", "devcontainer.json")
+	if err := os.MkdirAll(filepath.Dir(source), 0700); err != nil {
+		t.Fatal(err)
+	}
+	const config = "{\"name\":\"test\"}\n"
+	if err := os.WriteFile(source, []byte(config), 0600); err != nil {
+		t.Fatal(err)
 	}
 
-	devcontainerPath, _, err := tools.InstallStartTools(tools.DefaultInstallerUseServices{}, binDir)
-	if err != nil {
-		t.Fatalf("Error installing start tools: %v", err)
-	}
-
-	workspaceFolder := "./test/project/TestCreateConfigFile"
+	configDirForDevcontainer := filepath.Join(root, "cache")
 	configFilePath, err := devcontainer.CreateConfigFile(devcontainerPath, workspaceFolder, configDirForDevcontainer)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			t.Skipf("configuration file not found: %v", err)
-		}
-		if strings.Contains(err.Error(), "出力パースに失敗") || strings.Contains(err.Error(), "read-configuration` に失敗") {
-			t.Skipf("devcontainer CLI environment issue: %v", err)
-		}
-		t.Fatalf("error: %v", err)
+		t.Fatal(err)
 	}
-	want := "test/resource/config/devcontainer/6d0900e89898e089cf294371661aea37/devcontainer.json"
+	hash := md5.Sum([]byte(workspaceAbs))
+	want := filepath.Join(configDirForDevcontainer, fmt.Sprintf("%x", hash), "devcontainer.json")
 	if want != configFilePath {
-		t.Fatalf("error: want %s, but got %s", want, configFilePath)
+		t.Fatalf("config path = %q, want %q", configFilePath, want)
+	}
+	if data, err := os.ReadFile(configFilePath); err != nil || string(data) != config {
+		t.Fatalf("generated config = %q, %v, want %q", data, err, config)
 	}
 }
