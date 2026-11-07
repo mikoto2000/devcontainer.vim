@@ -10,6 +10,51 @@ import (
 	"testing"
 )
 
+func TestVimLaunchPreservesExistingDirectory(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		launch func(dir string) ([]string, error)
+	}{
+		{"run", func(dir string) ([]string, error) {
+			return dockerRunVimArgs("container-id", "vim", "", "SendToTcp.vim", "amd64", true, false, true, "", dir)
+		}},
+		{"start", func(dir string) ([]string, error) {
+			return devcontainerStartVimArgs("container-id", "workspace", "vim", "", "SendToTcp.vim", "amd64", true, false, true, "", dir)
+		}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			_, dir := installForwardTestCommands(t, "[]")
+			collision := filepath.Join(dir, "VimRun.sh")
+			if err := os.Mkdir(collision, 0700); err != nil {
+				t.Fatal(err)
+			}
+			marker := filepath.Join(collision, "keep")
+			if err := os.WriteFile(marker, []byte("existing contents"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := tt.launch(dir); err == nil {
+				t.Error("launch script generation accepted a directory")
+			}
+			if data, err := os.ReadFile(marker); err != nil || string(data) != "existing contents" {
+				t.Errorf("existing directory contents = %q, %v", data, err)
+			}
+		})
+	}
+}
+
+func TestWriteVimRunScriptReplacesExistingFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "VimRun.sh")
+	if err := os.WriteFile(path, []byte("old"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeVimRunScript(path, "new"); err != nil {
+		t.Fatal(err)
+	}
+	if data, err := os.ReadFile(path); err != nil || string(data) != "new" {
+		t.Fatalf("replacement contents = %q, %v", data, err)
+	}
+}
+
 func TestSelectVimRunTemplate(t *testing.T) {
 	for _, tc := range []struct {
 		name, hostOS, arch, want string
