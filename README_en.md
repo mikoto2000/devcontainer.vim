@@ -436,7 +436,7 @@ endif
 
 ## Limitation:
 
-- amd64 architecture cannot be used in alpine-based containers
+- On amd64 Alpine containers, devcontainer.vim can use Vim installed in the container. Configurations that download the [Vim AppImage](https://github.com/vim/vim-appimage/releases) require a runtime compatible with glibc 2.34.
 - When using NeoVim in an aarch64 container, you must use the system-installed version
 - If the NeoVim AppImage is not available and there is no system-installed NeoVim, Vim will start instead of NeoVim
 - When using NeoVim on macOS, only the system-installed NeoVim can be used
