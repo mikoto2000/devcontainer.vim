@@ -2,7 +2,6 @@ package devcontainer
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -24,7 +23,7 @@ func TestSetupContainer(t *testing.T) {
 	noCdr := false
 	noPf := false
 
-	containerID, _, _, _, _, _, _, _, _, err := setupContainer(
+	containerID, _, _, _, _, _, _, cdrPID, _, err := setupContainer(
 		[]string{"alpine:latest"},
 		noCdr,
 		noPf,
@@ -36,6 +35,18 @@ func TestSetupContainer(t *testing.T) {
 		vimrc,
 		[]string{},
 	)
+	t.Cleanup(func() {
+		if cdrPID > 0 {
+			if err := tools.KillCdr(cdrPID); err != nil {
+				t.Errorf("stop clipboard-data-receiver: %v", err)
+			}
+		}
+		if containerID != "" {
+			if err := docker.Stop(containerID); err != nil {
+				t.Errorf("stop test container: %v", err)
+			}
+		}
+	})
 
 	if err != nil {
 		if strings.Contains(err.Error(), "Container start error") {
@@ -46,17 +57,6 @@ func TestSetupContainer(t *testing.T) {
 		}
 		t.Fatalf("error: %s", err)
 	}
-
-	// 後片付け
-	// コンテナ停止
-	defer func() {
-		// `docker stop <dockerrun 時に標準出力に表示される CONTAINER ID>`
-		fmt.Printf("Stop container(Async) %s.\n", containerID)
-		err = exec.Command(containerCommand, "stop", containerID).Start()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Container stop error: %s\n", err)
-		}
-	}()
 
 	//     /vim
 	vimOutput, err := docker.Exec(containerID, "sh", "-c", "ls /vim*")
