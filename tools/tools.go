@@ -43,7 +43,7 @@ func (t Tool) Install(installDir string, containerArch string, override bool) (s
 	// tool download から直接呼ばれることもあるのでここでも正規化する
 	containerArch, err := util.NormalizeContainerArch(containerArch)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	// ツールの配置先組み立て
