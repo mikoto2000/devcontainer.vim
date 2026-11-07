@@ -354,6 +354,10 @@ func Start(
 	configFilePath string,
 	vimrc string) error {
 
+	if len(args) == 0 {
+		return errors.New("missing workspace folder")
+	}
+
 	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
 	workspaceFolder := args[len(args)-1]
 
