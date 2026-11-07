@@ -1,14 +1,11 @@
 package devcontainer
 
 import (
-	"context"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/mikoto2000/devcontainer.vim/v3/docker"
 	"github.com/mikoto2000/devcontainer.vim/v3/tools"
@@ -19,6 +16,7 @@ const bundledVimTestImage = "debian:bookworm-slim"
 
 // setupContainer関数のテスト（既存のテストを継続使用）
 func TestSetupContainer(t *testing.T) {
+	requireLinuxDocker(t)
 	_, binDir, configDirForDocker, _ := createTempAppDirs(t)
 
 	nvim := false
@@ -40,26 +38,9 @@ func TestSetupContainer(t *testing.T) {
 		vimrc,
 		[]string{},
 	)
-	t.Cleanup(func() {
-		if setup.cdrPID > 0 {
-			if err := tools.KillCdr(setup.cdrPID); err != nil {
-				t.Errorf("stop clipboard-data-receiver: %v", err)
-			}
-		}
-		if setup.containerID != "" {
-			if err := docker.Stop(setup.containerID); err != nil {
-				t.Errorf("stop test container: %v", err)
-			}
-		}
-	})
+	cleanupTestContainerSetup(t, setup)
 
 	if err != nil {
-		if strings.Contains(err.Error(), "Container start error") {
-			t.Skipf("container runtime not available for integration test: %v", err)
-		}
-		if tools.IsCdrStartupTimeout(err) {
-			t.Skipf("clipboard-data-receiver startup timeout (environment issue): %v", err)
-		}
 		t.Fatalf("error: %s", err)
 	}
 
@@ -82,21 +63,13 @@ func TestSetupContainer(t *testing.T) {
 
 // startContainer関数の単体テスト
 func TestStartContainer(t *testing.T) {
-	// Dockerの存在確認
-	_, err := exec.LookPath("docker")
-	if err != nil {
-		t.Skip("docker command not found, skipping test")
-	}
+	requireLinuxDocker(t)
 
 	args := []string{"alpine:latest"}
 	defaultRunargs := []string{}
 
 	containerID, err := startContainer(args, defaultRunargs)
 	if err != nil {
-		// Dockerデーモンが動いていない場合はスキップ
-		if strings.Contains(err.Error(), "Cannot connect to the Docker daemon") || strings.Contains(err.Error(), "Container start error") {
-			t.Skip("Docker daemon not running, skipping test")
-		}
 		t.Fatalf("startContainer failed: %v", err)
 	}
 
@@ -105,10 +78,7 @@ func TestStartContainer(t *testing.T) {
 		t.Fatal("Container ID should not be empty")
 	}
 
-	// 後片付け
-	defer func() {
-		exec.Command(containerCommand, "stop", containerID).Start()
-	}()
+	cleanupTestContainerSetup(t, containerSetup{containerID: containerID})
 
 	// コンテナが実際に起動していることを確認
 	psOutput, err := docker.Ps("id=" + containerID)
@@ -166,19 +136,13 @@ func TestGetContainerArch(t *testing.T) {
 
 // setupVim関数の単体テスト（システムVimが存在する場合）
 func TestSetupVimWithSystemVim(t *testing.T) {
-	if err := exec.CommandContext(t.Context(), containerCommand, "info", "--format", "{{.ServerVersion}}").Run(); err != nil {
-		t.Skipf("Docker server not available: %v", err)
-	}
+	requireLinuxDocker(t)
 
 	containerID, err := startContainer([]string{"debian:bookworm-slim"}, nil)
 	if err != nil {
 		t.Fatalf("Failed to start container: %v", err)
 	}
-	t.Cleanup(func() {
-		if err := docker.Stop(containerID); err != nil {
-			t.Errorf("stop system Vim fixture: %v", err)
-		}
-	})
+	cleanupTestContainerSetup(t, containerSetup{containerID: containerID})
 	install := exec.CommandContext(t.Context(), containerCommand, "exec", "--user", "root", containerID, "sh", "-c",
 		"apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends vim")
 	if output, err := install.CombinedOutput(); err != nil {
@@ -204,17 +168,7 @@ func TestSetupVimWithSystemVim(t *testing.T) {
 
 // Run関数の統合テスト（実際のコンテナ使用）
 func TestRunIntegration(t *testing.T) {
-	// 長時間実行されるテストなので、短いタイムアウトでスキップも可能
-	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
-	}
-
-	// Dockerの存在確認
-	_, err := exec.LookPath("docker")
-	if err != nil {
-		t.Skip("docker command not found, skipping integration test")
-	}
-
+	requireLinuxDocker(t)
 	_, binDir, configDirForDocker, _ := createTempAppDirs(t)
 
 	nvim := false
@@ -226,54 +180,30 @@ func TestRunIntegration(t *testing.T) {
 	noCdr := false
 	noPf := false
 
-	// Run関数を別のgoroutineで実行し、タイムアウトを設定
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	// Exercise setup directly so it finishes before test cleanup starts.
+	setup, err := setupContainer(args, noCdr, noPf, false, cdrPath, binDir, nvim, configDirForDocker, vimrc, defaultRunargs)
+	cleanupTestContainerSetup(t, setup)
 
-	done := make(chan error, 1)
-	go func() {
-		// Run関数は通常、ユーザーの入力を待つため、即座に終了させる
-		// 実際のテストでは、コンテナが起動してVimが実行可能な状態になることを確認
-
-		// setupContainer部分のみをテスト
-		setup, err := setupContainer(
-			args,
-			noCdr,
-			noPf,
-			false,
-			cdrPath,
-			binDir,
-			nvim,
-			configDirForDocker,
-			vimrc,
-			defaultRunargs)
-
-		if err != nil {
-			done <- err
-			return
-		}
-
-		// クリーンアップ
-		tools.KillCdr(setup.cdrPID)
-		os.RemoveAll(setup.cdrConfigDir)
-		exec.Command(containerCommand, "stop", setup.containerID).Start()
-
-		if setup.vimFileName != "vim" || setup.useSystemVim {
-			done <- fmt.Errorf("setup selected %q (system=%v), want bundled Vim", setup.vimFileName, setup.useSystemVim)
-			return
-		}
-		done <- nil
-	}()
-
-	select {
-	case err := <-done:
-		if err != nil {
-			if strings.Contains(err.Error(), "Cannot connect to the Docker daemon") || strings.Contains(err.Error(), "Container start error") {
-				t.Skip("Docker daemon not running, skipping integration test")
-			}
-			t.Fatalf("Run integration test failed: %v", err)
-		}
-	case <-ctx.Done():
-		t.Fatal("Run integration test timed out")
+	if err != nil {
+		t.Fatalf("Run integration test failed: %v", err)
 	}
+	if setup.vimFileName != "vim" || setup.useSystemVim {
+		t.Fatalf("setup selected %q (system=%v), want bundled Vim", setup.vimFileName, setup.useSystemVim)
+	}
+}
+
+func cleanupTestContainerSetup(t *testing.T, setup containerSetup) {
+	t.Helper()
+	t.Cleanup(func() {
+		if setup.cdrPID > 0 {
+			if err := tools.KillCdr(setup.cdrPID); err != nil {
+				t.Errorf("stop clipboard-data-receiver: %v", err)
+			}
+		}
+		if setup.containerID != "" {
+			if err := docker.Stop(setup.containerID); err != nil {
+				t.Errorf("stop test container: %v", err)
+			}
+		}
+	})
 }

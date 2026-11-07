@@ -1,7 +1,6 @@
 package devcontainer
 
 import (
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -11,11 +10,7 @@ import (
 
 // 段階的テスト: 各分割された関数を個別にテスト
 func TestStartStepByStep(t *testing.T) {
-	// devcontainerコマンドの存在確認
-	_, err := exec.LookPath("docker")
-	if err != nil {
-		t.Skip("docker command not found, skipping integration test")
-	}
+	requireLinuxDocker(t)
 
 	// 設定ファイルの作成と検証
 	t.Run("Config File Creation", func(t *testing.T) {
@@ -26,10 +21,6 @@ func TestStartStepByStep(t *testing.T) {
 		// 設定ファイルが作成できるか確認
 		configFilePath, err := CreateConfigFile(devcontainerPath, "../test/project/TestStart", configDirForDevcontainer)
 		if err != nil {
-			// devcontainerコマンドが失敗する場合はスキップ
-			if strings.Contains(err.Error(), "出力パースに失敗") {
-				t.Skip("devcontainer CLI not working properly, skipping test")
-			}
 			t.Fatalf("Error creating config file: %v", err)
 		}
 
