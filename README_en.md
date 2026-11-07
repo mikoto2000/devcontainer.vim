@@ -409,7 +409,7 @@ By adding this configuration, `host.docker.internal` becomes usable, and clipboa
 
 ### 2.x.x to 3.x.x
 
-If you are using Vim with devcontainer.vim 2.x.x and will start using NeoVim with devcontainer.vim 3.x.x, you need either remove the vimrc mapping shown with `devcontainer.vim vimrc -o` or enclose the mapping with `if !has(`nvim”)` to enclose the mapping.
+If you used Vim with devcontainer.vim 2.x.x and are switching to Neovim with 3.x.x, open your vimrc with `devcontainer.vim vimrc -o`. Remove the Vim-specific mapping or wrap it in an `if !has("nvim")` block.
 
 ```vim
 if !has("nvim")
