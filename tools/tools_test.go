@@ -116,6 +116,21 @@ func TestDownloadPreservesExecutableOnFailure(t *testing.T) {
 	}
 }
 
+func TestToolInstallRejectsUnknownArchitecture(t *testing.T) {
+	dir := t.TempDir()
+	tool := Tool{
+		FileName: "test-tool",
+		CalculateDownloadURL: func(arch string) (string, error) {
+			t.Fatalf("attempted to resolve a download URL for %q", arch)
+			return "", nil
+		},
+	}
+	path, err := tool.Install(dir, "riscv64", true)
+	if path != "" || err == nil || !strings.Contains(err.Error(), "Unknown Architecture") {
+		t.Fatalf("Install returned %q, %v; want an empty path and an architecture error", path, err)
+	}
+}
+
 func TestToolInstallPreservesExecutableOnFailure(t *testing.T) {
 	executablePath := copyTestExecutable(t)
 	installErr := errors.New("install interrupted")

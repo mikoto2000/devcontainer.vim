@@ -28,7 +28,8 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestRunWithoutImage(t *testing.T) {
+func isolateCLIHome(t *testing.T) string {
+	t.Helper()
 	dir := t.TempDir()
 	config := filepath.Join(dir, "config")
 	cache := filepath.Join(dir, "cache")
@@ -38,7 +39,11 @@ func TestRunWithoutImage(t *testing.T) {
 	t.Setenv("XDG_CACHE_HOME", cache)
 	t.Setenv("APPDATA", config)
 	t.Setenv("LOCALAPPDATA", cache)
+	return dir
+}
 
+func TestRunWithoutImage(t *testing.T) {
+	dir := isolateCLIHome(t)
 	configBase, err := os.UserConfigDir()
 	if err != nil {
 		t.Fatal(err)
@@ -94,6 +99,23 @@ func TestRunWithoutImage(t *testing.T) {
 	}
 	if data, err := os.ReadFile(dockerLog); !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("Docker was invoked for run without image: arguments %q, read error %v", data, err)
+	}
+}
+
+func TestToolDownloadRejectsUnknownArchitecture(t *testing.T) {
+	dir := isolateCLIHome(t)
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command(self, "-test.run=^TestCLIProcess$", "--", "tool", "vim", "download", "--arch", "riscv64")
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "DEVCONTAINER_VIM_TEST_CLI=1")
+	output, err := cmd.CombinedOutput()
+	var exit *exec.ExitError
+	if !errors.As(err, &exit) || exit.ExitCode() != 1 ||
+		!strings.Contains(string(output), "Error installing vim: Unknown Architecture") {
+		t.Fatalf("tool download with unknown architecture = %v, output %q, want architecture error and exit code 1", err, output)
 	}
 }
 
