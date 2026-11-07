@@ -188,14 +188,23 @@ func InstallRunTools(installDir string) (string, error) {
 }
 
 func InstallVim(installDir string, nvim bool, containerArch string) (string, error) {
+	path, _, err := InstallContainerEditor(installDir, nvim, containerArch)
+	return path, err
+}
+
+// InstallContainerEditor returns the cached path and the selected editor's command name.
+func InstallContainerEditor(installDir string, nvim bool, containerArch string) (string, string, error) {
 	// Use static Vim for ARM containers and for amd64 containers on macOS,
 	// where this setup does not use the Neovim AppImage.
 	armContainer := containerArch == "aarch64" || containerArch == "arm64"
 	macStaticVim := runtime.GOOS == "darwin" && (containerArch == "amd64" || containerArch == "x86_64")
+	installer, commandName := NVIM, "nvim"
 	if !nvim || armContainer || macStaticVim {
-		return VIM(DefaultInstallerUseServices{}).Install(installDir, containerArch, false)
+		installer, commandName = VIM, "vim"
 	}
-	return NVIM(DefaultInstallerUseServices{}).Install(installDir, containerArch, false)
+	editor := installer(DefaultInstallerUseServices{})
+	path, err := editor.Install(installDir, containerArch, false)
+	return path, commandName, err
 }
 
 func InstallTmux(installDir string, containerArch string) (string, error) {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/mikoto2000/devcontainer.vim/v3/docker"
@@ -121,14 +120,11 @@ func setupVim(containerID, vimInstallDir string, nvim bool, containerArch string
 		return vimFileName, true, nil
 	}
 
-	vimFilePath, err := tools.InstallVim(vimInstallDir, nvim, containerArch)
+	vimFilePath, vimFileName, err := tools.InstallContainerEditor(vimInstallDir, nvim, containerArch)
 	if err != nil {
 		return "", false, err
 	}
 
-	// The cached artifact is named vim_<arch> or nvim_<arch>. Use the
-	// installed editor for both the launch command and clipboard script.
-	vimFileName, _, _ = strings.Cut(filepath.Base(vimFilePath), "_")
 	if err := docker.Cp("vim", vimFilePath, containerID, "/"+vimFileName); err != nil {
 		return vimFileName, false, err
 	}
