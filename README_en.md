@@ -243,6 +243,8 @@ PROJECT_ROOT/
 
 `devcontainer.vim config -g` generates a template for additional configuration files used by `devcontainer.vim`.
 
+The source template uses the devcontainer.vim placeholder `{{ remoteEnv:HOME }}`. The generator replaces it with `--home`, which defaults to `/home/vscode`. If you copy the source template manually, replace the placeholder with the home directory inside the container before using it.
+
 ```sh
 devcontainer.vim config -g --home /home/containerUser > .devcontainer/devcontainer.vim.json
 ```
