@@ -83,7 +83,7 @@ COMMANDS:
    help, h             Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --license, -l  show licensesa.
+   --license, -l  show licenses.
    --nvim         use NeoVim.
    --nocdr        disable clipboard-data-receiver.
    --notmux       disable tmux.
