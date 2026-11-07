@@ -4,8 +4,6 @@ import (
 	"errors"
 	"strings"
 	"text/template"
-
-	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
 // NeoVim のダウンロード URL
@@ -18,7 +16,7 @@ var NVIM = func(service InstallerUseServices) Tool {
 		FileName: "nvim",
 		CalculateDownloadURL: func(containerArch string) (string, error) {
 			if containerArch == "amd64" || containerArch == "x86_64" {
-				latestTagName, err := util.GetLatestReleaseFromGitHub("neovim", "neovim")
+				latestTagName, err := service.GetLatestReleaseFromGitHub("neovim", "neovim")
 				if err != nil {
 					return "", err
 				}
@@ -37,7 +35,7 @@ var NVIM = func(service InstallerUseServices) Tool {
 				}
 				return downloadURL.String(), nil
 			} else if containerArch == "arm64" || containerArch == "aarch64" {
-				latestTagName, err := util.GetLatestReleaseFromGitHub("mikoto2000", "vim-static")
+				latestTagName, err := service.GetLatestReleaseFromGitHub("mikoto2000", "vim-static")
 				if err != nil {
 					return "", err
 				}
