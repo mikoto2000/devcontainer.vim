@@ -82,18 +82,13 @@ func IsExists(filePath string) bool {
 	return err == nil
 }
 
+// AddExecutePermission adds owner execute permission and keeps the existing mode.
 func AddExecutePermission(filePath string) error {
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		return err
 	}
-	fileMode := fileInfo.Mode()
-	err = os.Chmod(filePath, fileMode|0111)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return os.Chmod(filePath, fileInfo.Mode()|0100)
 }
 
 // baseConfigPath で指定した JSON に additionalConfigPath で指定した JSON をマージし、その結果を返却する
