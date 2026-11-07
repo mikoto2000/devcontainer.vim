@@ -139,6 +139,12 @@ func TestMain(m *testing.M) {
 		switch strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe") {
 		case "docker", "test-forward-devcontainer":
 			os.Exit(runForwardTestCommand(dir, os.Args))
+		case "vim":
+			if err := runStartEditorFixture(dir, os.Args[1:]); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(99)
+			}
+			os.Exit(0)
 		}
 	}
 	if dir := os.Getenv(stopTestDirEnv); dir != "" {

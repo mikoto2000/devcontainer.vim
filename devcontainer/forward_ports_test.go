@@ -385,16 +385,30 @@ func assertForwardTestArgs(t *testing.T, dir, name string, want []string) {
 
 func runForwardTestCommand(dir string, argv []string) int {
 	args := argv[1:]
+	startShell := os.Getenv(startWorkflowShellEnv)
 	if strings.TrimSuffix(filepath.Base(argv[0]), ".exe") == "test-forward-devcontainer" {
 		if args[0] == "up" {
 			if !writeForwardTestArgs(dir, "up-args", args) {
 				return 99
 			}
-			fmt.Println(`{"outcome":"success","containerId":"fixture-up-container"}`)
+			if startShell != "" {
+				fmt.Println(`{"outcome":"success","containerId":"container-id"}`)
+			} else {
+				fmt.Println(`{"outcome":"success","containerId":"fixture-up-container"}`)
+			}
 			return 0
 		}
 		if args[0] == "read-configuration" {
 			fmt.Printf(`{"configuration":{"forwardPorts":%s}}`, os.Getenv("DEVCONTAINER_VIM_FORWARD_TEST_PORTS"))
+			return 0
+		}
+		if startShell != "" && slices.Equal(args, []string{"exec", "--container-id", "container-id", "--workspace-folder", dir, "/VimRun.sh"}) {
+			cmd := exec.Command(startShell, filepath.Join(dir, "VimRun.sh"), startWorkflowEditorArg)
+			cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+			if err := cmd.Run(); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				return 99
+			}
 			return 0
 		}
 		if err := os.WriteFile(filepath.Join(dir, "exec-called"), nil, 0600); err != nil {
@@ -449,6 +463,23 @@ func runForwardTestCommand(dir string, argv []string) int {
 			return 99
 		}
 		return 0
+	}
+	if startShell != "" {
+		if slices.Equal(args, []string{"exec", "container-id", "uname", "-m"}) {
+			fmt.Println("x86_64")
+			return 0
+		}
+		if slices.Equal(args, []string{"exec", "container-id", "sh", "-c", containerToolProbe, "devcontainer-vim-tool-probe", "vim"}) {
+			fmt.Println("found")
+			return 0
+		}
+		if len(args) == 3 && args[0] == "cp" && (args[2] == "container-id:/" || args[2] == "container-id:/VimRun.sh") {
+			data, err := os.ReadFile(args[1])
+			if err != nil || os.WriteFile(filepath.Join(dir, filepath.Base(args[1])), data, 0600) != nil {
+				return 99
+			}
+			return 0
+		}
 	}
 	if len(args) < 3 || args[0] != "exec" || args[1] != "container-id" {
 		return 99
