@@ -102,6 +102,57 @@ func TestRunWithoutImage(t *testing.T) {
 	}
 }
 
+func TestConfigDirectoryPermissions(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX permission bits are not applied on Windows")
+	}
+	dir := isolateCLIHome(t)
+	configBase, err := os.UserConfigDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cacheBase, err := os.UserCacheDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cache := filepath.Join(cacheBase, appName)
+	outputDir := filepath.Join(dir, "project", ".devcontainer")
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command(self, "-test.run=^TestCLIProcess$", "--", "config", "-g", "-o", filepath.Join(outputDir, "devcontainer.vim.json"))
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "DEVCONTAINER_VIM_TEST_CLI=1")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("config generation failed: %v\n%s", err, output)
+	}
+	assertMode := func(mode os.FileMode, paths ...string) {
+		t.Helper()
+		// Compare with a directory created under the same process umask.
+		ref := filepath.Join(t.TempDir(), "reference")
+		if err := os.Mkdir(ref, mode); err != nil {
+			t.Fatal(err)
+		}
+		want, err := os.Stat(ref)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, path := range paths {
+			got, err := os.Stat(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Mode().Perm() != want.Mode().Perm() {
+				t.Errorf("permissions of %q = %04o, want %04o", path, got.Mode().Perm(), want.Mode().Perm())
+			}
+		}
+	}
+	assertMode(0700, filepath.Join(configBase, appName), cache, filepath.Join(cache, "bin"),
+		filepath.Join(cache, "config"), filepath.Join(cache, "config", "docker"), filepath.Join(cache, "config", "devcontainer"))
+	assertMode(0755, filepath.Dir(outputDir), outputDir)
+}
+
 func TestToolDownloadRejectsUnknownArchitecture(t *testing.T) {
 	dir := isolateCLIHome(t)
 	self, err := os.Executable()

@@ -609,7 +609,7 @@ func main() {
 							configFilePath := cCtx.String(flagNameOutput)
 
 							// 生成先ディレクトリを作成
-							err := os.MkdirAll(filepath.Dir(configFilePath), 0766)
+							err := os.MkdirAll(filepath.Dir(configFilePath), 0755)
 							if err != nil {
 								fmt.Fprintf(os.Stderr, "Error creating output directory: %v\n", err)
 								os.Exit(1)

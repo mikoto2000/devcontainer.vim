@@ -17,6 +17,7 @@ import (
 
 const binDirName = "bin"
 const configDirName = "config"
+const userDirectoryMode = 0700
 
 // command で指定したものへパスが通っているかを確認する。
 // パスが通っている場合 true を返却し、通っていない場合 false を返却する。
@@ -34,7 +35,7 @@ func CreateConfigDirectory(pathFunc GetDirFunc, dirName string) (string, error) 
 		return "", err
 	}
 	var appConfigDir = filepath.Join(baseDir, dirName)
-	if err := os.MkdirAll(appConfigDir, 0766); err != nil {
+	if err := os.MkdirAll(appConfigDir, userDirectoryMode); err != nil {
 		return "", err
 	}
 	return appConfigDir, nil
@@ -52,25 +53,25 @@ func CreateCacheDirectory(pathFunc GetDirFunc, dirName string) (string, string, 
 		return "", "", "", "", err
 	}
 	var appCacheDir = filepath.Join(baseDir, dirName)
-	if err := os.MkdirAll(appCacheDir, 0766); err != nil {
+	if err := os.MkdirAll(appCacheDir, userDirectoryMode); err != nil {
 		return "", "", "", "", err
 	}
 	var binDir = filepath.Join(baseDir, dirName, binDirName)
-	if err := os.MkdirAll(binDir, 0766); err != nil {
+	if err := os.MkdirAll(binDir, userDirectoryMode); err != nil {
 		return appCacheDir, "", "", "", err
 	}
 	var configDir = filepath.Join(baseDir, dirName, configDirName)
-	if err := os.MkdirAll(configDir, 0766); err != nil {
+	if err := os.MkdirAll(configDir, userDirectoryMode); err != nil {
 		return appCacheDir, binDir, "", "", err
 	}
 	// docker 用のコンフィグディレクトリ作成
 	var configDirForDocker = filepath.Join(baseDir, dirName, configDirName, "docker")
-	if err := os.MkdirAll(configDirForDocker, 0766); err != nil {
+	if err := os.MkdirAll(configDirForDocker, userDirectoryMode); err != nil {
 		return appCacheDir, binDir, "", "", err
 	}
 	// devcontainer 用のコンフィグディレクトリ作成
 	var configDirForDevcontainer = filepath.Join(baseDir, dirName, configDirName, "devcontainer")
-	if err := os.MkdirAll(configDirForDevcontainer, 0766); err != nil {
+	if err := os.MkdirAll(configDirForDevcontainer, userDirectoryMode); err != nil {
 		return appCacheDir, binDir, configDir, "", err
 	}
 	return appCacheDir, binDir, configDirForDocker, configDirForDevcontainer, nil
