@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -293,7 +294,9 @@ func main() {
 							indexFile := filepath.Join(appCacheDir, indexFileName)
 							if !util.IsExists(indexFile) {
 								fmt.Println("Download template index ... ")
-								err := oras.Pull("ghcr.io/devcontainers/index", "latest", appCacheDir)
+								ctx, cancel := signal.NotifyContext(cCtx.Context, os.Interrupt)
+								err := oras.Pull(ctx, "ghcr.io/devcontainers/index", "latest", appCacheDir)
+								cancel()
 								if err != nil {
 									fmt.Fprintf(os.Stderr, "Error downloading template index: %v\n", err)
 									os.Exit(1)
@@ -978,7 +981,9 @@ func main() {
 						Action: func(cCtx *cli.Context) error {
 
 							// Features の一覧をダウンロード
-							err := oras.Pull("ghcr.io/devcontainers/index", "latest", appCacheDir)
+							ctx, cancel := signal.NotifyContext(cCtx.Context, os.Interrupt)
+							err := oras.Pull(ctx, "ghcr.io/devcontainers/index", "latest", appCacheDir)
+							cancel()
 							if err != nil {
 								if errors.Is(err, os.ErrNotExist) {
 									fmt.Fprintf(os.Stderr, "Index file not found: %v\n", err)

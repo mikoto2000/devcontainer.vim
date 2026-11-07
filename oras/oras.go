@@ -8,7 +8,7 @@ import (
 	"oras.land/oras-go/v2/registry/remote"
 )
 
-func Pull(id string, tagName string, destDir string) error {
+func Pull(ctx context.Context, id string, tagName string, destDir string) error {
 
 	// リモートリポジトリの設定
 	src, err := remote.NewRepository(id)
@@ -21,8 +21,6 @@ func Pull(id string, tagName string, destDir string) error {
 	if err != nil {
 		return err
 	}
-	ctx := context.Background()
-
 	_, err = oras.Copy(ctx, src, tagName, dst, tagName, oras.DefaultCopyOptions)
 	if err != nil {
 		return err
