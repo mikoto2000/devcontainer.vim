@@ -180,13 +180,8 @@ func downloadWithClient(client *http.Client, downloadURL, destPath string) error
 }
 
 // run サブコマンド用のツールインストール
-func InstallRunTools(installDir string, nvim bool) (string, error) {
-	var err error
-	cdrPath, err := CDR(DefaultInstallerUseServices{}).Install(installDir, "", false)
-	if err != nil {
-		return cdrPath, err
-	}
-	return cdrPath, err
+func InstallRunTools(installDir string) (string, error) {
+	return CDR(DefaultInstallerUseServices{}).Install(installDir, "", false)
 }
 
 func InstallVim(installDir string, nvim bool, containerArch string) (string, error) {
