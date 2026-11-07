@@ -29,8 +29,6 @@ var vimRunX8664Static string
 //go:embed VimRun_aarch64.template.sh
 var vimRunAarch64 string
 
-const containerCommand = "docker"
-
 type UnknownTypeError struct {
 	msg string
 }

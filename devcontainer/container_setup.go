@@ -65,7 +65,7 @@ func installPortForwarder(containerID, vimInstallDir, containerArch string) erro
 		return err
 	}
 	// The copy can carry permissions from a non-executable host cache entry.
-	cmd := exec.Command(containerCommand, "exec", "--user", "root", containerID, "chmod", "a+x", containerPath)
+	cmd := exec.Command(docker.Command, "exec", "--user", "root", containerID, "chmod", "a+x", containerPath)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("make %s executable in container %s: %w: %s", containerPath, containerID, err, strings.TrimSpace(string(output)))
 	}
@@ -93,8 +93,8 @@ func setupTmux(containerID, vimInstallDir string, containerArch string) (string,
 	}
 
 	dockerChmodArgs := []string{"exec", "--user", "root", containerID, "sh", "-c", "chmod +x /tmux"}
-	fmt.Printf("Make tmux executable: `%s \"%s\"` ...", containerCommand, strings.Join(dockerChmodArgs, "\" \""))
-	chmodResult, err := exec.Command(containerCommand, dockerChmodArgs...).CombinedOutput()
+	fmt.Printf("Make tmux executable: `%s \"%s\"` ...", docker.Command, strings.Join(dockerChmodArgs, "\" \""))
+	chmodResult, err := exec.Command(docker.Command, dockerChmodArgs...).CombinedOutput()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "chmod error.")
 		fmt.Fprintln(os.Stderr, string(chmodResult))
@@ -130,8 +130,8 @@ func setupVim(containerID, vimInstallDir string, nvim bool, containerArch string
 	}
 
 	dockerChmodArgs := []string{"exec", "--user", "root", containerID, "sh", "-c", "chmod +x /" + vimFileName}
-	fmt.Printf("Make %s executable: `%s \"%s\"` ...", vimFileName, containerCommand, strings.Join(dockerChmodArgs, "\" \""))
-	chmodResult, err := exec.Command(containerCommand, dockerChmodArgs...).CombinedOutput()
+	fmt.Printf("Make %s executable: `%s \"%s\"` ...", vimFileName, docker.Command, strings.Join(dockerChmodArgs, "\" \""))
+	chmodResult, err := exec.Command(docker.Command, dockerChmodArgs...).CombinedOutput()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "chmod error.")
 		fmt.Fprintln(os.Stderr, string(chmodResult))

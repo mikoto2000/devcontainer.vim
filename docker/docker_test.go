@@ -10,11 +10,11 @@ import (
 )
 
 func TestExecKeepsStdoutAndStderrSeparate(t *testing.T) {
-	dockerType, err := exec.CommandContext(t.Context(), containerCommand, "info", "--format", "{{.OSType}}").Output()
+	dockerType, err := exec.CommandContext(t.Context(), Command, "info", "--format", "{{.OSType}}").Output()
 	if err != nil || strings.TrimSpace(string(dockerType)) != "linux" {
 		t.Skipf("Linux Docker daemon required: %q, %v", dockerType, err)
 	}
-	cmd := exec.CommandContext(t.Context(), containerCommand, "run", "--rm", "-d", "debian:bookworm-slim",
+	cmd := exec.CommandContext(t.Context(), Command, "run", "--rm", "-d", "debian:bookworm-slim",
 		"sh", "-c", "trap 'exit 0' TERM; sleep infinity & wait")
 	output, err := cmd.Output()
 	if err != nil {

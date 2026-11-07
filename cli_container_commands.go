@@ -9,6 +9,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/mikoto2000/devcontainer.vim/v3/devcontainer"
+	"github.com/mikoto2000/devcontainer.vim/v3/docker"
 	"github.com/mikoto2000/devcontainer.vim/v3/tools"
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
@@ -22,7 +23,7 @@ func (paths commandPaths) runContainer(cCtx *cli.Context) error {
 
 	// Requirements のチェック
 	// 1. docker
-	isExistsDocker := util.IsExistsCommand(containerCommand)
+	isExistsDocker := util.IsExistsCommand(docker.Command)
 	if !isExistsDocker {
 		fmt.Fprintf(os.Stderr, "docker not found.")
 		os.Exit(1)

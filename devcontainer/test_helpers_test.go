@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mikoto2000/devcontainer.vim/v3/docker"
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
@@ -14,7 +15,7 @@ func requireLinuxDocker(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping Docker integration test in short mode")
 	}
-	output, err := exec.CommandContext(t.Context(), containerCommand, "info", "--format", "{{.OSType}}").Output()
+	output, err := exec.CommandContext(t.Context(), docker.Command, "info", "--format", "{{.OSType}}").Output()
 	if err != nil || strings.TrimSpace(string(output)) != "linux" {
 		t.Skipf("Linux Docker daemon required: %q, %v", output, err)
 	}

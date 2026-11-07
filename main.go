@@ -14,8 +14,6 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
-const containerCommand = "docker"
-
 var version = "dev"
 
 const envDevcontainerVimType = "DEVCONTAINER_VIM_TYPE"
