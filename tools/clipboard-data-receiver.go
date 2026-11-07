@@ -234,71 +234,118 @@ func runCdrForNative(cdrPath string, pidFile string, portFile string) (int, int,
 }
 
 func runCdrForWsl(cdrPath string, pidFile string, portFile string) (int, int, error) {
-	// clipboard-data-receiver.exe を実行
-	commandString := fmt.Sprintf("%s --random-port --pid-file $(wslpath -w %s) --port-file $(wslpath -w %s)", cdrPath, pidFile, portFile)
-	fmt.Println(commandString)
-	cdrRunCommand := exec.Command("sh", "-c", commandString)
-	var stdout strings.Builder
-	cdrRunCommand.Stdout = &stdout
-	err := cdrRunCommand.Start()
+	windowsPidFile, err := wslCdrPath(pidFile)
+	if err != nil {
+		return 0, 0, err
+	}
+	windowsPortFile, err := wslCdrPath(portFile)
 	if err != nil {
 		return 0, 0, err
 	}
 
-	// clipboard-data-receiver の出力を待つ
-
-	// PID ファイル出力まで待つ
-	// 現状 Windows で PID ファイルとポートファイルの後始末ができないので、
-	// とりあえず 1 秒待てば生成されるでしょうという感じで待っている。
-	var pid int
-	deadline := time.Now().Add(cdrStartupTimeout)
-	for time.Now().Before(deadline) {
-		pidFileContentBytes, err := os.ReadFile(pidFile)
-		if err != nil {
-			time.Sleep(cdrPollInterval)
-			continue
-		}
-
-		pid, err = strconv.Atoi(string(pidFileContentBytes))
-		if err != nil {
-			return 0, 0, err
-		}
-		if pid > 0 {
-			break
-		}
-
-		time.Sleep(cdrPollInterval)
+	cmd := exec.Command(cdrPath, "--random-port", "--pid-file", windowsPidFile, "--port-file", windowsPortFile)
+	var output cdrOutputBuffer
+	cmd.Stdout = &output
+	cmd.Stderr = &output
+	if err := cmd.Start(); err != nil {
+		return 0, 0, err
 	}
-	if pid <= 0 {
-		return 0, 0, fmt.Errorf("%w: pid file was not populated: %s", errCdrStartupTimeout, pidFile)
-	}
+	done := make(chan struct{})
+	var waitErr error
+	go func() {
+		waitErr = cmd.Wait()
+		close(done)
+	}()
 
-	// ポートファイル出力まで待つ
-	var port int
-	deadline = time.Now().Add(cdrStartupTimeout)
-	for time.Now().Before(deadline) {
-		portFileContentBytes, err := os.ReadFile(portFile)
-		if err != nil {
-			// ポートファイル出力まで待つ
-			time.Sleep(cdrPollInterval)
-			continue
+	pid, err := waitForWslCdrFile(pidFile, done)
+	if err == nil {
+		var port int
+		port, err = waitForWslCdrFile(portFile, done)
+		if err == nil {
+			select {
+			case <-done:
+				if waitErr == nil {
+					return pid, port, nil
+				}
+				err = fmt.Errorf("clipboard-data-receiver exited during startup")
+			default:
+				return pid, port, nil
+			}
 		}
-
-		port, err = strconv.Atoi(string(portFileContentBytes))
-		if err != nil {
-			return pid, 0, err
-		}
-		if port > 0 {
-			break
-		}
-
-		time.Sleep(cdrPollInterval)
-	}
-	if port <= 0 {
-		return pid, 0, fmt.Errorf("%w: port file was not populated: %s", errCdrStartupTimeout, portFile)
 	}
 
-	return pid, port, nil
+	select {
+	case <-done:
+		err = errors.Join(err, waitErr)
+	default:
+		if killErr := cmd.Process.Kill(); killErr != nil && !errors.Is(killErr, os.ErrProcessDone) {
+			return pid, 0, errors.Join(err, fmt.Errorf("stop clipboard-data-receiver: %w", killErr))
+		}
+		<-done
+	}
+	return 0, 0, fmt.Errorf("clipboard-data-receiver startup: %w; output: %s", err, strings.TrimSpace(output.String()))
+}
+
+func wslCdrPath(path string) (string, error) {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	cmd := exec.Command("wslpath", "-w", abs)
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("convert CDR path %q: %w", path, err)
+	}
+	converted := strings.TrimRight(string(out), "\r\n")
+	if converted == "" {
+		return "", fmt.Errorf("wslpath returned no path for %q", path)
+	}
+	return converted, nil
+}
+
+func waitForWslCdrFile(path string, done <-chan struct{}) (int, error) {
+	timeout := time.NewTimer(cdrStartupTimeout)
+	defer timeout.Stop()
+	poll := time.NewTicker(cdrPollInterval)
+	defer poll.Stop()
+	read := func() (int, error) {
+		data, err := os.ReadFile(path)
+		if errors.Is(err, os.ErrNotExist) {
+			return 0, nil
+		}
+		if err != nil {
+			return 0, err
+		}
+		value := strings.TrimSpace(string(data))
+		if value == "" {
+			return 0, nil
+		}
+		return strconv.Atoi(value)
+	}
+	for {
+		value, err := read()
+		if err != nil {
+			return 0, fmt.Errorf("read CDR startup file %q: %w", path, err)
+		}
+		if value > 0 {
+			return value, nil
+		}
+		select {
+		case <-done:
+			// The child may have written the file just before exiting.
+			value, err := read()
+			if err != nil {
+				return 0, fmt.Errorf("read CDR startup file %q: %w", path, err)
+			}
+			if value > 0 {
+				return value, nil
+			}
+			return 0, fmt.Errorf("clipboard-data-receiver exited before %q was populated", path)
+		case <-timeout.C:
+			return 0, fmt.Errorf("%w: %q was not populated", errCdrStartupTimeout, path)
+		case <-poll.C:
+		}
+	}
 }
 
 func KillCdr(pid int) error {
