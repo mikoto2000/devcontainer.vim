@@ -45,7 +45,7 @@ func TestRenderVimRunScriptWrapsWithTmux(t *testing.T) {
 	if !strings.Contains(script, `'/tmux' -u set-option -g prefix None \; unbind-key C-b \; set-option -g status off \; set-option -g set-clipboard on \; new-session`) {
 		t.Fatalf("tmux launch command not found in script: %s", script)
 	}
-	if !strings.Contains(script, `'vim' --cmd "let g:devcontainer_vim = v:true" -S '/SendToTcp.vim' -S /vimrc $*`) {
+	if !strings.Contains(script, `'vim' --cmd "let g:devcontainer_vim = v:true" -S '/SendToTcp.vim' -S /vimrc "$@"`) {
 		t.Fatalf("vim launch command not found in script: %s", script)
 	}
 }
@@ -63,7 +63,7 @@ func TestRenderVimRunScriptWithoutTmux(t *testing.T) {
 	if strings.Contains(script, `new-session`) {
 		t.Fatalf("tmux launch command should not be found in script: %s", script)
 	}
-	if !strings.Contains(script, `'vim' --cmd "let g:devcontainer_vim = v:true" -S '/SendToTcp.vim' -S /vimrc $*`) {
+	if !strings.Contains(script, `'vim' --cmd "let g:devcontainer_vim = v:true" -S '/SendToTcp.vim' -S /vimrc "$@"`) {
 		t.Fatalf("vim launch command not found in script: %s", script)
 	}
 }
@@ -76,21 +76,31 @@ func TestVimRunScriptPreservesShellArguments(t *testing.T) {
 	special := ` & <tag> 'quote' $(printf expanded)`
 	vim := filepath.Join(dir, "vim"+special)
 	tmux := filepath.Join(dir, "tmux"+special)
+	staticVim := filepath.Join(dir, "vim-static", "AppRun")
+	if err := os.Mkdir(filepath.Dir(staticVim), 0700); err != nil {
+		t.Fatal(err)
+	}
 	clipboard := "SendToTcp" + special + ".vim"
-	for _, path := range []string{vim, tmux} {
+	for _, path := range []string{vim, tmux, staticVim} {
 		if err := os.WriteFile(path, []byte("#!/bin/sh\nprintf '%s\\n' \"$0\" \"$@\"\n"), 0700); err != nil {
 			t.Fatal(err)
 		}
 	}
+	if err := os.WriteFile(filepath.Join(dir, "glob-match.txt"), nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	extra := []string{"file with spaces", "", "*.txt"}
 	for _, tt := range []struct {
-		name    string
-		useTmux bool
+		name, template, editor string
+		useTmux                bool
 	}{
-		{name: "direct"},
-		{name: "tmux", useTmux: true},
+		{name: "system/direct", template: vimRunX8664System, editor: vim},
+		{name: "system/tmux", template: vimRunX8664System, editor: vim, useTmux: true},
+		{name: "static/direct", template: vimRunX8664Static, editor: staticVim},
+		{name: "static/tmux", template: vimRunX8664Static, editor: staticVim, useTmux: true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			script, err := renderVimRunScript(vimRunX8664System, vimRunScriptParams{
+			script, err := renderVimRunScript(tt.template, vimRunScriptParams{
 				VimFileName: vim,
 				SendToTcp:   clipboard,
 				UseTmux:     tt.useTmux,
@@ -99,12 +109,21 @@ func TestVimRunScriptPreservesShellArguments(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			out, err := exec.Command("/bin/sh", "-c", script).CombinedOutput()
+			if tt.template == vimRunX8664Static {
+				// Exercise argv forwarding independently of archive extraction.
+				script = strings.TrimSpace(script)
+				script = script[strings.LastIndexByte(script, '\n')+1:]
+			}
+			cmd := exec.Command("/bin/sh", append([]string{"-c", script, "VimRun.sh"}, extra...)...)
+			cmd.Dir = dir
+			cmd.Env = append(os.Environ(), "HOME="+dir)
+			out, err := cmd.CombinedOutput()
 			if err != nil {
 				t.Fatalf("launcher failed: %v\n%s", err, out)
 			}
 			got := strings.Split(strings.TrimSuffix(string(out), "\n"), "\n")
-			want := []string{vim, "--cmd", "let g:devcontainer_vim = v:true", "-S", "/" + clipboard, "-S", "/vimrc"}
+			want := []string{tt.editor, "--cmd", "let g:devcontainer_vim = v:true", "-S", "/" + clipboard, "-S", "/vimrc"}
+			want = append(want, extra...)
 			if tt.useTmux {
 				want = append([]string{
 					tmux, "-u", "set-option", "-g", "prefix", "None", ";",

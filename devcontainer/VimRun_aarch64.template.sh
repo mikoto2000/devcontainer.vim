@@ -8,7 +8,7 @@ chmod -R +w ~/vim-static
 rm -rf ~/vim-static
 mv $(ls -d ~/vim-*-aarch64) ~/vim-static
 {{- if .UseTmux }}
-{{ shellQuote .TmuxCommand }} -u set-option -g prefix None \; unbind-key C-b \; set-option -g status off \; set-option -g set-clipboard on \; new-session -s "devcontainer.vim" -A ~/vim-static/AppRun --cmd "let g:devcontainer_vim = v:true" -S {{ shellQuote (print "/" .SendToTcp) }} -S /vimrc $*
+{{ shellQuote .TmuxCommand }} -u set-option -g prefix None \; unbind-key C-b \; set-option -g status off \; set-option -g set-clipboard on \; new-session -s "devcontainer.vim" -A ~/vim-static/AppRun --cmd "let g:devcontainer_vim = v:true" -S {{ shellQuote (print "/" .SendToTcp) }} -S /vimrc "$@"
 {{- else }}
-~/vim-static/AppRun --cmd "let g:devcontainer_vim = v:true" -S {{ shellQuote (print "/" .SendToTcp) }} -S /vimrc $*
+~/vim-static/AppRun --cmd "let g:devcontainer_vim = v:true" -S {{ shellQuote (print "/" .SendToTcp) }} -S /vimrc "$@"
 {{- end }}
