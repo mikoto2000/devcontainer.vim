@@ -57,10 +57,11 @@ func StartForwardingContext(ctx context.Context, listenAddr, forwardAddr string)
 	if err != nil {
 		return err
 	}
-	return serveForwarding(ctx, listener, forwardAddr)
+	return ServeForwarding(ctx, listener, forwardAddr)
 }
 
-func serveForwarding(ctx context.Context, listener net.Listener, forwardAddr string) error {
+// ServeForwarding relays TCP connections and closes the listener when it returns.
+func ServeForwarding(ctx context.Context, listener net.Listener, forwardAddr string) error {
 	ctx, cancel := context.WithCancel(ctx)
 	var workers sync.WaitGroup
 	stop := context.AfterFunc(ctx, func() { listener.Close() })

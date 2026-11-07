@@ -12,7 +12,9 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -56,7 +58,7 @@ func TestGetForwardPortsInvalid(t *testing.T) {
 
 func TestSetupPortForwardingRejectsInvalidBeforeRunningCommands(t *testing.T) {
 	devcontainerPath, dir := installForwardTestCommands(t, `[8080,"localhost:80; echo injected"]`)
-	err := setupPortForwarding(t.Context(), "container-id", devcontainerPath, "workspace", "override.json")
+	_, err := setupPortForwarding(t.Context(), "container-id", devcontainerPath, "workspace", "override.json")
 	if err == nil || !strings.Contains(err.Error(), "forwardPorts[1]") {
 		t.Fatalf("setupPortForwarding error = %v, want validation error", err)
 	}
@@ -65,6 +67,64 @@ func TestSetupPortForwardingRejectsInvalidBeforeRunningCommands(t *testing.T) {
 			t.Errorf("unexpected forwarding command %s: %v", name, err)
 		}
 	}
+}
+
+func TestSetupPortForwardingReportsOccupiedPort(t *testing.T) {
+	for _, mode := range []string{"start", "restore"} {
+		t.Run(mode, func(t *testing.T) {
+			first, occupied := listenForForwardTest(t), listenForForwardTest(t)
+			_, firstPort, _ := net.SplitHostPort(first.Addr().String())
+			_, occupiedPort, _ := net.SplitHostPort(occupied.Addr().String())
+			first.Close()
+
+			path, dir := installForwardTestCommands(t, fmt.Sprintf("[%s,%s]", firstPort, occupiedPort))
+			t.Setenv("DEVCONTAINER_VIM_FORWARD_TEST_DEST", "127.0.0.1:1")
+			if mode == "restore" {
+				markers := fmt.Sprintf("localhost:%s_127.0.0.1:1\x00localhost:%s_127.0.0.1:1\x00", firstPort, occupiedPort)
+				if err := os.WriteFile(filepath.Join(dir, "markers"), []byte(markers), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			stop, err := setupPortForwarding(t.Context(), "container-id", path, "workspace", "override.json")
+			if stop != nil {
+				defer stop()
+			}
+			var listenErr *net.OpError
+			if !errors.As(err, &listenErr) || listenErr.Op != "listen" || !strings.Contains(err.Error(), ":"+occupiedPort) {
+				t.Fatalf("setup error = %v, want listen error for port %s", err, occupiedPort)
+			}
+			if _, err := os.Stat(filepath.Join(dir, "exec-"+occupiedPort)); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("container forwarder was started for occupied port %s: %v", occupiedPort, err)
+			}
+			reopened, err := net.Listen("tcp", net.JoinHostPort("0.0.0.0", firstPort))
+			if err != nil {
+				t.Fatalf("previously opened port %s was not released: %v", firstPort, err)
+			}
+			reopened.Close()
+			if mode == "start" {
+				assertForwardChildReaped(t, dir, firstPort)
+			} else if _, err := os.Stat(filepath.Join(dir, "exec-called")); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("restoration launched a container forwarder: %v", err)
+			}
+		})
+	}
+}
+
+func TestSetupPortForwardingReportsChildStartupExit(t *testing.T) {
+	listener := listenForForwardTest(t)
+	_, port, _ := net.SplitHostPort(listener.Addr().String())
+	listener.Close()
+	path, dir := installForwardTestCommands(t, "["+port+"]")
+	t.Setenv("DEVCONTAINER_VIM_FORWARD_TEST_FAIL_START", "1")
+	stop, err := setupPortForwarding(t.Context(), "container-id", path, "workspace", "override.json")
+	if stop != nil {
+		defer stop()
+	}
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 23 || !strings.Contains(err.Error(), "exited during startup") {
+		t.Fatalf("setup error = %v, want child startup exit code 23", err)
+	}
+	assertForwardChildReaped(t, dir, port)
 }
 
 func TestSetupPortForwardingAcceptsNumberAndHostPort(t *testing.T) {
@@ -105,9 +165,11 @@ func TestSetupPortForwardingAcceptsNumberAndHostPort(t *testing.T) {
 	t.Setenv("DEVCONTAINER_VIM_FORWARD_TEST_DEST", destination.Addr().String())
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
-	if err := setupPortForwarding(ctx, "container-id", devcontainerPath, "workspace", "override.json"); err != nil {
+	stop, err := setupPortForwarding(ctx, "container-id", devcontainerPath, "workspace", "override.json")
+	if err != nil {
 		t.Fatal(err)
 	}
+	defer stop()
 	for _, target := range []ForwardConfig{{Host: "localhost", Port: firstPort}, {Host: "api", Port: secondPort}} {
 		addr := net.JoinHostPort("127.0.0.1", target.Port)
 		deadline := time.Now().Add(3 * time.Second)
@@ -135,21 +197,55 @@ func TestSetupPortForwardingAcceptsNumberAndHostPort(t *testing.T) {
 		assertForwardTestArgs(t, dir, "marker-"+target.Port, []string{"exec", "-t", "container-id", "sh", "-c",
 			`dir="$HOME/.config/devcontainer.vim/pf"; mkdir -p "$dir" && touch "$dir/$1"`, "port-forwarder-marker", targetAddr + "_" + destination.Addr().String()})
 	}
+	// A child exit must release its relay and be reaped while the session is still active.
+	if err := os.WriteFile(filepath.Join(dir, "exit-"+firstPort), nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	waitForForwardListenerToClose(t, firstPort)
+	assertForwardChildReaped(t, dir, firstPort)
 	cancel()
-	for _, port := range []string{firstPort, secondPort} {
-		addr := net.JoinHostPort("127.0.0.1", port)
-		deadline := time.Now().Add(time.Second)
-		for {
-			conn, err := net.DialTimeout("tcp", addr, 100*time.Millisecond)
-			if err != nil {
-				break
-			}
-			conn.Close()
-			if time.Now().After(deadline) {
-				t.Fatalf("forwarding for %s continued after cancellation", addr)
-			}
-			time.Sleep(10 * time.Millisecond)
+	waitForForwardListenerToClose(t, secondPort)
+	stop()
+	assertForwardChildReaped(t, dir, secondPort)
+}
+
+func waitForForwardListenerToClose(t *testing.T, port string) {
+	t.Helper()
+	addr := net.JoinHostPort("127.0.0.1", port)
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		conn, err := net.DialTimeout("tcp", addr, 100*time.Millisecond)
+		if err != nil {
+			return
 		}
+		conn.Close()
+		if time.Now().After(deadline) {
+			t.Fatalf("forwarding for %s continued after shutdown", addr)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+func assertForwardChildReaped(t *testing.T, dir, port string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		return
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "pid-"+port))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pid, err := strconv.Atoi(string(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer process.Release()
+	if err := process.Signal(syscall.Signal(0)); !errors.Is(err, os.ErrProcessDone) && !errors.Is(err, syscall.ESRCH) {
+		t.Fatalf("forwarder PID %d was not reaped: signal check = %v", pid, err)
 	}
 }
 
@@ -222,19 +318,41 @@ func runForwardTestCommand(dir string, argv []string) int {
 		if err != nil || !writeForwardTestArgs(dir, "exec-"+port, args) {
 			return 99
 		}
+		if err := os.WriteFile(filepath.Join(dir, "pid-"+port), []byte(strconv.Itoa(os.Getpid())), 0600); err != nil {
+			return 99
+		}
+		if os.Getenv("DEVCONTAINER_VIM_FORWARD_TEST_FAIL_START") != "" {
+			fmt.Fprintln(os.Stderr, "fixture forwarder startup failed")
+			return 23
+		}
 		_, dest, err := net.SplitHostPort(os.Getenv("DEVCONTAINER_VIM_FORWARD_TEST_DEST"))
 		if err != nil {
 			return 99
 		}
 		fmt.Println("45123; echo injected")
 		fmt.Println(dest)
-		return 0
+		deadline := time.Now().Add(12 * time.Second)
+		for time.Now().Before(deadline) {
+			if _, err := os.Stat(filepath.Join(dir, "exit-"+port)); err == nil {
+				return 24
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+		return 99
 	}
 	if err := os.WriteFile(filepath.Join(dir, "docker-called"), nil, 0600); err != nil {
 		return 99
 	}
 	if len(args) >= 4 && args[3] == "hostname" {
 		fmt.Println("127.0.0.1")
+	} else if len(args) == 6 {
+		if markers, err := os.ReadFile(filepath.Join(dir, "markers")); err == nil {
+			if strings.HasPrefix(args[5], "grep ") {
+				fmt.Println("/proc/123/comm")
+			} else if strings.HasPrefix(args[5], "ls ") {
+				os.Stdout.Write(markers)
+			}
+		}
 	} else if len(args) == 8 {
 		target, _, _ := strings.Cut(args[7], "_")
 		_, port, err := net.SplitHostPort(target)

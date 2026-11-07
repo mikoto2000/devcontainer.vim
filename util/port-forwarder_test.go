@@ -41,7 +41,7 @@ func TestForwardingStopsOnCancellation(t *testing.T) {
 			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 			done := make(chan error, 1)
-			go func() { done <- serveForwarding(ctx, listener, backend.Addr().String()) }()
+			go func() { done <- ServeForwarding(ctx, listener, backend.Addr().String()) }()
 
 			if mode == "active" {
 				client, err := net.DialTimeout("tcp", listener.Addr().String(), time.Second)
@@ -89,7 +89,7 @@ func TestForwardingRelaysHalfCloseInBothDirections(t *testing.T) {
 			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 			done := make(chan error, 1)
-			go func() { done <- serveForwarding(ctx, listener, backend.Addr().String()) }()
+			go func() { done <- ServeForwarding(ctx, listener, backend.Addr().String()) }()
 
 			conn, err := net.DialTimeout("tcp", listener.Addr().String(), time.Second)
 			if err != nil {
@@ -145,8 +145,8 @@ func TestForwardingStopsOnPermanentAcceptError(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	defer cancel()
-	if err := serveForwarding(ctx, listener, "unused"); !errors.Is(err, net.ErrClosed) {
-		t.Fatalf("serveForwarding returned %v, want closed listener error", err)
+	if err := ServeForwarding(ctx, listener, "unused"); !errors.Is(err, net.ErrClosed) {
+		t.Fatalf("ServeForwarding returned %v, want closed listener error", err)
 	}
 }
 
@@ -160,8 +160,8 @@ func TestForwardingRetriesTemporaryAcceptError(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	defer cancel()
-	if err := serveForwarding(ctx, listener, "unused"); !errors.Is(err, net.ErrClosed) || len(listener.errors) != 0 {
-		t.Fatalf("serveForwarding returned %v with %d errors remaining, want a retry followed by the permanent error", err, len(listener.errors))
+	if err := ServeForwarding(ctx, listener, "unused"); !errors.Is(err, net.ErrClosed) || len(listener.errors) != 0 {
+		t.Fatalf("ServeForwarding returned %v with %d errors remaining, want a retry followed by the permanent error", err, len(listener.errors))
 	}
 }
 
