@@ -136,8 +136,7 @@ func TestStart(t *testing.T) {
 }
 
 func TestStartWithDockerCompose(t *testing.T) {
-	// TODO: chdir しなくても成功するように修正
-	os.Chdir("../test/project/TestStartWithDockerCompose")
+	workspace := "../test/project/TestStartWithDockerCompose"
 	_, binDir, _, configDirForDevcontainer := createTempAppDirs(t)
 
 	// 必要なファイルのダウンロード
@@ -146,7 +145,7 @@ func TestStartWithDockerCompose(t *testing.T) {
 	cdrPath := requireTestBinary(t, "clipboard-data-receiver")
 
 	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
-	configFilePath, err := CreateConfigFile(devcontainerPath, ".", configDirForDevcontainer)
+	configFilePath, err := CreateConfigFile(devcontainerPath, workspace, configDirForDevcontainer)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			t.Skipf("Configuration file not found: %v", err)
@@ -157,12 +156,12 @@ func TestStartWithDockerCompose(t *testing.T) {
 		}
 	}
 
-	args := []string{"."}
+	args := []string{workspace}
 
 	// devcontainer を用いたコンテナ立ち上げ
 	noCdr := false
 	noPf := false
-	err = Start(TestDevcontainerStartUseService{}, args, devcontainerPath, noCdr, noPf, false, cdrPath, binDir, nvim, "", configFilePath, "../../resource/TestStartWithDockerCompose/vimrc")
+	err = Start(TestDevcontainerStartUseService{}, args, devcontainerPath, noCdr, noPf, false, cdrPath, binDir, nvim, "", configFilePath, "../test/resource/TestStartWithDockerCompose/vimrc")
 	if err != nil {
 		if errors.Is(err, os.ErrPermission) {
 			t.Skipf("Permission error: %v", err)
@@ -176,12 +175,12 @@ func TestStartWithDockerCompose(t *testing.T) {
 	}
 
 	// 後片付け
-	defer Down([]string{"."}, devcontainerPath, configDirForDevcontainer)
+	defer Down(args, devcontainerPath, configDirForDevcontainer)
 
 	// json マージ後の設定でコンテナが起動するか？
 	// 起動したコンテナに所望のファイルが転送されているか？
 	//     ストレージのマウントがされるか
-	vimfilesOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", ".", "sh", "-c", "ls -d ~/.vim")
+	vimfilesOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", workspace, "sh", "-c", "ls -d ~/.vim")
 	if err != nil {
 		t.Fatalf("error: %s", err)
 	}
@@ -191,7 +190,7 @@ func TestStartWithDockerCompose(t *testing.T) {
 	}
 
 	//     環境変数が設定されるか
-	termOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", ".", "sh", "-c", "\"env\"")
+	termOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", workspace, "sh", "-c", "\"env\"")
 	if err != nil {
 		t.Fatalf("error: %s", err)
 	}
@@ -200,7 +199,7 @@ func TestStartWithDockerCompose(t *testing.T) {
 		t.Fatalf("error: want match %s, but got %s", termWantMatch, termOutput)
 	}
 	//     /vim
-	vimOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", ".", "sh", "-c", "ls /vim")
+	vimOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", workspace, "sh", "-c", "ls /vim")
 	if err != nil {
 		t.Fatalf("error: %s", err)
 	}
@@ -209,7 +208,7 @@ func TestStartWithDockerCompose(t *testing.T) {
 		t.Fatalf("error: want match %s, but got %s", vimWant, vimOutput)
 	}
 	//     /vimrc
-	vimrcOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", ".", "sh", "-c", "ls /vimrc")
+	vimrcOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", workspace, "sh", "-c", "ls /vimrc")
 	if err != nil {
 		t.Fatalf("error: %s", err)
 	}
@@ -218,7 +217,7 @@ func TestStartWithDockerCompose(t *testing.T) {
 		t.Fatalf("error: want match %s, but got %s", vimrcWant, vimrcOutput)
 	}
 	//     /port-forwarder
-	portForwarderOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", ".", "sh", "-c", "ls /port-forwarder")
+	portForwarderOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", workspace, "sh", "-c", "ls /port-forwarder")
 	if err != nil {
 		t.Fatalf("error: %s", err)
 	}
