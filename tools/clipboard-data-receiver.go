@@ -18,7 +18,7 @@ import (
 )
 
 const CdrFileName = "clipboard-data-receiver"
-const CdrFileNameForMac = "clipboard-data-receiver"
+const CdrFileNameForMac = CdrFileName
 const cdrFileNameForWindows = "clipboard-data-receiver.exe"
 
 var errCdrStartupTimeout = errors.New("clipboard-data-receiver startup timed out")
@@ -107,17 +107,15 @@ var CDR = func(services InstallerUseServices) Tool {
 
 	// WSL 上で実行されているかを判定し、
 	// WSL 上で実行されているなら `.exe` をダウンロード
-	var cdrFileName string
+	cdrFileName := CdrFileName
 	var tmpl *template.Template
 	var err error
 	if util.IsWsl() {
 		cdrFileName = cdrFileNameForWindows
 		tmpl, err = template.New("clipboard-data-receiver-windows-download-url").Parse(downloadURLCdrPatternForWindows)
 	} else if runtime.GOOS == "darwin" {
-		cdrFileName = CdrFileNameForMac
 		tmpl, err = template.New("clipboard-data-receiver-macos-download-url").Parse(downloadURLCdrPatternForMac)
 	} else {
-		cdrFileName = CdrFileName
 		tmpl, err = template.New("clipboard-data-receiver-linux-download-url").Parse(downloadURLCdrPattern)
 	}
 	if err != nil {
