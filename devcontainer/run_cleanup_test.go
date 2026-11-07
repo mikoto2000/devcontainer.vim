@@ -15,6 +15,7 @@ import (
 )
 
 const runCleanupTestDirEnv = "DEVCONTAINER_VIM_RUN_CLEANUP_TEST_DIR"
+const runCleanupDockerDiagnostic = "fixture Docker daemon rejected the image"
 
 func TestRunCleansUpAfterSetupFailure(t *testing.T) {
 	for _, tt := range []struct {
@@ -23,7 +24,7 @@ func TestRunCleansUpAfterSetupFailure(t *testing.T) {
 		exitCode int
 		startCDR bool
 	}{
-		{name: "run", commands: []string{"run"}},
+		{name: "run", commands: []string{"run"}, exitCode: 13},
 		{name: "uname", commands: []string{"run", "uname", "stop"}, exitCode: 17},
 		{name: "cp", commands: []string{"run", "uname", "which", "cp", "stop"}, exitCode: 23, startCDR: true},
 	} {
@@ -57,16 +58,15 @@ func TestRunCleansUpAfterSetupFailure(t *testing.T) {
 			}
 
 			err = Run([]string{"test-image"}, !tt.startCDR, true, true, cdr, dir, false, "", dir, "", nil)
-			if tt.exitCode == 0 {
+			if tt.name == "run" {
 				var startErr *ContainerStartError
-				if !errors.As(err, &startErr) {
-					t.Errorf("Run error = %v, want ContainerStartError", err)
+				if !errors.As(err, &startErr) || !strings.Contains(err.Error(), runCleanupDockerDiagnostic) {
+					t.Errorf("Run error = %v, want ContainerStartError with Docker stderr", err)
 				}
-			} else {
-				var exitErr *exec.ExitError
-				if !errors.As(err, &exitErr) || exitErr.ExitCode() != tt.exitCode {
-					t.Errorf("Run error = %v, want setup exit code %d", err, tt.exitCode)
-				}
+			}
+			var exitErr *exec.ExitError
+			if !errors.As(err, &exitErr) || exitErr.ExitCode() != tt.exitCode {
+				t.Errorf("Run error = %v, want setup exit code %d", err, tt.exitCode)
 			}
 
 			commands, err := os.ReadFile(filepath.Join(dir, "commands"))
@@ -162,12 +162,14 @@ func runCleanupTestDocker(dir string, args []string) int {
 	switch command {
 	case "run":
 		if fail == "run" {
+			fmt.Fprintln(os.Stderr, runCleanupDockerDiagnostic)
 			return 13
 		}
 		if err := os.WriteFile(container, nil, 0600); err != nil {
 			return 99
 		}
 		fmt.Println("test-container")
+		fmt.Fprintln(os.Stderr, "fixture Docker warning")
 	case "uname":
 		if fail == "uname" {
 			return 17
