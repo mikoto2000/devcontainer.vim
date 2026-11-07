@@ -329,7 +329,7 @@ endif
 ```
 
 
-### run Customize the arguments of subcommands
+### Customize the default arguments for `run`
 
 `devcontainer.vim runargs -o` opens the argument settings file that is implicitly set to the run subcommand.
 
