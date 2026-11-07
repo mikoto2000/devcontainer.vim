@@ -1,7 +1,9 @@
 package tools
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -145,6 +147,48 @@ func TestUpdateRejectsInvalidExecutable(t *testing.T) {
 		t.Fatalf("updateExecutable error = %v, want invalid executable error", err)
 	}
 	assertExecutableRuns(t, executablePath)
+}
+
+type selfUpdateTestServices struct {
+	TestInstallerUseServices
+	targetPath string
+}
+
+func (s selfUpdateTestServices) Download(downloadURL, destPath string) error {
+	stageDir := filepath.Dir(destPath)
+	if filepath.Dir(stageDir) != filepath.Dir(s.targetPath) || filepath.Base(destPath) != filepath.Base(s.targetPath) {
+		return fmt.Errorf("update staged at %q, want a staging file for %q", destPath, s.targetPath)
+	}
+	return s.TestInstallerUseServices.Download(downloadURL, destPath)
+}
+
+func TestSelfUpdateUsesTemporaryExecutable(t *testing.T) {
+	target := copyTestExecutable(t)
+	binary, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	original, err := os.ReadFile(binary)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The stub writes an empty file, as in the original self-update test.
+	services := selfUpdateTestServices{targetPath: target}
+	if err := selfUpdate(services, target); err == nil || !strings.Contains(err.Error(), "read update executable build info") {
+		t.Errorf("selfUpdate error = %v, want empty staged executable to be rejected", err)
+	}
+
+	for _, path := range []string{binary, target} {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(data, original) {
+			t.Errorf("self-update changed %q", path)
+		}
+		assertExecutableRuns(t, path)
+	}
 }
 
 func TestReplaceExecutableWithBackupOnFailure(t *testing.T) {
