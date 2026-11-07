@@ -1,8 +1,10 @@
 package util
 
 import (
+	"crypto/md5"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -214,16 +216,20 @@ func TestCreateConfigFileForDevcontainer(t *testing.T) {
 }
 
 func TestGetConfigDir(t *testing.T) {
-	configDir := "test/resource/TestGetConfigDir/config"
-	workspaceFolder := "test/resource/TestGetConfigDir"
-	got, err := GetConfigDir(configDir, workspaceFolder)
+	t.Chdir(t.TempDir())
+	configDir := filepath.Join("cache", "config")
+	workspaceFolder := filepath.Join("project", "workspace with spaces")
+	workspaceAbs, err := filepath.Abs(workspaceFolder)
 	if err != nil {
-		t.Fatalf("error: %s", err)
+		t.Fatal(err)
 	}
-
-	want := "test/resource/TestGetConfigDir/config/c6f98b7a913a4e3c094b7ba70d2e0f00"
-	if want != got {
-		t.Fatalf("error: want %s, but got %s", want, got)
+	hash := md5.Sum([]byte(workspaceAbs))
+	want := filepath.Join(configDir, fmt.Sprintf("%x", hash))
+	for _, input := range []string{workspaceFolder, workspaceAbs} {
+		got, err := GetConfigDir(configDir, input)
+		if err != nil || got != want {
+			t.Errorf("GetConfigDir(%q, %q) = %q, %v, want %q", configDir, input, got, err, want)
+		}
 	}
 }
 
