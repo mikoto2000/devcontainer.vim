@@ -185,7 +185,7 @@ func CreateConfigFileForDevcontainer(configDirForDevcontainer string, workspaceF
 		return "", err
 	}
 	generateConfigFilePath := filepath.Join(generateConfigDir, "devcontainer.json")
-	err = os.MkdirAll(generateConfigDir, 0777)
+	err = os.MkdirAll(generateConfigDir, userDirectoryMode)
 	if err != nil {
 		return "", err
 	}
