@@ -39,6 +39,29 @@ func TestVimDownloadURL(t *testing.T) {
 	}
 }
 
+func TestNeovimDownloadURLUsesInjectedReleaseLookup(t *testing.T) {
+	for _, tt := range []struct {
+		arch, repository, url string
+	}{
+		{"amd64", "neovim/neovim", "https://github.com/neovim/neovim/releases/download/v0.11.0/nvim-linux-x86_64.appimage"},
+		{"aarch64", "mikoto2000/vim-static", "https://github.com/mikoto2000/vim-static/releases/download/v9.1.1353/vim-v9.1.1353-aarch64.tar.gz"},
+	} {
+		t.Run(tt.arch, func(t *testing.T) {
+			service := &vimReleaseTestService{}
+			got, err := NVIM(service).CalculateDownloadURL(tt.arch)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !slices.Equal(service.lookups, []string{tt.repository}) {
+				t.Errorf("release lookups = %v, want [%s]", service.lookups, tt.repository)
+			}
+			if got != tt.url {
+				t.Errorf("download URL = %q, want %q", got, tt.url)
+			}
+		})
+	}
+}
+
 type vimReleaseTestService struct {
 	TestInstallerUseServices
 	lookups []string
@@ -52,6 +75,8 @@ func (s *vimReleaseTestService) GetLatestReleaseFromGitHub(owner, repository str
 		return "v9.1.1353", nil
 	case "vim/vim-appimage":
 		return "v9.1.9999", nil
+	case "neovim/neovim":
+		return "v0.11.0", nil
 	default:
 		return "", fmt.Errorf("unexpected release lookup for %s", repo)
 	}
