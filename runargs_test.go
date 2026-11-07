@@ -111,9 +111,9 @@ esac
 			if err := os.WriteFile(filepath.Join(dir, "docker"), []byte(docker), 0700); err != nil {
 				t.Fatal(err)
 			}
-			cmd := exec.Command(self, "-test.run=^TestRunargsCLIProcess$", "--", "--nocdr", "--nopf", "--notmux", "run", "test-image")
+			cmd := exec.Command(self, "-test.run=^TestCLIProcess$", "--", "--nocdr", "--nopf", "--notmux", "run", "test-image")
 			cmd.Dir = workspace
-			cmd.Env = append(os.Environ(), "DEVCONTAINER_VIM_TEST_RUNARGS_CLI=1")
+			cmd.Env = append(os.Environ(), "DEVCONTAINER_VIM_TEST_CLI=1")
 			out, err := cmd.CombinedOutput()
 			if _, statErr := os.Stat(marker); !errors.Is(statErr, os.ErrNotExist) {
 				t.Errorf("runargs executed a host command: %v", statErr)
@@ -153,16 +153,4 @@ esac
 			}
 		})
 	}
-}
-
-func TestRunargsCLIProcess(t *testing.T) {
-	if os.Getenv("DEVCONTAINER_VIM_TEST_RUNARGS_CLI") != "1" {
-		return
-	}
-	delimiter := slices.Index(os.Args, "--")
-	if delimiter < 0 {
-		t.Fatal("missing CLI argument separator")
-	}
-	os.Args = append([]string{os.Args[0]}, os.Args[delimiter+1:]...)
-	main()
 }
