@@ -183,6 +183,26 @@ func TestToolInstallUsesInjectedDownload(t *testing.T) {
 	}
 }
 
+func TestInstallContainerEditorSeparatesCommandFromCacheName(t *testing.T) {
+	dir := t.TempDir()
+	cachedPath := filepath.Join(dir, "custom_cached_editor_aarch64")
+	if err := os.WriteFile(cachedPath, nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	original := VIM
+	VIM = func(services InstallerUseServices) Tool {
+		tool := original(services)
+		tool.FileName = "custom_cached_editor"
+		return tool
+	}
+	t.Cleanup(func() { VIM = original })
+
+	path, commandName, err := InstallContainerEditor(dir, true, "arm64")
+	if path != cachedPath || commandName != "vim" || err != nil {
+		t.Fatalf("InstallContainerEditor() = %q, %q, %v, want %q, vim, nil", path, commandName, err, cachedPath)
+	}
+}
+
 func TestToolInstallRejectsUnknownArchitecture(t *testing.T) {
 	dir := t.TempDir()
 	tool := Tool{
