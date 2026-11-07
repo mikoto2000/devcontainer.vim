@@ -14,42 +14,17 @@ LD_FLAGS := "-s -w -X main.version=${VERSION}"
 
 DEST := ./build
 
-WATCH_SRC := ./main.go \
-						 ./devcontainer/DevcontainerJson.go \
-						 ./devcontainer/devcontainer.go \
-						 ./devcontainer/run.go \
-						 ./devcontainer/start.go \
-						 ./devcontainer/dockerRunVimArgs.go \
-						 ./devcontainer/devcontainerStartVimArgs.go \
-						 ./devcontainer/readConfigurationResult.go \
-						 ./devcontainer/upCommandResult.go \
-						 ./devcontainer/VimRun_aarch64.template.sh \
-						 ./devcontainer/VimRun_system.template.sh \
-						 ./devcontainer/VimRun_x86_64_AppImage.template.sh \
-						 ./devcontainer/VimRun_x86_64_static.template.sh \
-						 ./docker/docker.go \
-						 ./docker/dockerPsResult.go \
-						 ./dockercompose/dockerCompose.go \
-						 ./dockercompose/dockerComposePsResult.go \
-						 ./tools/tools.go \
-						 ./tools/vim.go \
-						 ./tools/nvim.go \
-						 ./tools/devcontainer.go \
-						 ./tools/devcontainer_darwin.go \
-						 ./tools/devcontainer_linux.go \
-						 ./tools/devcontainer_windows.go \
-						 ./tools/clipboard-data-receiver.go \
-						 ./tools/port-forwarder.go \
-						 ./util/port-forwarder.go \
-						 ./util/util.go
-
 ### 開発関連
 # 開発環境の都合で、個別にビルドできるようにしている
 # (Linux コンテナ上でコーディングを行い、 Windows 上で実行することがあるため)
+.PHONY: all build force-build
 all: build
 build: build/devcontainer.vim
-build/devcontainer.vim: ${WATCH_SRC}
+# Let Go track the full set of build inputs and reuse cached packages.
+build/devcontainer.vim: force-build
 	go build -ldflags=${LD_FLAGS} -trimpath -o ./build/${APP_NAME}
+
+force-build:
 
 build-all:
 	@mkdir -p $(DEST)
