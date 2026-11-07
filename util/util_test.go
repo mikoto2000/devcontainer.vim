@@ -115,11 +115,19 @@ func TestAddExecutePermission(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Windows does not apply POSIX execute bits")
 	}
-	for _, name := range []string{"file", "directory"} {
-		t.Run(name, func(t *testing.T) {
-			target := filepath.Join(t.TempDir(), name)
+	for _, tc := range []struct {
+		name string
+		mode os.FileMode
+		want os.FileMode
+	}{
+		{"file", 0640, 0740},
+		{"directory", 0640, 0740},
+		{"file with group execute", 0650, 0750},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			target := filepath.Join(t.TempDir(), "target")
 			var err error
-			if name == "directory" {
+			if tc.name == "directory" {
 				err = os.Mkdir(target, 0700)
 			} else {
 				err = os.WriteFile(target, nil, 0600)
@@ -127,7 +135,7 @@ func TestAddExecutePermission(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := os.Chmod(target, 0640); err != nil {
+			if err := os.Chmod(target, tc.mode); err != nil {
 				t.Fatal(err)
 			}
 			if err := AddExecutePermission(target); err != nil {
@@ -137,8 +145,8 @@ func TestAddExecutePermission(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got := info.Mode().Perm(); got != 0751 {
-				t.Fatalf("%s permissions = %04o, want 0751", name, got)
+			if got := info.Mode().Perm(); got != tc.want {
+				t.Fatalf("permissions = %04o, want %04o", got, tc.want)
 			}
 		})
 	}

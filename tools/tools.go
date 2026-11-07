@@ -274,6 +274,13 @@ func updateExecutable(downloadFunc func(string, string) error, downloadURL, exec
 			!slices.Contains(info.Settings, debug.BuildSetting{Key: "GOARCH", Value: runtime.GOARCH}) {
 			return fmt.Errorf("update is not a devcontainer.vim executable for %s/%s", runtime.GOOS, runtime.GOARCH)
 		}
+		current, err := os.Stat(executablePath)
+		if err != nil {
+			return fmt.Errorf("read installed executable permissions: %w", err)
+		}
+		if err := os.Chmod(stagedPath, current.Mode().Perm()); err != nil {
+			return fmt.Errorf("preserve executable permissions: %w", err)
+		}
 		return nil
 	}, replaceExecutable)
 }
