@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"testing"
 
 	"os"
@@ -118,29 +119,35 @@ func TestCreateCacheDirectorySuccess(t *testing.T) {
 }
 
 func TestAddExecutePermission(t *testing.T) {
-	target := "TestAddExecutePermission"
-	err := os.Mkdir(target, 0644)
-	if err != nil {
-		t.Fatalf("error: %s", err)
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows does not apply POSIX execute bits")
 	}
-	defer func() {
-		os.RemoveAll(target)
-	}()
-
-	err = AddExecutePermission(target)
-	if err != nil {
-		t.Fatalf("error: %s", err)
-	}
-
-	fileInfo, err := os.Stat(target)
-	if err != nil {
-		t.Fatalf("error: %s", err)
-	}
-
-	want := "drwxr-xr-x"
-	got := fileInfo.Mode().String()
-	if got != want {
-		t.Fatalf("error: want %s but got %s", got, want)
+	for _, name := range []string{"file", "directory"} {
+		t.Run(name, func(t *testing.T) {
+			target := filepath.Join(t.TempDir(), name)
+			var err error
+			if name == "directory" {
+				err = os.Mkdir(target, 0700)
+			} else {
+				err = os.WriteFile(target, nil, 0600)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Chmod(target, 0640); err != nil {
+				t.Fatal(err)
+			}
+			if err := AddExecutePermission(target); err != nil {
+				t.Fatal(err)
+			}
+			info, err := os.Stat(target)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := info.Mode().Perm(); got != 0751 {
+				t.Fatalf("%s permissions = %04o, want 0751", name, got)
+			}
+		})
 	}
 }
 
