@@ -291,14 +291,9 @@ The images that can be specified in `features` can be checked in
 
 #### Creating a vimrc that is only loaded for Vim on devcontainer.vim
 
-`devcontainer.vim vimrc -o` opens a script that will be additionally loaded into Vim running in the container.
+`devcontainer.vim vimrc -o` opens the additional vimrc that devcontainer.vim loads when it starts Vim or Neovim in a container. Use it for settings specific to those editor sessions.
 
-Updating this script allows you to apply settings only to Vim on the container.
-
-Send the contents of the `"` register to the host in normal mode with `"*yy`, and in visual mode with `"*y`.
-Adjust as desired.
-
-The default is as follows:
+The default mappings send the yanked text to the host clipboard. Use `"*yy` in Normal mode or `"*y` in Visual mode, and edit the mappings if you want different keys.
 
 ```vimrc
 if !has("nvim")
