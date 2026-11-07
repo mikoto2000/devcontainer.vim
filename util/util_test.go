@@ -34,16 +34,6 @@ func TestIsExistsCommandNg(t *testing.T) {
 	}
 }
 
-func CreateTestCreateDirectorySuccessPath() (string, error) {
-	tempDir := os.TempDir()
-	testDirectory, err := os.MkdirTemp(tempDir, "devcontainer.vim-testdir")
-	return testDirectory, err
-}
-
-func CreateTestCreateDirectoryFailedPath() (string, error) {
-	return "/usr/bin", nil
-}
-
 func TestIsExistsTrue(t *testing.T) {
 	want := true
 
