@@ -21,10 +21,11 @@ import (
 const stopTestDirEnv = "DEVCONTAINER_VIM_STOP_TEST_DIR"
 
 type stopTestFixture struct {
-	Workspace string
-	Config    Configuration
-	Unlabeled bool
-	Fail      bool
+	Workspace      string
+	Config         Configuration
+	Unlabeled      bool
+	Fail           bool
+	DockerPSOutput string
 }
 
 type stopTestCall struct {
@@ -122,6 +123,65 @@ func TestStopAndDownWaitForDocker(t *testing.T) {
 					assertStopTestCall(t, filepath.Join(dir, "finished"), want)
 				})
 			}
+		}
+	}
+}
+
+func TestStopAndDownSelectSingleDockerContainer(t *testing.T) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, action := range []struct {
+		name string
+		run  func([]string, string, string) error
+		args []string
+	}{
+		{name: "stop", run: Stop, args: []string{"stop", "first-id"}},
+		{name: "down", run: Down, args: []string{"rm", "-f", "first-id"}},
+	} {
+		for _, tc := range []struct {
+			name, output, wantErr string
+		}{
+			{name: "single", output: "\r\n{\"ID\":\"first-id\"}\r\n\r\n"},
+			{
+				name:    "ambiguous",
+				output:  "{\"ID\":\"first-id\"}\n{\"ID\":\"second-id\"}\n",
+				wantErr: `multiple containers match (IDs "first-id" and "second-id")`,
+			},
+		} {
+			t.Run(action.name+"/"+tc.name, func(t *testing.T) {
+				dir := t.TempDir()
+				workspace := filepath.Join(dir, "workspace")
+				cache := filepath.Join(dir, "cache")
+				configDir, err := util.GetConfigDir(cache, workspace)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := os.MkdirAll(configDir, 0700); err != nil {
+					t.Fatal(err)
+				}
+				devcontainerPath := installStopTestCommands(t, dir, stopTestFixture{
+					Workspace: workspace, DockerPSOutput: tc.output,
+				})
+				err = action.run([]string{"--nocdr", workspace}, devcontainerPath, cache)
+				if tc.wantErr == "" {
+					if err != nil {
+						t.Fatal(err)
+					}
+					assertStopTestCall(t, filepath.Join(dir, "finished"), stopTestCall{Dir: cwd, Args: action.args})
+					return
+				}
+				if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+					t.Errorf("%s error = %v, want %q", action.name, err, tc.wantErr)
+				}
+				if _, err := os.Stat(filepath.Join(dir, "mutation-attempt")); !errors.Is(err, os.ErrNotExist) {
+					t.Errorf("Docker stop or rm was attempted: stat error = %v", err)
+				}
+				if _, err := os.Stat(configDir); err != nil {
+					t.Errorf("cache should be retained: %v", err)
+				}
+			})
 		}
 	}
 }
@@ -281,14 +341,25 @@ func runStopTestCommand(dir string, argv []string) int {
 	switch args[0] {
 	case "ps":
 		if !slices.Contains(args, "--all") {
-			fmt.Println(`{"ID":"container-id"}`)
+			if fixture.DockerPSOutput != "" {
+				if !slices.Equal(args, []string{"ps", "--format", "json", "--filter", "label=devcontainer.local_folder=" + fixture.Workspace}) {
+					return 99
+				}
+				fmt.Print(fixture.DockerPSOutput)
+			} else {
+				fmt.Println(`{"ID":"container-id"}`)
+			}
 		} else if !fixture.Unlabeled {
 			encoder := json.NewEncoder(os.Stdout)
 			encoder.Encode(map[string]string{"workspace": fixture.Workspace, "config": fixture.Config.ConfigFilePath.FsPath + ".other", "project": "other-project"})
 			encoder.Encode(map[string]string{"workspace": fixture.Workspace, "config": fixture.Config.ConfigFilePath.FsPath, "project": "workspace_devcontainer"})
 		}
 		return 0
-	case "stop", "rm", "compose":
+	case "stop", "rm":
+		if err := os.WriteFile(filepath.Join(dir, "mutation-attempt"), nil, 0600); err != nil {
+			return 99
+		}
+	case "compose":
 	default:
 		return 99
 	}

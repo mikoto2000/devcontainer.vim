@@ -23,25 +23,16 @@ func GetContainerIDFromWorkspaceFolder(workspaceFolder string) (string, error) {
 
 	// `devcontainer.local_folder=${workspaceFolder}` が含まれている行を探す
 
-	workspaceFilderAbs, err := filepath.Abs(workspaceFolder)
+	workspaceFolderAbs, err := filepath.Abs(workspaceFolder)
 	if err != nil {
 		return "", err
 	}
 
-	psResult, err := Ps("label=devcontainer.local_folder=" + workspaceFilderAbs)
+	psResult, err := Ps("label=devcontainer.local_folder=" + workspaceFolderAbs)
 	if err != nil {
 		return "", err
 	}
-	if psResult == "" {
-		return "", &ContainerNotFoundError{msg: "container not found."}
-	}
-
-	id, err := GetID(psResult)
-	if err != nil {
-		return "", err
-	}
-
-	return id, nil
+	return GetID(psResult)
 }
 
 // `docker exec` コマンドを実行する。
