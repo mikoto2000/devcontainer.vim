@@ -16,6 +16,7 @@ import (
 
 const runCleanupTestDirEnv = "DEVCONTAINER_VIM_RUN_CLEANUP_TEST_DIR"
 const runCleanupDockerDiagnostic = "fixture Docker daemon rejected the image"
+const runCleanupProbeDiagnostic = "fixture Docker daemon could not exec the tool probe"
 
 func TestRunCleansUpAfterSetupFailure(t *testing.T) {
 	for _, tt := range []struct {
@@ -23,10 +24,13 @@ func TestRunCleansUpAfterSetupFailure(t *testing.T) {
 		commands []string
 		exitCode int
 		startCDR bool
+		withTmux bool
 	}{
 		{name: "run", commands: []string{"run"}, exitCode: 13},
 		{name: "uname", commands: []string{"run", "uname", "stop"}, exitCode: 17},
-		{name: "cp", commands: []string{"run", "uname", "which", "cp", "stop"}, exitCode: 23, startCDR: true},
+		{name: "probe-vim", commands: []string{"run", "uname", "probe-vim", "stop"}, exitCode: 1},
+		{name: "probe-tmux", commands: []string{"run", "uname", "probe-vim", "probe-tmux", "stop"}, exitCode: 1, withTmux: true},
+		{name: "cp", commands: []string{"run", "uname", "probe-vim", "cp", "stop"}, exitCode: 23, startCDR: true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			dir := t.TempDir()
@@ -48,6 +52,12 @@ func TestRunCleansUpAfterSetupFailure(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
+			// Keep an incorrect fallback offline and detect its attempted Docker copy.
+			for _, name := range []string{"vim_amd64", "tmux_amd64"} {
+				if err := os.WriteFile(filepath.Join(dir, name), nil, 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
 			t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
 			t.Setenv(runCleanupTestDirEnv, dir)
 			t.Setenv("DEVCONTAINER_VIM_RUN_CLEANUP_TEST_FAIL", tt.name)
@@ -57,12 +67,15 @@ func TestRunCleansUpAfterSetupFailure(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			err = Run([]string{"test-image"}, !tt.startCDR, true, true, cdr, dir, false, "", dir, "", nil)
+			err = Run([]string{"test-image"}, !tt.startCDR, true, !tt.withTmux, cdr, dir, false, "", dir, "", nil)
 			if tt.name == "run" {
 				var startErr *ContainerStartError
 				if !errors.As(err, &startErr) || !strings.Contains(err.Error(), runCleanupDockerDiagnostic) {
 					t.Errorf("Run error = %v, want ContainerStartError with Docker stderr", err)
 				}
+			}
+			if strings.HasPrefix(tt.name, "probe-") && (err == nil || !strings.Contains(err.Error(), runCleanupProbeDiagnostic)) {
+				t.Errorf("Run error = %v, want the Docker tool probe diagnostic", err)
 			}
 			var exitErr *exec.ExitError
 			if !errors.As(err, &exitErr) || exitErr.ExitCode() != tt.exitCode {
@@ -146,6 +159,9 @@ func runCleanupTestDocker(dir string, args []string) int {
 	command := args[0]
 	if command == "exec" && len(args) > 3 && args[1] == "-t" {
 		command = args[3]
+		if command == "sh" && len(args) == 8 && args[4] == "-c" && args[5] == containerToolProbe && args[6] == "devcontainer-vim-tool-probe" {
+			command = "probe-" + args[7]
+		}
 	}
 	log, err := os.OpenFile(filepath.Join(dir, "commands"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
@@ -175,8 +191,12 @@ func runCleanupTestDocker(dir string, args []string) int {
 			return 17
 		}
 		fmt.Println("x86_64")
-	case "which":
-		fmt.Println("/usr/bin/vim")
+	case "probe-vim", "probe-tmux":
+		if fail == command {
+			fmt.Fprintln(os.Stderr, runCleanupProbeDiagnostic)
+			return 1
+		}
+		fmt.Println("found")
 	case "cp":
 		addr, err := os.ReadFile(filepath.Join(dir, "cdr-address"))
 		if err != nil {
