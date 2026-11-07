@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -60,34 +61,7 @@ func TestStopAndDownWaitForDocker(t *testing.T) {
 						files = append(files, override)
 					}
 
-					binDir := t.TempDir()
-					self, err := os.Executable()
-					if err != nil {
-						t.Fatal(err)
-					}
-					binary, err := os.ReadFile(self)
-					if err != nil {
-						t.Fatal(err)
-					}
-					suffix := ""
-					if runtime.GOOS == "windows" {
-						suffix = ".exe"
-					}
-					devcontainerPath := filepath.Join(binDir, "test-devcontainer"+suffix)
-					for _, path := range []string{filepath.Join(binDir, "docker"+suffix), devcontainerPath} {
-						if err := os.WriteFile(path, binary, 0700); err != nil {
-							t.Fatal(err)
-						}
-					}
-					data, err := json.Marshal(fixture)
-					if err != nil {
-						t.Fatal(err)
-					}
-					if err := os.WriteFile(filepath.Join(dir, "fixture.json"), data, 0600); err != nil {
-						t.Fatal(err)
-					}
-					t.Setenv(stopTestDirEnv, dir)
-					t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+					devcontainerPath := installStopTestCommands(t, dir, fixture)
 
 					cache := filepath.Join(dir, "cache")
 					configDir, err := util.GetConfigDir(cache, "workspace")
@@ -152,6 +126,121 @@ func TestStopAndDownWaitForDocker(t *testing.T) {
 	}
 }
 
+func TestDownCdrPidFile(t *testing.T) {
+	for _, pid := range []string{"0", "-1", "-2", "positive"} {
+		t.Run(pid, func(t *testing.T) {
+			dir := t.TempDir()
+			workspace := filepath.Join(dir, "workspace")
+			if err := os.Mkdir(workspace, 0700); err != nil {
+				t.Fatal(err)
+			}
+			cache := filepath.Join(dir, "cache")
+			configDir, err := util.GetConfigDir(cache, workspace)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.MkdirAll(configDir, 0700); err != nil {
+				t.Fatal(err)
+			}
+			fixture := stopTestFixture{Workspace: workspace}
+			pidFile := filepath.Join(configDir, "pid")
+			if pid != "positive" {
+				// Route any attempted signal to a recorder so a regression is safe to test.
+				devcontainerPath := installStopTestCommands(t, dir, fixture, "powershell.exe")
+				t.Setenv("WSL_DISTRO_NAME", "cdr-test")
+				if err := os.WriteFile(pidFile, []byte(pid), 0600); err != nil {
+					t.Fatal(err)
+				}
+				err := Down([]string{workspace}, devcontainerPath, cache)
+				if err == nil || !strings.Contains(err.Error(), "invalid clipboard-data-receiver PID "+pid+": must be positive") {
+					t.Errorf("Down error = %v, want invalid PID %s", err, pid)
+				}
+				if _, err := os.Stat(filepath.Join(dir, "cdr-signal-attempt")); !errors.Is(err, os.ErrNotExist) {
+					t.Errorf("Down attempted to signal invalid PID %s: stat error = %v", pid, err)
+				}
+				if data, err := os.ReadFile(pidFile); err != nil || string(data) != pid {
+					t.Errorf("PID file after failed Down = %q, %v, want %q", data, err, pid)
+				}
+				return
+			}
+
+			devcontainerPath := installStopTestCommands(t, dir, fixture, "run-test-cdr")
+			// Exercise the native signal path even when running under WSL.
+			t.Setenv("WSL_DISTRO_NAME", "")
+			if err := os.Unsetenv("WSL_DISTRO_NAME"); err != nil {
+				t.Fatal(err)
+			}
+			cdr := exec.Command("run-test-cdr")
+			cdr.Env = append(os.Environ(), runCleanupTestDirEnv+"="+dir)
+			if err := cdr.Start(); err != nil {
+				t.Fatal(err)
+			}
+			done := make(chan struct{})
+			var waitErr error
+			go func() {
+				waitErr = cdr.Wait()
+				close(done)
+			}()
+			t.Cleanup(func() {
+				_ = cdr.Process.Kill()
+				<-done
+			})
+			if err := os.WriteFile(pidFile, []byte(strconv.Itoa(cdr.Process.Pid)), 0600); err != nil {
+				t.Fatal(err)
+			}
+			if err := Down([]string{workspace}, devcontainerPath, cache); err != nil {
+				t.Fatal(err)
+			}
+			select {
+			case <-done:
+				var exit *exec.ExitError
+				if !errors.As(waitErr, &exit) || exit.ExitCode() == 99 {
+					t.Errorf("CDR exit = %v, want termination by Down", waitErr)
+				}
+			case <-time.After(3 * time.Second):
+				t.Fatal("CDR is still running after Down")
+			}
+			if _, err := os.Stat(configDir); !errors.Is(err, os.ErrNotExist) {
+				t.Errorf("cache after Down: %v, want removed", err)
+			}
+		})
+	}
+}
+
+func installStopTestCommands(t *testing.T, dir string, fixture stopTestFixture, extraNames ...string) string {
+	t.Helper()
+	binDir := t.TempDir()
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	binary, err := os.ReadFile(self)
+	if err != nil {
+		t.Fatal(err)
+	}
+	commandPath := func(name string) string {
+		if runtime.GOOS == "windows" && !strings.HasSuffix(name, ".exe") {
+			name += ".exe"
+		}
+		return filepath.Join(binDir, name)
+	}
+	for _, name := range append([]string{"docker", "test-devcontainer"}, extraNames...) {
+		if err := os.WriteFile(commandPath(name), binary, 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	data, err := json.Marshal(fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "fixture.json"), data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv(stopTestDirEnv, dir)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	return commandPath("test-devcontainer")
+}
+
 func assertStopTestCall(t *testing.T, path string, want stopTestCall) {
 	t.Helper()
 	data, err := os.ReadFile(path)
@@ -178,7 +267,13 @@ func runStopTestCommand(dir string, argv []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 99
 	}
-	if strings.TrimSuffix(filepath.Base(argv[0]), ".exe") == "test-devcontainer" {
+	switch strings.TrimSuffix(filepath.Base(argv[0]), ".exe") {
+	case "powershell":
+		if err := os.WriteFile(filepath.Join(dir, "cdr-signal-attempt"), []byte(strings.Join(argv[1:], " ")), 0600); err != nil {
+			return 99
+		}
+		return 0
+	case "test-devcontainer":
 		json.NewEncoder(os.Stdout).Encode(ReadConfigurationCommandResult{Configuration: fixture.Config})
 		return 0
 	}
