@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/anmitsu/go-shlex"
 	"github.com/manifoldco/promptui"
 	"github.com/urfave/cli/v2"
 
@@ -233,8 +232,25 @@ func main() {
 						noTmux = cCtx.Bool(flagNameNoTmux)
 					}
 
-					// 必要なファイルのダウンロード
+					args := cCtx.Args().Slice()
+					var defaultRunargs []string
+					// Windows では runargs を使用しない。
+					if runtime.GOOS != "windows" {
+						data, err := os.ReadFile(runargs)
+						if err != nil {
+							return fmt.Errorf("read runargs: %w", err)
+						}
+						defaultRunargs, err = parseRunargs(string(data))
+						if err != nil {
+							return fmt.Errorf("parse runargs: %w", err)
+						}
+						if len(args) == 0 {
+							fmt.Fprintf(os.Stderr, "Usage: devcontainer.vim run <IMAGE_OR_CONTAINER>\n")
+							os.Exit(1)
+						}
+					}
 
+					// 必要なファイルのダウンロード
 					nvim := false
 					if cCtx.Bool(flagNameNeoVim) || os.Getenv(envDevcontainerVimType) == "nvim" {
 						nvim = true
@@ -245,48 +261,10 @@ func main() {
 						os.Exit(1)
 					}
 
-					// デフォルト引数取得
-					defaultRunargsBytes, err := os.ReadFile(runargs)
+					err = devcontainer.Run(args, noCdr, noPf, noTmux, cdrPath, binDir, nvim, shell, configDirForDocker, vimrc, defaultRunargs)
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error reading runargs: %v\n", err)
+						fmt.Fprintf(os.Stderr, "Error running docker: %v\n", err)
 						os.Exit(1)
-					}
-					defaultRunargsString := string(defaultRunargsBytes)
-
-					args := cCtx.Args().Slice()
-					if runtime.GOOS == "windows" {
-						// コンテナ起動
-						// windows はシェル変数展開が上手くいかないので runargs を使用しない
-						err = devcontainer.Run(args, noCdr, noPf, noTmux, cdrPath, binDir, nvim, shell, configDirForDocker, vimrc, []string{})
-						if err != nil {
-							fmt.Fprintf(os.Stderr, "Error running docker: %v\n", err)
-							os.Exit(1)
-						}
-					} else {
-						// デフォルト引数内のシェル変数を展開
-						extractedDofaultRunargsString, err := util.ExtractShellVariables(defaultRunargsString)
-						if err != nil {
-							fmt.Fprintf(os.Stderr, "Error extracting shell variables: %v\n", err)
-							os.Exit(1)
-						}
-
-						// 展開したものを配列へ分割
-						defaultRunargs, err := shlex.Split(extractedDofaultRunargsString, true)
-						if err != nil {
-							fmt.Fprintf(os.Stderr, "Error splitting runargs: %v\n", err)
-							os.Exit(1)
-						}
-
-						// コンテナ起動
-						if len(args) == 0 {
-							fmt.Fprintf(os.Stderr, "Usage: devcontainer.vim run <IMAGE_OR_CONTAINER>\n")
-							os.Exit(1)
-						}
-						err = devcontainer.Run(args, noCdr, noPf, noTmux, cdrPath, binDir, nvim, shell, configDirForDocker, vimrc, defaultRunargs)
-						if err != nil {
-							fmt.Fprintf(os.Stderr, "Error running docker: %v\n", err)
-							os.Exit(1)
-						}
 					}
 
 					return nil

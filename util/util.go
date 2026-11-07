@@ -227,22 +227,6 @@ func CreateFileWithContents(file string, content string, permission fs.FileMode)
 	return nil
 }
 
-// 文字列中のシェル変数を展開して返却する
-func ExtractShellVariables(str string) (string, error) {
-	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		return "", errors.New("ExtractShellVariables no support windows")
-	} else {
-		cmd = exec.Command("sh", "-c", "echo "+str)
-	}
-
-	extractedStrBytes, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", err
-	}
-	return string(extractedStrBytes), nil
-}
-
 func NormalizeContainerArch(containerArch string) (string, error) {
 	if containerArch == "amd64" || containerArch == "x86_64" {
 		return "amd64", nil
