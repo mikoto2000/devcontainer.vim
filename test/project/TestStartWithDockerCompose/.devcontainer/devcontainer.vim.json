@@ -1,4 +1,5 @@
 {
+  // Keep this override with the Compose workspace so it exercises discovery and merging independently of the image-based test.
   "remoteEnv": {
     "EDITOR": "/vim --appimage-extract-and-run",
     "LESSCHARSET": "utf-8",
