@@ -2,6 +2,7 @@ package devcontainer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -18,10 +19,15 @@ var devcontainerRunArgsSuffix = []string{"sh", "-c", "trap \"exit 0\" TERM; slee
 
 type ContainerStartError struct {
 	msg string
+	err error
 }
 
 func (e *ContainerStartError) Error() string {
 	return e.msg
+}
+
+func (e *ContainerStartError) Unwrap() error {
+	return e.err
 }
 
 type ChmodError struct {
@@ -125,14 +131,20 @@ func startContainer(args []string, defaultRunargs []string) (string, error) {
 
 	dockerRunCommand := exec.Command(containerCommand, devcontainerRunArgs...)
 	containerIDRaw, err := dockerRunCommand.Output()
-	containerID := string(containerIDRaw)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Container start error.")
-		fmt.Fprintln(os.Stderr, string(containerID))
-		return "", &ContainerStartError{msg: "Container start error."}
+		diagnostic := string(containerIDRaw)
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			diagnostic += "\n" + string(exitErr.Stderr)
+		}
+		msg := fmt.Sprintf("docker run: %v", err)
+		if diagnostic := strings.TrimSpace(diagnostic); diagnostic != "" {
+			msg += ": " + diagnostic
+		}
+		return "", &ContainerStartError{msg: msg, err: err}
 	}
 
-	containerID = strings.ReplaceAll(containerID, "\n", "")
+	containerID := strings.ReplaceAll(string(containerIDRaw), "\n", "")
 	containerID = strings.ReplaceAll(containerID, "\r", "")
 	fmt.Printf("Container started. id: %s\n", containerID)
 
