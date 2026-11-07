@@ -58,7 +58,7 @@ endif`
 
 const luaScriptTemplateSendToCdr = `function SendToCdr(register)
   local text = vim.fn.getreg(register)
-  local uv = vim.loop
+  local uv = vim.uv or vim.loop
   local host = "host.docker.internal"
   local port = {{ .Port }}
 
