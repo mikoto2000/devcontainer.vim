@@ -22,6 +22,17 @@ const runDockerLogEnv = "DEVCONTAINER_VIM_TEST_DOCKER_LOG"
 const configCLIFixtureEnv = "DEVCONTAINER_VIM_TEST_CONFIG_CLI"
 
 func TestMain(m *testing.M) {
+	if dir := os.Getenv(startCLIFixtureEnv); dir != "" {
+		switch strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe") {
+		case "devcontainer", "docker":
+			if err := runStartCLIFixture(dir, os.Args); err != nil {
+				_ = os.WriteFile(filepath.Join(dir, "unexpected-start-command"), []byte(err.Error()), 0600)
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(99)
+			}
+			os.Exit(0)
+		}
+	}
 	if os.Getenv(configCLIFixtureEnv) == "1" {
 		if len(os.Args) != 4 || os.Args[1] != "read-configuration" || os.Args[2] != "--workspace-folder" {
 			fmt.Fprintln(os.Stderr, "unexpected read-configuration arguments:", os.Args[1:])
