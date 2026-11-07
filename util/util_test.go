@@ -182,51 +182,35 @@ func TestParseJwcc(t *testing.T) {
 }
 
 func TestCreateConfigFileForDevcontainer(t *testing.T) {
-	configDirForDevcontainer := "test/resource/config"
-	workspaceFolder := "test/resource/TestCreateConfigFileForDevcontainer"
-	configFilePath := "test/resource/TestCreateConfigFileForDevcontainer/.devcontainer/devcontainer.json"
-	additionalConfigFilePath := "test/resource/TestCreateConfigFileForDevcontainer/.devcontainer/devcontainer.vim.json"
+	configDirForDevcontainer := t.TempDir()
+	workspaceFolder := filepath.Join("test", "resource", "TestCreateConfigFileForDevcontainer")
+	configDir := filepath.Join(workspaceFolder, ".devcontainer")
+	configFilePath := filepath.Join(configDir, "devcontainer.json")
+	additionalConfigFilePath := filepath.Join(configDir, "devcontainer.vim.json")
 
 	mergedConfigFilePath, err := CreateConfigFileForDevcontainer(configDirForDevcontainer, workspaceFolder, configFilePath, additionalConfigFilePath)
 	if err != nil {
 		t.Fatalf("error: %s", err)
 	}
 
-	defer func() {
-		os.RemoveAll("./test/resource/config/5ffc48ca73a1122ac36772801370c276/")
-	}()
-
-	// config ディレクトリ下に MD5 ハッシュのフォルダが作成される
-	if !IsExists("./test/resource/config/5ffc48ca73a1122ac36772801370c276/") {
-		t.Fatal("config directory not found: ./test/resource/config/5ffc48ca73a1122ac36772801370c276/")
-	}
-
-	if !IsExists("./test/resource/config/5ffc48ca73a1122ac36772801370c276/devcontainer.json") {
-		t.Fatal("config file not found: ./test/resource/config/5ffc48ca73a1122ac36772801370c276/")
-	}
-
-	bytes, err := os.ReadFile(mergedConfigFilePath)
+	data, err := os.ReadFile(mergedConfigFilePath)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
 
-	var unmarshaledJson map[string]interface{}
-	json.Unmarshal(bytes, &unmarshaledJson)
-
-	// ベース json の値が取得できる
-	want := unmarshaledJson["name"]
-	got := "test_name"
-	if want != got {
-		t.Fatalf("error: want %s, but got %s", want, got)
+	var merged map[string]string
+	if err := json.Unmarshal(data, &merged); err != nil {
+		t.Fatal(err)
 	}
-
-	// 追加 json の値も取得できる
-	want2 := unmarshaledJson["additional_key"]
-	got2 := "additional_value"
-	if want != got {
-		t.Fatalf("error: want %s, but got %s", want2, got2)
+	for key, want := range map[string]string{
+		"name":           "test_name",
+		"image":          "test_image",
+		"additional_key": "additional_value",
+	} {
+		if got := merged[key]; got != want {
+			t.Errorf("%s = %q, want %q", key, got, want)
+		}
 	}
-
 }
 
 func TestGetConfigDir(t *testing.T) {
