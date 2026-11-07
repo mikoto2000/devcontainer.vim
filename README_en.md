@@ -373,7 +373,7 @@ devcontainer.vim start .
 
 ### Using Shell
 
-By adding the `--shell` option or setting the environment variable `DEVCONTAINER_SHELL_TYPE` to using shell, the shell will be transferred and launched instead of vim.
+Use `--shell` or set `DEVCONTAINER_SHELL_TYPE` to launch the specified shell inside the container in place of Vim. The shell must be installed in the container.
 
 
 ```sh
