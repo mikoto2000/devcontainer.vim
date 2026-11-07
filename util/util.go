@@ -222,6 +222,9 @@ func CreateFileWithContents(file string, content string, permission fs.FileMode)
 	return nil
 }
 
+// NormalizeContainerArch returns amd64 or aarch64 for container installers and
+// their cache keys. URL builders map these names to each release's asset names,
+// which may use arm64 or x86_64. An empty input identifies a host-only tool.
 func NormalizeContainerArch(containerArch string) (string, error) {
 	if containerArch == "amd64" || containerArch == "x86_64" {
 		return "amd64", nil
