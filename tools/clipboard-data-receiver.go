@@ -411,7 +411,8 @@ func CreateSendToTCP(configDir string, port int, noCdr bool, nvim bool) (string,
 	} else {
 		sendToTCP = filepath.Join(configDir, "SendToTcp.vim")
 	}
-	err = os.WriteFile(sendToTCP, []byte(sendToTCPString.String()), 0666)
+	// Docker copies this script for the container editor, which may run as a non-root user.
+	err = os.WriteFile(sendToTCP, []byte(sendToTCPString.String()), 0644)
 	if err != nil {
 		return "", err
 	}
