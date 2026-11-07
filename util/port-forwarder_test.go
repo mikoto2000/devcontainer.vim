@@ -5,9 +5,33 @@ import (
 	"errors"
 	"io"
 	"net"
+	"syscall"
 	"testing"
+	"testing/synctest"
 	"time"
 )
+
+func TestForwardingDialTimeout(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		dialer := forwardingDialer
+		dialer.ControlContext = func(ctx context.Context, _, _ string, _ syscall.RawConn) error {
+			// Hold the dial before any connection attempt until it times out.
+			<-ctx.Done()
+			return ctx.Err()
+		}
+		ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
+		defer cancel()
+		start := time.Now()
+		conn, err := dialer.DialContext(ctx, "tcp4", "127.0.0.1:0")
+		if conn != nil {
+			conn.Close()
+		}
+		var timeout net.Error
+		if !errors.As(err, &timeout) || !timeout.Timeout() || time.Since(start) != 5*time.Second {
+			t.Fatalf("dial returned %v after %s, want a five-second timeout", err, time.Since(start))
+		}
+	})
+}
 
 func TestForwardingStopsOnCancellation(t *testing.T) {
 	for _, mode := range []string{"idle", "active"} {

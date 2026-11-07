@@ -9,10 +9,11 @@ import (
 	"time"
 )
 
+var forwardingDialer = net.Dialer{Timeout: 5 * time.Second}
+
 // forward relays traffic between an accepted client and the destination.
 func forward(ctx context.Context, src net.Conn, dstAddr string) error {
-	var dialer net.Dialer
-	dst, err := dialer.DialContext(ctx, "tcp", dstAddr)
+	dst, err := forwardingDialer.DialContext(ctx, "tcp", dstAddr)
 	if err != nil {
 		src.Close()
 		return err
