@@ -1,12 +1,15 @@
 package tools
 
 import (
+	"debug/buildinfo"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
+	"slices"
 
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
@@ -60,8 +63,27 @@ func (t Tool) Install(installDir string, containerArch string, override bool) (s
 		if err != nil {
 			return "", err
 		}
-		return t.installFunc(t.DownloadFunc, downloadURL, filePath, containerArch)
+		err = stageFile(filePath, func(stagedPath string) error {
+			_, err := t.installFunc(t.DownloadFunc, downloadURL, stagedPath, containerArch)
+			return err
+		}, os.Rename)
+		return filePath, err
 	}
+}
+
+// Keep the destination in place until the new file is ready to publish.
+func stageFile(destPath string, prepare func(string) error, publish func(string, string) error) error {
+	dir, err := os.MkdirTemp(filepath.Dir(destPath), ".devcontainer.vim-stage-*")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(dir)
+
+	stagedPath := filepath.Join(dir, filepath.Base(destPath))
+	if err := prepare(stagedPath); err != nil {
+		return err
+	}
+	return publish(stagedPath, destPath)
 }
 
 // 単純なファイル配置でインストールが完了するもののインストール処理。
@@ -116,21 +138,31 @@ func download(downloadURL string, destPath string) error {
 	}
 	defer resp.Body.Close()
 
-	size := resp.ContentLength
-
-	// ファイルを作成
-	out, err := os.Create(destPath)
-	if err != nil {
-		return err
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("download %s: unexpected HTTP status %s", filepath.Base(destPath), resp.Status)
 	}
-	defer out.Close()
-
-	progress := &ProgressWriter{
-		Total: size,
-	}
-
-	// レスポンスの内容をファイルに書き込み
-	_, err = io.Copy(out, io.TeeReader(resp.Body, progress))
+	err = stageFile(destPath, func(stagedPath string) error {
+		out, err := os.Create(stagedPath)
+		if err != nil {
+			return err
+		}
+		var body io.Reader = resp.Body
+		if resp.ContentLength > 0 {
+			body = io.TeeReader(body, &ProgressWriter{Total: resp.ContentLength})
+		}
+		size, copyErr := io.Copy(out, body)
+		closeErr := out.Close()
+		if copyErr != nil {
+			return copyErr
+		}
+		if closeErr != nil {
+			return closeErr
+		}
+		if size == 0 {
+			return fmt.Errorf("download %s: empty response body", filepath.Base(destPath))
+		}
+		return nil
+	}, os.Rename)
 	if err != nil {
 		return err
 	}
@@ -223,29 +255,68 @@ func SelfUpdate(services InstallerUseServices) error {
 		downloadURL = downloadURL + ".exe"
 	}
 
-	// Download the latest release
 	executablePath, err := os.Executable()
 	if err != nil {
 		return err
 	}
 
-	// Rename the current binary to avoid "text file busy" error
-	tempPath := executablePath + ".old"
-	err = os.Rename(executablePath, tempPath)
-	if err != nil {
+	if err := updateExecutable(services.Download, downloadURL, executablePath); err != nil {
 		return err
 	}
-
-	_, err = simpleInstall(services.Download, downloadURL, executablePath)
-	if err != nil {
-		// Restore the original binary if download fails
-		os.Rename(tempPath, executablePath)
-		return err
-	}
-
-	// Remove the old binary
-	os.Remove(tempPath)
-
 	fmt.Println("devcontainer.vim has been updated to the latest version.")
+	return nil
+}
+
+func updateExecutable(downloadFunc func(string, string) error, downloadURL, executablePath string) error {
+	return stageFile(executablePath, func(stagedPath string) error {
+		if _, err := simpleInstall(downloadFunc, downloadURL, stagedPath); err != nil {
+			return err
+		}
+		info, err := buildinfo.ReadFile(stagedPath)
+		if err != nil {
+			return fmt.Errorf("read update executable build info: %w", err)
+		}
+		if info.Path != "github.com/mikoto2000/devcontainer.vim/v3" ||
+			!slices.Contains(info.Settings, debug.BuildSetting{Key: "GOOS", Value: runtime.GOOS}) ||
+			!slices.Contains(info.Settings, debug.BuildSetting{Key: "GOARCH", Value: runtime.GOARCH}) {
+			return fmt.Errorf("update is not a devcontainer.vim executable for %s/%s", runtime.GOOS, runtime.GOARCH)
+		}
+		return nil
+	}, replaceExecutable)
+}
+
+func replaceExecutable(stagedPath, executablePath string) error {
+	if runtime.GOOS == "windows" {
+		// Windows cannot replace an executable while it is running.
+		return replaceExecutableWithBackup(stagedPath, executablePath, os.Rename)
+	}
+	return os.Rename(stagedPath, executablePath)
+}
+
+func replaceExecutableWithBackup(stagedPath, executablePath string, rename func(string, string) error) error {
+	backup, err := os.CreateTemp(filepath.Dir(executablePath), ".devcontainer.vim-old-*.exe")
+	if err != nil {
+		return err
+	}
+	backupPath := backup.Name()
+	if err := backup.Close(); err != nil {
+		os.Remove(backupPath)
+		return err
+	}
+	if err := rename(executablePath, backupPath); err != nil {
+		os.Remove(backupPath)
+		return fmt.Errorf("back up executable: %w", err)
+	}
+
+	if err := rename(stagedPath, executablePath); err != nil {
+		if restoreErr := rename(backupPath, executablePath); restoreErr != nil {
+			return fmt.Errorf("replace executable: %w; could not restore from %q: %w", err, backupPath, restoreErr)
+		}
+		return fmt.Errorf("replace executable: %w", err)
+	}
+
+	if err := os.Remove(backupPath); err != nil {
+		fmt.Fprintf(os.Stderr, "Updated executable; previous version remains at %q: %v\n", backupPath, err)
+	}
 	return nil
 }
