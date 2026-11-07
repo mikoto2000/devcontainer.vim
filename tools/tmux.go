@@ -32,8 +32,7 @@ var Tmux = func(service InstallerUseServices) Tool {
 				return "", err
 			}
 
-			pattern := "pattern"
-			tmpl, err := template.New(pattern).Parse(tmuxDownloadURLPattern)
+			tmpl, err := template.New("tmux-download-url").Parse(tmuxDownloadURLPattern)
 			if err != nil {
 				return "", err
 			}

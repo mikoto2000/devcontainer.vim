@@ -21,8 +21,7 @@ var NVIM = func(service InstallerUseServices) Tool {
 					return "", err
 				}
 
-				pattern := "pattern"
-				tmpl, err := template.New(pattern).Parse(nvimAppImageDownloadURLPattern)
+				tmpl, err := template.New("neovim-appimage-download-url").Parse(nvimAppImageDownloadURLPattern)
 				if err != nil {
 					return "", err
 				}
@@ -40,8 +39,7 @@ var NVIM = func(service InstallerUseServices) Tool {
 					return "", err
 				}
 
-				pattern := "pattern"
-				tmpl, err := template.New(pattern).Parse(nvimArmStaticDownloadURLPattern)
+				tmpl, err := template.New("vim-static-arm-download-url").Parse(nvimArmStaticDownloadURLPattern)
 				if err != nil {
 					return "", err
 				}
