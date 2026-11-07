@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/mikoto2000/devcontainer.vim/v3/docker"
 	"github.com/mikoto2000/devcontainer.vim/v3/tools"
 )
 
@@ -79,7 +80,7 @@ func Run(
 		}
 		if setup.containerID != "" {
 			fmt.Printf("Stop container %s.\n", setup.containerID)
-			output, err := exec.Command(containerCommand, "stop", setup.containerID).CombinedOutput()
+			output, err := exec.Command(docker.Command, "stop", setup.containerID).CombinedOutput()
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Container stop error: %v\n%s", err, output)
 			}
@@ -101,8 +102,8 @@ func Run(
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Start vim: `%s \"%s\"`\n", containerCommand, strings.Join(dockerRunVimArgs, "\" \""))
-	dockerExec := exec.CommandContext(ctx, containerCommand, dockerRunVimArgs...)
+	fmt.Printf("Start vim: `%s \"%s\"`\n", docker.Command, strings.Join(dockerRunVimArgs, "\" \""))
+	dockerExec := exec.CommandContext(ctx, docker.Command, dockerRunVimArgs...)
 	dockerExec.Stdin = os.Stdin
 	dockerExec.Stdout = os.Stdout
 	dockerExec.Stderr = os.Stderr
@@ -128,9 +129,9 @@ func startContainer(args []string, defaultRunargs []string) (string, error) {
 	}
 	devcontainerRunArgs = append(devcontainerRunArgs, args...)
 	devcontainerRunArgs = append(devcontainerRunArgs, devcontainerRunArgsSuffix...)
-	fmt.Printf("run container: `%s \"%s\"`\n", containerCommand, strings.Join(devcontainerRunArgs, "\" \""))
+	fmt.Printf("run container: `%s \"%s\"`\n", docker.Command, strings.Join(devcontainerRunArgs, "\" \""))
 
-	dockerRunCommand := exec.Command(containerCommand, devcontainerRunArgs...)
+	dockerRunCommand := exec.Command(docker.Command, devcontainerRunArgs...)
 	containerIDRaw, err := dockerRunCommand.Output()
 	if err != nil {
 		diagnostic := string(containerIDRaw)

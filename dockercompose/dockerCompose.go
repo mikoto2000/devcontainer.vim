@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-)
 
-const containerCommand = "docker"
+	"github.com/mikoto2000/devcontainer.vim/v3/docker"
+)
 
 type PsCommandError struct {
 	msg string
@@ -48,7 +48,7 @@ func FindProject(workspaceFolder, configFile string, files ...string) (Project, 
 		return Project{}, err
 	}
 	const format = `{"workspace":{{json (.Label "devcontainer.local_folder")}},"config":{{json (.Label "devcontainer.config_file")}},"project":{{json (.Label "com.docker.compose.project")}}}`
-	cmd := exec.Command(containerCommand, "ps", "--all", "--filter", "label=devcontainer.local_folder", "--format", format)
+	cmd := exec.Command(docker.Command, "ps", "--all", "--filter", "label=devcontainer.local_folder", "--format", format)
 	output, err := cmd.Output()
 	if err != nil {
 		return Project{}, fmt.Errorf("find Compose project: %w", err)
@@ -146,7 +146,7 @@ func (p Project) command(args ...string) *exec.Cmd {
 	for _, file := range p.files {
 		commandArgs = append(commandArgs, "-f", file)
 	}
-	cmd := exec.Command(containerCommand, append(commandArgs, args...)...)
+	cmd := exec.Command(docker.Command, append(commandArgs, args...)...)
 	// Match Dev Containers' working directory for workspace .env files.
 	cmd.Dir = p.workspaceFolder
 	return cmd

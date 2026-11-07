@@ -127,7 +127,7 @@ func TestSetupVimWithSystemVim(t *testing.T) {
 		t.Fatalf("Failed to start container: %v", err)
 	}
 	cleanupTestContainerSetup(t, containerSetup{containerID: containerID})
-	install := exec.CommandContext(t.Context(), containerCommand, "exec", "--user", "root", containerID, "sh", "-c",
+	install := exec.CommandContext(t.Context(), docker.Command, "exec", "--user", "root", containerID, "sh", "-c",
 		"apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends vim")
 	if output, err := install.CombinedOutput(); err != nil {
 		t.Fatalf("install system Vim in fixture: %v\n%s", err, output)

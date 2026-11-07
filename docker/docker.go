@@ -8,7 +8,8 @@ import (
 	"strings"
 )
 
-const containerCommand = "docker"
+// Command is the executable name of the Docker CLI.
+const Command = "docker"
 
 type ContainerNotFoundError struct {
 	msg string
@@ -41,7 +42,7 @@ func Exec(containerID string, command ...string) (string, error) {
 	dockerExecArgs := []string{"exec", containerID}
 	dockerExecArgs = append(dockerExecArgs, command...)
 
-	dockerExecCommand := exec.Command(containerCommand, dockerExecArgs...)
+	dockerExecCommand := exec.Command(Command, dockerExecArgs...)
 	stdout, err := dockerExecCommand.Output()
 	return string(stdout), err
 }
@@ -52,7 +53,7 @@ func Ps(filter string) (string, error) {
 	if filter != "" {
 		args = append(args, "--filter", filter)
 	}
-	dockerPsCommand := exec.Command(containerCommand, args...)
+	dockerPsCommand := exec.Command(Command, args...)
 	stdout, err := dockerPsCommand.Output()
 	return string(stdout), err
 }
@@ -68,7 +69,7 @@ func Rm(containerID string) error {
 }
 
 func runContainerCommand(args ...string) error {
-	output, err := exec.Command(containerCommand, args...).CombinedOutput()
+	output, err := exec.Command(Command, args...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("docker %s: %w: %s", strings.Join(args, " "), err, strings.TrimSpace(string(output)))
 	}
@@ -77,8 +78,8 @@ func runContainerCommand(args ...string) error {
 
 func Cp(tagForLog string, from string, containerID string, to string) error {
 	dockerCpArgs := []string{"cp", from, containerID + ":" + to}
-	fmt.Printf("Copy %s: `%s \"%s\"` ...", tagForLog, containerCommand, strings.Join(dockerCpArgs, "\" \""))
-	copyResult, err := exec.Command(containerCommand, dockerCpArgs...).CombinedOutput()
+	fmt.Printf("Copy %s: `%s \"%s\"` ...", tagForLog, Command, strings.Join(dockerCpArgs, "\" \""))
+	copyResult, err := exec.Command(Command, dockerCpArgs...).CombinedOutput()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "copy error.")
 		fmt.Fprintln(os.Stderr, string(copyResult))
