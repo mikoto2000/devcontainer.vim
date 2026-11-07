@@ -100,9 +100,14 @@ func TestRunargsCLI(t *testing.T) {
 case "$1" in
   run) printf '%s\000' "$@" > "$RUNARGS_TEST_DOCKER_ARGS"; printf 'container-id\n' ;;
   exec)
-    case "$4" in
-      uname) printf 'x86_64\n' ;;
-      which) printf '/usr/bin/vim\n' ;;
+    case "$2:$3" in
+      container-id:uname) [ "$4" = -m ] || exit 99; printf 'x86_64\n' ;;
+      container-id:sh)
+        [ "$4" = -c ] && [ "$6" = devcontainer-vim-tool-probe ] && [ "$7" = vim ] || exit 99
+        printf 'found\n' ;;
+      --detach-keys:*)
+        [ "$4" = -it ] && [ "$5" = container-id ] && [ "$6" = /VimRun.sh ] || exit 99 ;;
+      *) exit 99 ;;
     esac ;;
   cp|stop) ;;
   *) exit 99 ;;
