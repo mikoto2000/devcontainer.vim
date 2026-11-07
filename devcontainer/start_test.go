@@ -49,17 +49,6 @@ func TestStart(t *testing.T) {
 	if !strings.Contains(vimfilesOutput, vimfilesWant) {
 		t.Fatalf("error: want match %s, but got %s", vimfilesWant, vimfilesOutput)
 	}
-	//     portForward がされるか
-	//     TODO: なぜかテストでは生えてこない...
-	//pfOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", "../test/project/TestStart", "sh", "-c", "ls /pf")
-	//if err != nil {
-	//	t.Fatalf("error: %s", err)
-	//}
-	//pfWant := "localhost:8888_"
-	//if !strings.Contains(pfOutput, pfWant) {
-	//	t.Fatalf("error: want match %s, but got %s", pfWant, pfOutput)
-	//}
-
 	//     環境変数が設定されるか
 	termOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", workspace, "sh", "-c", "\"env\"")
 	if err != nil {
