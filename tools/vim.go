@@ -16,7 +16,7 @@ var VIM = func(service InstallerUseServices) Tool {
 		installFunc: func(downloadFunc func(downloadURL string, destPath string) error, downloadURL string, filePath string, containerArch string) (string, error) {
 			return simpleInstall(downloadFunc, downloadURL, filePath)
 		},
-		DownloadFunc: download,
+		DownloadFunc: service.Download,
 	}
 }
 

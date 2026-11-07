@@ -70,7 +70,7 @@ var Tmux = func(service InstallerUseServices) Tool {
 			}
 			return filePath, nil
 		},
-		DownloadFunc: download,
+		DownloadFunc: service.Download,
 	}
 }
 

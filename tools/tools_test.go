@@ -153,6 +153,36 @@ func TestDownloadPreservesExecutableOnTimeout(t *testing.T) {
 	}
 }
 
+type recordingDownloadService struct {
+	TestInstallerUseServices
+	urls []string
+	err  error
+}
+
+func (s *recordingDownloadService) Download(downloadURL, _ string) error {
+	s.urls = append(s.urls, downloadURL)
+	return s.err
+}
+
+func TestToolInstallUsesInjectedDownload(t *testing.T) {
+	for _, makeTool := range []func(InstallerUseServices) Tool{NVIM, PortForwarderContainer, Tmux, VIM} {
+		service := &recordingDownloadService{err: errors.New("injected download failed")}
+		tool := makeTool(service)
+		t.Run(tool.FileName, func(t *testing.T) {
+			const downloadURL = "fixture://artifact"
+			// Exercise the install path independently of release lookup.
+			tool.CalculateDownloadURL = func(string) (string, error) { return downloadURL, nil }
+			_, err := tool.Install(t.TempDir(), "amd64", false)
+			if !errors.Is(err, service.err) {
+				t.Errorf("Install error = %v, want %v", err, service.err)
+			}
+			if len(service.urls) != 1 || service.urls[0] != downloadURL {
+				t.Errorf("injected download URLs = %v, want [%s]", service.urls, downloadURL)
+			}
+		})
+	}
+}
+
 func TestToolInstallRejectsUnknownArchitecture(t *testing.T) {
 	dir := t.TempDir()
 	tool := Tool{
