@@ -9,6 +9,38 @@ import (
 	"testing"
 )
 
+func TestExecKeepsStdoutAndStderrSeparate(t *testing.T) {
+	dockerType, err := exec.CommandContext(t.Context(), containerCommand, "info", "--format", "{{.OSType}}").Output()
+	if err != nil || strings.TrimSpace(string(dockerType)) != "linux" {
+		t.Skipf("Linux Docker daemon required: %q, %v", dockerType, err)
+	}
+	cmd := exec.CommandContext(t.Context(), containerCommand, "run", "--rm", "-d", "debian:bookworm-slim",
+		"sh", "-c", "trap 'exit 0' TERM; sleep infinity & wait")
+	output, err := cmd.Output()
+	if err != nil {
+		var exit *exec.ExitError
+		if errors.As(err, &exit) {
+			t.Fatalf("start Docker exec fixture: %v\n%s", err, exit.Stderr)
+		}
+		t.Fatal(err)
+	}
+	containerID := strings.TrimSpace(string(output))
+	t.Cleanup(func() {
+		if err := Stop(containerID); err != nil {
+			t.Errorf("stop Docker exec fixture: %v", err)
+		}
+	})
+
+	out, err := Exec(containerID, "sh", "-c", `printf 'payload\000\n'; printf 'diagnostic\n' >&2; exit 23`)
+	if out != "payload\x00\n" {
+		t.Errorf("stdout = %q, want the exact payload", out)
+	}
+	var exit *exec.ExitError
+	if !errors.As(err, &exit) || exit.ExitCode() != 23 || string(exit.Stderr) != "diagnostic\n" {
+		t.Fatalf("exec error = %#v, want exit code 23 with a separate diagnostic", err)
+	}
+}
+
 func requireDockerPsJSONSupport(t *testing.T) {
 	t.Helper()
 
