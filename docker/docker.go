@@ -29,11 +29,11 @@ func GetContainerIDFromWorkspaceFolder(workspaceFolder string) (string, error) {
 	}
 
 	psResult, err := Ps("label=devcontainer.local_folder=" + workspaceFilderAbs)
-	if psResult == "" {
-		return "", &ContainerNotFoundError{msg: "container not found."}
-	}
 	if err != nil {
 		return "", err
+	}
+	if psResult == "" {
+		return "", &ContainerNotFoundError{msg: "container not found."}
 	}
 
 	id, err := GetID(psResult)
@@ -66,18 +66,22 @@ func Ps(filter string) (string, error) {
 	return string(stdout), err
 }
 
-// `docker stop -f ${containerID}` コマンドを実行する。
+// `docker stop ${containerID}` を実行し、完了を待つ。
 func Stop(containerID string) error {
-	dockerStopCommand := exec.Command(containerCommand, "stop", containerID)
-	err := dockerStopCommand.Start()
-	return err
+	return runContainerCommand("stop", containerID)
 }
 
 // `docker rm -f ${containerID}` コマンドを実行する。
 func Rm(containerID string) error {
-	dockerRmCommand := exec.Command(containerCommand, "rm", "-f", containerID)
-	err := dockerRmCommand.Start()
-	return err
+	return runContainerCommand("rm", "-f", containerID)
+}
+
+func runContainerCommand(args ...string) error {
+	output, err := exec.Command(containerCommand, args...).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("docker %s: %w: %s", strings.Join(args, " "), err, strings.TrimSpace(string(output)))
+	}
+	return nil
 }
 
 func Cp(tagForLog string, from string, containerID string, to string) error {

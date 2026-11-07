@@ -2,6 +2,8 @@ package dockercompose
 
 import (
 	"encoding/json"
+	"errors"
+	"strings"
 )
 
 // `docker compose ps --format json` コマンドの実行結果スキーマ
@@ -42,12 +44,33 @@ type PsCommandResult struct {
 }
 
 func GetProjectName(psCommandResult string) (string, error) {
-	result, err := UnmarshalPsCommandResult([]byte(psCommandResult))
-	if err != nil {
-		return "", err
+	output := strings.TrimSpace(psCommandResult)
+	if output == "" {
+		return "", nil
 	}
-
-	return result.Project, nil
+	var project string
+	if strings.HasPrefix(output, "[") {
+		// Older Compose versions returned a JSON array.
+		var results []PsCommandResult
+		if err := json.Unmarshal([]byte(output), &results); err != nil {
+			return "", err
+		}
+		if len(results) == 0 {
+			return "", nil
+		}
+		project = results[0].Project
+	} else {
+		line, _, _ := strings.Cut(output, "\n")
+		result, err := UnmarshalPsCommandResult([]byte(line))
+		if err != nil {
+			return "", err
+		}
+		project = result.Project
+	}
+	if project == "" {
+		return "", errors.New("docker compose ps returned a container without a project name")
+	}
+	return project, nil
 }
 
 func UnmarshalPsCommandResult(data []byte) (PsCommandResult, error) {

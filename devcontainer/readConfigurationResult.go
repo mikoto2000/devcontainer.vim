@@ -41,6 +41,7 @@ type ReadConfigurationCommandResult struct {
 }
 
 type Configuration struct {
+	DevcontainerJSON
 	ForwardPorts   []any          `json:"forwardPorts"`
 	ConfigFilePath ConfigFilePath `json:"configFilePath"`
 }
