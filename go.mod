@@ -4,7 +4,6 @@ go 1.26
 
 require (
 	github.com/Jeffail/gabs/v2 v2.7.0
-	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be
 	github.com/google/go-github/v62 v62.0.0
 	github.com/manifoldco/promptui v0.9.0
 	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a

@@ -330,6 +330,10 @@ The default is as follows:
 -v "$(pwd):/work" -v "$HOME/.vim:/root/.vim" --workdir /work
 ```
 
+`runargs` is a list of arguments passed to Docker. Spaces and newlines separate arguments. Use quotes or backslashes to include spaces in an argument. Outside single quotes, `$VAR` and `${VAR}` expand environment variables, and `$(pwd)` expands to the current directory. An unquoted `~` or `~/` at the start of an argument refers to the home directory. Expanded values stay within the same argument.
+
+Other command substitutions, pipes, redirects, and similar shell syntax are unsupported. Filename wildcards are passed literally.
+
 To revert to the default, regenerate runargs with the `-g` option.
 
 ```sh
