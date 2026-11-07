@@ -59,29 +59,29 @@ func Run(
 		vimrc,
 		defaultRunargs)
 
-	// 後片付け
-	// clipboard-data-receiver を停止
+	// セットアップが途中で失敗しても、取得済みのリソースを片付ける。
 	defer func() {
-		err = tools.KillCdr(cdrPid)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Container stop error: %s\n", err)
+		if cdrPid > 0 {
+			if err := tools.KillCdr(cdrPid); err != nil {
+				fmt.Fprintf(os.Stderr, "Clipboard receiver stop error: %s\n", err)
+			}
 		}
-
-		err = os.RemoveAll(cdrConfigDir)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Cache remove error: %s\n", err)
+		if cdrConfigDir != "" {
+			if err := os.RemoveAll(cdrConfigDir); err != nil {
+				fmt.Fprintf(os.Stderr, "Cache remove error: %s\n", err)
+			}
+		}
+		if containerID != "" {
+			fmt.Printf("Stop container %s.\n", containerID)
+			output, err := exec.Command(containerCommand, "stop", containerID).CombinedOutput()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Container stop error: %v\n%s", err, output)
+			}
 		}
 	}()
-
-	// コンテナ停止
-	defer func() {
-		// `docker stop <dockerrun 時に標準出力に表示される CONTAINER ID>`
-		fmt.Printf("Stop container(Async) %s.\n", containerID)
-		err = exec.Command(containerCommand, "stop", containerID).Start()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Container stop error: %s\n", err)
-		}
-	}()
+	if err != nil {
+		return err
+	}
 
 	// コンテナへ接続
 	// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> /Vim-AppImage`
@@ -144,11 +144,11 @@ func startClipboardReceiver(cdrPath, configDirForDocker, containerID string) (in
 	configDirForCdr := filepath.Join(configDirForDocker, containerID)
 	err := os.MkdirAll(configDirForCdr, 0744)
 	if err != nil {
-		return 0, 0, configDirForCdr, err
+		return 0, 0, "", err
 	}
 	pid, port, err := tools.RunCdr(cdrPath, configDirForCdr)
 	if err != nil {
-		return 0, 0, configDirForCdr, err
+		return pid, 0, configDirForCdr, err
 	}
 	fmt.Printf("Started clipboard-data-receiver with pid: %d, port: %d\n", pid, port)
 	return pid, port, configDirForCdr, nil
