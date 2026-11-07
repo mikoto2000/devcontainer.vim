@@ -53,7 +53,7 @@ func Run(
 	defaultRunargs []string) error {
 
 	// コンテナのセットアップ
-	containerID, vimFileName, tmuxFileName, sendToTCP, containerArch, useSystemVim, useSystemTmux, cdrPid, cdrConfigDir, err := setupContainer(
+	setup, err := setupContainer(
 		args,
 		noCdr,
 		noPf,
@@ -67,19 +67,19 @@ func Run(
 
 	// セットアップが途中で失敗しても、取得済みのリソースを片付ける。
 	defer func() {
-		if cdrPid > 0 {
-			if err := tools.KillCdr(cdrPid); err != nil {
+		if setup.cdrPID > 0 {
+			if err := tools.KillCdr(setup.cdrPID); err != nil {
 				fmt.Fprintf(os.Stderr, "Clipboard receiver stop error: %s\n", err)
 			}
 		}
-		if cdrConfigDir != "" {
-			if err := os.RemoveAll(cdrConfigDir); err != nil {
+		if setup.cdrConfigDir != "" {
+			if err := os.RemoveAll(setup.cdrConfigDir); err != nil {
 				fmt.Fprintf(os.Stderr, "Cache remove error: %s\n", err)
 			}
 		}
-		if containerID != "" {
-			fmt.Printf("Stop container %s.\n", containerID)
-			output, err := exec.Command(containerCommand, "stop", containerID).CombinedOutput()
+		if setup.containerID != "" {
+			fmt.Printf("Stop container %s.\n", setup.containerID)
+			output, err := exec.Command(containerCommand, "stop", setup.containerID).CombinedOutput()
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Container stop error: %v\n%s", err, output)
 			}
@@ -95,8 +95,9 @@ func Run(
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	sendToTCPName := filepath.Base(sendToTCP)
-	dockerRunVimArgs, err := dockerRunVimArgs(containerID, vimFileName, tmuxFileName, sendToTCPName, containerArch, useSystemVim, useSystemTmux, noTmux, shell, configDirForDocker)
+	sendToTCPName := filepath.Base(setup.sendToTCP)
+	dockerRunVimArgs, err := dockerRunVimArgs(setup.containerID, setup.vimFileName, setup.tmuxFileName, sendToTCPName,
+		setup.containerArch, setup.useSystemVim, setup.useSystemTmux, noTmux, shell, configDirForDocker)
 	if err != nil {
 		return err
 	}
@@ -166,6 +167,19 @@ func startClipboardReceiver(cdrPath, configDirForDocker, containerID string) (in
 	return pid, port, configDirForCdr, nil
 }
 
+// containerSetup also records resources acquired before a setup failure.
+type containerSetup struct {
+	containerID   string
+	containerArch string
+	cdrPID        int
+	cdrConfigDir  string
+	vimFileName   string
+	useSystemVim  bool
+	tmuxFileName  string
+	useSystemTmux bool
+	sendToTCP     string
+}
+
 func setupContainer(
 	args []string,
 	noCdr bool,
@@ -176,59 +190,52 @@ func setupContainer(
 	nvim bool,
 	configDirForDocker string,
 	vimrc string,
-	defaultRunargs []string) (string, string, string, string, string, bool, bool, int, string, error) {
+	defaultRunargs []string) (containerSetup, error) {
+	var setup containerSetup
+	var err error
 
 	// 1. コンテナを起動
-	containerID, err := startContainer(args, defaultRunargs)
+	setup.containerID, err = startContainer(args, defaultRunargs)
 	if err != nil {
-		return "", "", "", "", "", false, false, 0, "", err
+		return setup, err
 	}
 
 	// 2. コンテナアーキテクチャを取得
-	containerArch, err := getContainerArch(containerID)
+	setup.containerArch, err = getContainerArch(setup.containerID)
 	if err != nil {
-		return containerID, "", "", "", "", false, false, 0, "", err
+		return setup, err
 	}
 
 	// 3. port-forwarderをインストール
 	if !noPf {
-		err = installPortForwarder(containerID, vimInstallDir, containerArch)
-		if err != nil {
-			return containerID, "", "", "", containerArch, false, false, 0, "", err
+		if err := installPortForwarder(setup.containerID, vimInstallDir, setup.containerArch); err != nil {
+			return setup, err
 		}
 	}
 
 	// 4. clipboard-data-receiverを起動
-	pid := 0
 	port := 0
-	configDirForCdr := ""
 	if !noCdr {
-		pid, port, configDirForCdr, err = startClipboardReceiver(cdrPath, configDirForDocker, containerID)
+		setup.cdrPID, port, setup.cdrConfigDir, err = startClipboardReceiver(cdrPath, configDirForDocker, setup.containerID)
 		if err != nil {
-			return containerID, "", "", "", containerArch, false, false, pid, configDirForCdr, err
+			return setup, err
 		}
 	}
 
 	// 5. Vimの検出とインストール
-	vimFileName, useSystemVim, err := setupVim(containerID, vimInstallDir, nvim, containerArch)
+	setup.vimFileName, setup.useSystemVim, err = setupVim(setup.containerID, vimInstallDir, nvim, setup.containerArch)
 	if err != nil {
-		return containerID, vimFileName, "", "", containerArch, useSystemVim, false, pid, configDirForCdr, err
+		return setup, err
 	}
 
-	tmuxFileName := ""
-	useSystemTmux := false
 	if !noTmux {
-		tmuxFileName, useSystemTmux, err = setupTmux(containerID, vimInstallDir, containerArch)
+		setup.tmuxFileName, setup.useSystemTmux, err = setupTmux(setup.containerID, vimInstallDir, setup.containerArch)
 		if err != nil {
-			return containerID, vimFileName, "", "", containerArch, useSystemVim, false, pid, configDirForCdr, err
+			return setup, err
 		}
 	}
 
 	// 6. Vimファイルを転送
-	sendToTCP, err := transferVimFiles(containerID, configDirForDocker, vimrc, noCdr, port, vimFileName == "nvim")
-	if err != nil {
-		return containerID, vimFileName, tmuxFileName, sendToTCP, containerArch, useSystemVim, useSystemTmux, pid, configDirForCdr, err
-	}
-
-	return containerID, vimFileName, tmuxFileName, sendToTCP, containerArch, useSystemVim, useSystemTmux, pid, configDirForCdr, nil
+	setup.sendToTCP, err = transferVimFiles(setup.containerID, configDirForDocker, vimrc, noCdr, port, setup.vimFileName == "nvim")
+	return setup, err
 }

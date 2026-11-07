@@ -28,7 +28,7 @@ func TestSetupContainer(t *testing.T) {
 	noCdr := false
 	noPf := false
 
-	containerID, vimName, _, _, _, useSystemVim, _, cdrPID, _, err := setupContainer(
+	setup, err := setupContainer(
 		[]string{bundledVimTestImage},
 		noCdr,
 		noPf,
@@ -41,13 +41,13 @@ func TestSetupContainer(t *testing.T) {
 		[]string{},
 	)
 	t.Cleanup(func() {
-		if cdrPID > 0 {
-			if err := tools.KillCdr(cdrPID); err != nil {
+		if setup.cdrPID > 0 {
+			if err := tools.KillCdr(setup.cdrPID); err != nil {
 				t.Errorf("stop clipboard-data-receiver: %v", err)
 			}
 		}
-		if containerID != "" {
-			if err := docker.Stop(containerID); err != nil {
+		if setup.containerID != "" {
+			if err := docker.Stop(setup.containerID); err != nil {
 				t.Errorf("stop test container: %v", err)
 			}
 		}
@@ -63,14 +63,14 @@ func TestSetupContainer(t *testing.T) {
 		t.Fatalf("error: %s", err)
 	}
 
-	if vimName != "vim" || useSystemVim {
-		t.Fatalf("setup selected %q (system=%v), want bundled Vim", vimName, useSystemVim)
+	if setup.vimFileName != "vim" || setup.useSystemVim {
+		t.Fatalf("setup selected %q (system=%v), want bundled Vim", setup.vimFileName, setup.useSystemVim)
 	}
-	if _, err := docker.Exec(containerID, "test", "-x", "/vim"); err != nil {
+	if _, err := docker.Exec(setup.containerID, "test", "-x", "/vim"); err != nil {
 		t.Fatalf("bundled Vim is not executable at /vim: %v", err)
 	}
 	//     /vimrc
-	vimrcOutput, err := docker.Exec(containerID, "sh", "-c", "ls /vimrc")
+	vimrcOutput, err := docker.Exec(setup.containerID, "sh", "-c", "ls /vimrc")
 	if err != nil {
 		t.Fatalf("error: %s", err)
 	}
@@ -236,7 +236,7 @@ func TestRunIntegration(t *testing.T) {
 		// 実際のテストでは、コンテナが起動してVimが実行可能な状態になることを確認
 
 		// setupContainer部分のみをテスト
-		containerID, vimName, _, _, _, useSystemVim, _, cdrPid, cdrConfigDir, err := setupContainer(
+		setup, err := setupContainer(
 			args,
 			noCdr,
 			noPf,
@@ -254,12 +254,12 @@ func TestRunIntegration(t *testing.T) {
 		}
 
 		// クリーンアップ
-		tools.KillCdr(cdrPid)
-		os.RemoveAll(cdrConfigDir)
-		exec.Command(containerCommand, "stop", containerID).Start()
+		tools.KillCdr(setup.cdrPID)
+		os.RemoveAll(setup.cdrConfigDir)
+		exec.Command(containerCommand, "stop", setup.containerID).Start()
 
-		if vimName != "vim" || useSystemVim {
-			done <- fmt.Errorf("setup selected %q (system=%v), want bundled Vim", vimName, useSystemVim)
+		if setup.vimFileName != "vim" || setup.useSystemVim {
+			done <- fmt.Errorf("setup selected %q (system=%v), want bundled Vim", setup.vimFileName, setup.useSystemVim)
 			return
 		}
 		done <- nil
