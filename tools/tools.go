@@ -183,19 +183,14 @@ func InstallRunTools(installDir string, nvim bool) (string, error) {
 }
 
 func InstallVim(installDir string, nvim bool, containerArch string) (string, error) {
-	var vimPath string
-	var err error
-	if !nvim {
-		vimPath, err = VIM(DefaultInstallerUseServices{}).Install(installDir, containerArch, false)
-	} else {
-		if runtime.GOOS == "darwin" && containerArch == "amd64" {
-			// M1 Mac で amd64 のコンテナを動かすと、なぜか AppImage が動かないので vim にフォールバック
-			vimPath, err = VIM(DefaultInstallerUseServices{}).Install(installDir, containerArch, false)
-		} else {
-			vimPath, err = NVIM(DefaultInstallerUseServices{}).Install(installDir, containerArch, false)
-		}
+	// Use static Vim for ARM containers and for amd64 containers on macOS,
+	// where this setup does not use the Neovim AppImage.
+	armContainer := containerArch == "aarch64" || containerArch == "arm64"
+	macStaticVim := runtime.GOOS == "darwin" && (containerArch == "amd64" || containerArch == "x86_64")
+	if !nvim || armContainer || macStaticVim {
+		return VIM(DefaultInstallerUseServices{}).Install(installDir, containerArch, false)
 	}
-	return vimPath, err
+	return NVIM(DefaultInstallerUseServices{}).Install(installDir, containerArch, false)
 }
 
 func InstallTmux(installDir string, containerArch string) (string, error) {

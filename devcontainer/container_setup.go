@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/mikoto2000/devcontainer.vim/v3/docker"
@@ -88,65 +87,39 @@ func setupVim(containerID, vimInstallDir string, nvim bool, containerArch string
 		vimFileName = "nvim"
 	}
 
-	useSystemVim := false
 	fmt.Printf("Check system installed %s ... ", vimFileName)
 	out, _ := docker.Exec(containerID, "which", vimFileName)
 	if out != "" {
 		fmt.Printf("found.\n")
-		useSystemVim = true
-
-		if nvim {
-			vimFileName = "nvim"
-		}
-	} else {
-		fmt.Printf("not found.\n")
-
-		if runtime.GOARCH == "arm64" {
-			// arm の場合スタティックリンクの nvim を作れないため、 vim にフォールバック
-			vimFileName = "vim"
-			nvim = false
-		} else if runtime.GOOS == "darwin" && runtime.GOARCH == "amd64" && nvim {
-			// M1 Mac で amd64 のコンテナを動かすと、なぜか AppImage が動かないので vim にフォールバック
-			vimFileName = "vim"
-			nvim = false
-		}
+		fmt.Printf("docker exec output: \"%s\".\n", strings.TrimSpace(out))
+		return vimFileName, true, nil
 	}
+	fmt.Printf("not found.\n")
 	fmt.Printf("docker exec output: \"%s\".\n", strings.TrimSpace(out))
 
-	if !useSystemVim {
-		// コンテナへ Vim/Neovim を転送して実行権限を追加
-		vimFilePath, err := tools.InstallVim(vimInstallDir, nvim, containerArch)
-		if err != nil {
-			return "", false, err
-		}
-
-		// start.goとrun.goで異なる処理: start.goは特別なパス解析が必要
-		actualVimFileName := vimFileName
-		if strings.Contains(vimFilePath, "_") {
-			// vim_<ARCH>, nvim_<ARCH> の形式でパスがわたってくる場合（start.go）
-			actualVimFileName = strings.Split(filepath.Base(vimFilePath), "_")[0]
-		}
-
-		err = docker.Cp("vim", vimFilePath, containerID, "/"+actualVimFileName)
-		if err != nil {
-			return actualVimFileName, useSystemVim, err
-		}
-
-		// `docker exec <dockerrun 時に標準出力に表示される CONTAINER ID> chmod +x /Vim-AppImage`
-		dockerChownArgs := []string{"exec", "--user", "root", containerID, "sh", "-c", "chmod +x /" + actualVimFileName}
-		fmt.Printf("Chown AppImage: `%s \"%s\"` ...", containerCommand, strings.Join(dockerChownArgs, "\" \""))
-		chmodResult, err := exec.Command(containerCommand, dockerChownArgs...).CombinedOutput()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "chmod error.")
-			fmt.Fprintln(os.Stderr, string(chmodResult))
-			return actualVimFileName, useSystemVim, &ChmodError{msg: "chmod error."}
-		}
-		fmt.Printf(" done.\n")
-
-		return actualVimFileName, useSystemVim, nil
+	vimFilePath, err := tools.InstallVim(vimInstallDir, nvim, containerArch)
+	if err != nil {
+		return "", false, err
 	}
 
-	return vimFileName, useSystemVim, nil
+	// The cached artifact is named vim_<arch> or nvim_<arch>. Use the
+	// installed editor for both the launch command and clipboard script.
+	vimFileName, _, _ = strings.Cut(filepath.Base(vimFilePath), "_")
+	if err := docker.Cp("vim", vimFilePath, containerID, "/"+vimFileName); err != nil {
+		return vimFileName, false, err
+	}
+
+	dockerChownArgs := []string{"exec", "--user", "root", containerID, "sh", "-c", "chmod +x /" + vimFileName}
+	fmt.Printf("Chown AppImage: `%s \"%s\"` ...", containerCommand, strings.Join(dockerChownArgs, "\" \""))
+	chmodResult, err := exec.Command(containerCommand, dockerChownArgs...).CombinedOutput()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "chmod error.")
+		fmt.Fprintln(os.Stderr, string(chmodResult))
+		return vimFileName, false, &ChmodError{msg: "chmod error."}
+	}
+	fmt.Printf(" done.\n")
+
+	return vimFileName, false, nil
 }
 
 // Vimファイル（SendToTcp.vimとvimrc）をコンテナに転送する

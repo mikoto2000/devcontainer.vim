@@ -105,6 +105,16 @@ func TestRunCleansUpAfterSetupFailure(t *testing.T) {
 
 // Copies of the test executable act as Docker and CDR without either dependency.
 func TestMain(m *testing.M) {
+	if dir := os.Getenv(armVimTestDirEnv); dir != "" {
+		switch strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe") {
+		case "docker", "test-arm-devcontainer":
+			if err := runArmVimTestCommand(dir, os.Args[1:]); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(99)
+			}
+			os.Exit(0)
+		}
+	}
 	if dir := os.Getenv(forwardTestDirEnv); dir != "" {
 		switch strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe") {
 		case "docker", "test-forward-devcontainer":
