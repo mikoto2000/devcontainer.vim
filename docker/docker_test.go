@@ -1,6 +1,9 @@
 package docker
 
 import (
+	"encoding/json"
+	"errors"
+	"io"
 	"os/exec"
 	"strings"
 	"testing"
@@ -18,83 +21,71 @@ func requireDockerPsJSONSupport(t *testing.T) {
 	}
 }
 
+func assertPsJSON(t *testing.T, output, wantState string) {
+	t.Helper()
+	decoder := json.NewDecoder(strings.NewReader(output))
+	for {
+		var row struct {
+			PsCommandResult
+			State string
+		}
+		err := decoder.Decode(&row)
+		if err == io.EOF {
+			return
+		}
+		if err != nil {
+			t.Fatalf("invalid docker ps JSON: %v\n%s", err, output)
+		}
+		if strings.TrimSpace(row.ID) == "" {
+			t.Fatalf("docker ps row has no ID: %+v", row)
+		}
+		if wantState != "" && row.State != wantState {
+			t.Errorf("container %s has state %q, want %q", row.ID, row.State, wantState)
+		}
+	}
+}
+
 func TestPs(t *testing.T) {
 	requireDockerPsJSONSupport(t)
 
-	// 基本的なdocker psコマンドがエラーなく実行できることをテスト
 	result, err := Ps("status=running")
 	if err != nil {
-		// dockerデーモンが動いていない場合などはスキップ
-		if strings.Contains(err.Error(), "Cannot connect to the Docker daemon") {
-			t.Skip("Docker daemon not running, skipping test")
-		}
 		t.Fatalf("Ps failed: %v", err)
 	}
-
-	// 結果が文字列であることを確認
-	if result == "" {
-		// 実行中のコンテナがない場合は空文字列が返る
-		t.Logf("No running containers found")
-	} else {
-		// 結果にJSONの形式が含まれているかチェック（簡易）
-		if !strings.Contains(result, "ID") {
-			t.Logf("Unexpected output format: %s", result)
-		}
-	}
+	assertPsJSON(t, result, "running")
 }
 
 func TestPsWithInvalidFilter(t *testing.T) {
 	requireDockerPsJSONSupport(t)
 
-	// 無効なフィルタでテスト
 	result, err := Ps("invalid=filter")
-	if err != nil {
-		// dockerデーモンが動いていない場合などはスキップ
-		if strings.Contains(err.Error(), "Cannot connect to the Docker daemon") {
-			t.Skip("Docker daemon not running, skipping test")
-		}
-		// 無効なフィルタでもdockerコマンド自体は成功する場合がある
-		t.Logf("Ps with invalid filter returned error: %v", err)
+	var exit *exec.ExitError
+	if !errors.As(err, &exit) || !strings.Contains(strings.ToLower(string(exit.Stderr)), "invalid filter") {
+		t.Fatalf("Ps with invalid filter returned %q, %v, want an invalid filter error", result, err)
 	}
-
-	// 結果は空文字列になることが期待される
-	if result != "" {
-		t.Logf("Unexpected result with invalid filter: %s", result)
+	if strings.TrimSpace(result) != "" {
+		t.Errorf("Ps with invalid filter returned container data: %q", result)
 	}
 }
 
 func TestPsWithEmptyFilter(t *testing.T) {
 	requireDockerPsJSONSupport(t)
 
-	// 空のフィルタでテスト
 	result, err := Ps("")
 	if err != nil {
-		// dockerデーモンが動いていない場合などはスキップ
-		if strings.Contains(err.Error(), "Cannot connect to the Docker daemon") {
-			t.Skip("Docker daemon not running, skipping test")
-		}
 		t.Fatalf("Ps with empty filter failed: %v", err)
 	}
-
-	// 結果が文字列であることを確認（空でも可）
-	t.Logf("Ps with empty filter result: %s", result)
+	assertPsJSON(t, result, "")
 }
 
 func TestPsWithValidLabel(t *testing.T) {
 	requireDockerPsJSONSupport(t)
 
-	// ラベルフィルタでテスト（存在しないラベルを使用）
-	result, err := Ps("label=devcontainer.local_folder=/nonexistent/path")
+	result, err := Ps("label=devcontainer.local_folder=" + t.TempDir())
 	if err != nil {
-		// dockerデーモンが動いていない場合などはスキップ
-		if strings.Contains(err.Error(), "Cannot connect to the Docker daemon") {
-			t.Skip("Docker daemon not running, skipping test")
-		}
 		t.Fatalf("Ps with label filter failed: %v", err)
 	}
-
-	// 存在しないラベルなので結果は空文字列になることが期待される
-	if result != "" {
-		t.Logf("Unexpected result with nonexistent label: %s", result)
+	if strings.TrimSpace(result) != "" {
+		t.Fatalf("Ps with nonexistent label returned containers: %q", result)
 	}
 }
