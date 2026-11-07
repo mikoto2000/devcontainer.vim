@@ -1,5 +1,6 @@
 {
   "name": "TestStart",
   "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+  "remoteUser": "vscode",
   "forwardPorts": [8888]
 }
