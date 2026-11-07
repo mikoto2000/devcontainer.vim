@@ -20,6 +20,43 @@ import (
 )
 
 const forwardTestDirEnv = "DEVCONTAINER_VIM_FORWARD_TEST_DIR"
+const forwardTestChmodFailureEnv = "DEVCONTAINER_VIM_FORWARD_TEST_CHMOD_FAILURE"
+
+func TestInstallPortForwarderMakesContainerCopyExecutable(t *testing.T) {
+	for _, mode := range []string{"success", "chmod-denied"} {
+		t.Run(mode, func(t *testing.T) {
+			_, dir := installForwardTestCommands(t, "[]")
+			if mode == "chmod-denied" {
+				t.Setenv(forwardTestChmodFailureEnv, "1")
+			}
+			cache := filepath.Join(dir, "port-forwarder-container_amd64")
+			if err := os.WriteFile(cache, []byte("cached forwarder"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			err := installPortForwarder("container-id", dir, "amd64")
+			if mode == "chmod-denied" {
+				var exit *exec.ExitError
+				if !errors.As(err, &exit) || exit.ExitCode() != 23 || !strings.Contains(err.Error(), "fixture chmod denied") {
+					t.Fatalf("install error = %v, want chmod exit code and diagnostic", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			assertForwardTestArgs(t, dir, "forwarder-chmod", []string{"exec", "--user", "root", "container-id", "chmod", "a+x", "/port-forwarder"})
+			if runtime.GOOS != "windows" {
+				copied, err := os.Stat(filepath.Join(dir, "copied-forwarder"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if copied.Mode().Perm()&0111 != 0111 {
+					t.Errorf("container copy mode = %o, want execute bits set", copied.Mode().Perm())
+				}
+			}
+		})
+	}
+}
 
 func TestGetForwardPortsValid(t *testing.T) {
 	input := `{"configuration":{"forwardPorts":[0,8080,65535,"api:443","db.local:00543","127.0.0.1:80"]}}`
@@ -387,6 +424,24 @@ func runForwardTestCommand(dir string, argv []string) int {
 	}
 	if err := os.WriteFile(filepath.Join(dir, "docker-called"), nil, 0600); err != nil {
 		return 99
+	}
+	copied := filepath.Join(dir, "copied-forwarder")
+	if len(args) == 3 && args[0] == "cp" && args[2] == "container-id:/port-forwarder" {
+		data, err := os.ReadFile(args[1])
+		if err != nil || os.WriteFile(copied, data, 0600) != nil {
+			return 99
+		}
+		return 0
+	}
+	if slices.Equal(args, []string{"exec", "--user", "root", "container-id", "chmod", "a+x", "/port-forwarder"}) {
+		if os.Getenv(forwardTestChmodFailureEnv) != "" {
+			fmt.Fprintln(os.Stderr, "fixture chmod denied")
+			return 23
+		}
+		if os.Chmod(copied, 0711) != nil || !writeForwardTestArgs(dir, "forwarder-chmod", args) {
+			return 99
+		}
+		return 0
 	}
 	if len(args) >= 4 && args[3] == "hostname" {
 		fmt.Println("127.0.0.1")

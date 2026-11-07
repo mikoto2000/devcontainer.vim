@@ -61,9 +61,14 @@ func installPortForwarder(containerID, vimInstallDir, containerArch string) erro
 	if err != nil {
 		return err
 	}
-	err = docker.Cp("port-forwarder-container", portForwarderContainerPath, containerID, "/port-forwarder")
-	if err != nil {
+	const containerPath = "/port-forwarder"
+	if err := docker.Cp("port-forwarder-container", portForwarderContainerPath, containerID, containerPath); err != nil {
 		return err
+	}
+	// The copy can carry permissions from a non-executable host cache entry.
+	cmd := exec.Command(containerCommand, "exec", "--user", "root", containerID, "chmod", "a+x", containerPath)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("make %s executable in container %s: %w: %s", containerPath, containerID, err, strings.TrimSpace(string(output)))
 	}
 	return nil
 }
