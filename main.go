@@ -196,7 +196,11 @@ func main() {
 				HideHelp:        true,
 				SkipFlagParsing: true,
 				Action: func(cCtx *cli.Context) error {
-					// `docker run` でコンテナを立てる
+					args := cCtx.Args().Slice()
+					if len(args) == 0 {
+						fmt.Fprintln(os.Stderr, "Usage: devcontainer.vim run <IMAGE_OR_CONTAINER>")
+						os.Exit(1)
+					}
 
 					// Requirements のチェック
 					// 1. docker
@@ -232,7 +236,6 @@ func main() {
 						noTmux = cCtx.Bool(flagNameNoTmux)
 					}
 
-					args := cCtx.Args().Slice()
 					var defaultRunargs []string
 					// Windows では runargs を使用しない。
 					if runtime.GOOS != "windows" {
@@ -243,10 +246,6 @@ func main() {
 						defaultRunargs, err = parseRunargs(string(data))
 						if err != nil {
 							return fmt.Errorf("parse runargs: %w", err)
-						}
-						if len(args) == 0 {
-							fmt.Fprintf(os.Stderr, "Usage: devcontainer.vim run <IMAGE_OR_CONTAINER>\n")
-							os.Exit(1)
 						}
 					}
 
