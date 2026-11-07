@@ -21,20 +21,24 @@ func forward(ctx context.Context, src net.Conn, dstAddr string) error {
 		src.Close()
 		dst.Close()
 	}
+	defer closeConnections()
 	stop := context.AfterFunc(ctx, closeConnections)
 	defer stop()
 
-	clientDone := make(chan struct{})
-	go func() {
-		defer close(clientDone)
-		io.Copy(dst, src)
-	}()
-	defer func() {
-		closeConnections()
-		<-clientDone
-	}()
-	io.Copy(src, dst)
-	return nil
+	copyDirection := func(to, from net.Conn) error {
+		_, err := io.Copy(to, from)
+		if writer, ok := to.(interface{ CloseWrite() error }); err == nil && ok {
+			err = writer.CloseWrite()
+		}
+		if err != nil {
+			closeConnections()
+		}
+		return err
+	}
+	clientDone := make(chan error, 1)
+	go func() { clientDone <- copyDirection(dst, src) }()
+	serverErr := copyDirection(src, dst)
+	return errors.Join(serverErr, <-clientDone)
 }
 
 // StartForwarding relays TCP connections without a cancellation context.
