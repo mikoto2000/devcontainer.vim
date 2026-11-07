@@ -13,6 +13,7 @@ const downloadURLPortForwarderContainerArm64Pattern = "https://github.com/mikoto
 var PortForwarderContainer = func(services InstallerUseServices) Tool {
 
 	return Tool{
+		// This is the host cache basename. The container executable is /port-forwarder.
 		FileName: "port-forwarder-container",
 		CalculateDownloadURL: func(containerArch string) (string, error) {
 			latestTagName, err := services.GetLatestReleaseFromGitHub("mikoto2000", "port-forwarder")

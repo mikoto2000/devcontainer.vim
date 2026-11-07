@@ -12,6 +12,8 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
+const containerPortForwarderPath = "/port-forwarder"
+
 // Both probe results exit successfully so Docker execution errors stay distinct.
 const containerToolProbe = `if command -v "$1" >/dev/null; then printf 'found\n'; else printf 'missing\n'; fi`
 
@@ -56,18 +58,18 @@ func getContainerArch(containerID string) (string, error) {
 
 // port-forwarderをコンテナにインストールする
 func installPortForwarder(containerID, vimInstallDir, containerArch string) error {
-	portForwarderContainerPath, err := tools.PortForwarderContainer(tools.DefaultInstallerUseServices{}).Install(vimInstallDir, containerArch, false)
+	forwarder := tools.PortForwarderContainer(tools.DefaultInstallerUseServices{})
+	cachedPath, err := forwarder.Install(vimInstallDir, containerArch, false)
 	if err != nil {
 		return err
 	}
-	const containerPath = "/port-forwarder"
-	if err := docker.Cp("port-forwarder-container", portForwarderContainerPath, containerID, containerPath); err != nil {
+	if err := docker.Cp(forwarder.FileName, cachedPath, containerID, containerPortForwarderPath); err != nil {
 		return err
 	}
 	// The copy can carry permissions from a non-executable host cache entry.
-	cmd := exec.Command(docker.Command, "exec", "--user", "root", containerID, "chmod", "a+x", containerPath)
+	cmd := exec.Command(docker.Command, "exec", "--user", "root", containerID, "chmod", "a+x", containerPortForwarderPath)
 	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("make %s executable in container %s: %w: %s", containerPath, containerID, err, strings.TrimSpace(string(output)))
+		return fmt.Errorf("make %s executable in container %s: %w: %s", containerPortForwarderPath, containerID, err, strings.TrimSpace(string(output)))
 	}
 	return nil
 }

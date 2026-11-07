@@ -120,7 +120,7 @@ func (s *portForwardingSession) startPortForwarders(containerID, containerIp, de
 	for _, fc := range forwardConfigs {
 		target := net.JoinHostPort(fc.Host, fc.Port)
 		args := []string{"exec", "--container-id", containerID, "--workspace-folder", workspaceFolder,
-			"--override-config", configFilePath, "/port-forwarder", "-l", "0.0.0.0:0", "-f", target}
+			"--override-config", configFilePath, containerPortForwarderPath, "-l", "0.0.0.0:0", "-f", target}
 		if err := s.startPortForwarder(containerID, containerIp, fc.Port, target, devcontainerPath, args); err != nil {
 			return err
 		}
