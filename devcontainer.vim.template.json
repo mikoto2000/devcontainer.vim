@@ -1,10 +1,10 @@
 {
   "remoteEnv": {
-    // To override the container's editor or pager, choose commands it provides.
+    // To override the container's editor, pager, or shell, choose commands it provides.
     // "EDITOR": "vim",
     // "PAGER": "less",
+    // "SHELL": "/bin/bash",
     "LESSCHARSET": "utf-8",
-    "SHELL": "bash",
     "TERM": "xterm-256color",
     "HISTCONTROL": "erasedups",
     // If use WSLG
