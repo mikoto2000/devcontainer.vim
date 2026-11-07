@@ -2,7 +2,7 @@ package devcontainer
 
 import "testing"
 
-func TestBuildDevcontainerStartVimExecArgsUsesDetachKeysForVimRunScript(t *testing.T) {
+func TestBuildDevcontainerStartVimExecArgsForVimRunScript(t *testing.T) {
 	args := buildDevcontainerStartVimExecArgs("test-container", "/workspace", "")
 
 	if len(args) != 6 {
@@ -13,7 +13,7 @@ func TestBuildDevcontainerStartVimExecArgsUsesDetachKeysForVimRunScript(t *testi
 	}
 }
 
-func TestBuildDevcontainerStartVimExecArgsUsesDetachKeysForShell(t *testing.T) {
+func TestBuildDevcontainerStartVimExecArgsForShell(t *testing.T) {
 	args := buildDevcontainerStartVimExecArgs("test-container", "/workspace", "bash")
 
 	if len(args) != 6 {
