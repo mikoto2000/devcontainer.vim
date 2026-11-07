@@ -191,7 +191,6 @@ func (o *cdrOutputBuffer) String() string {
 
 // clipboard-data-receiver を、 WSL でない環境で実行する場合の処理
 func runCdrForNative(cdrPath, pidFile, portFile string, startupTimeout, pollInterval time.Duration) (int, int, error) {
-	fmt.Println("\""+cdrPath+"\"", "--pid-file", pidFile, "--port-file", portFile, "--random-port")
 	cdrRunCommand := exec.Command(cdrPath, "--pid-file", pidFile, "--port-file", portFile, "--random-port")
 	var output cdrOutputBuffer
 	cdrRunCommand.Stdout = &output
