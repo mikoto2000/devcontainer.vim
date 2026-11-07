@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"os"
@@ -212,6 +213,54 @@ func TestCreateConfigFileForDevcontainer(t *testing.T) {
 		if got := merged[key]; got != want {
 			t.Errorf("%s = %q, want %q", key, got, want)
 		}
+	}
+}
+
+func TestCreateConfigFileForDevcontainerMergesConflicts(t *testing.T) {
+	dir := t.TempDir()
+	base := filepath.Join(dir, "devcontainer.json")
+	additional := filepath.Join(dir, "devcontainer.vim.json")
+	if err := os.WriteFile(base, []byte(`{
+		"name": "base",
+		"mounts": ["base-mount"],
+		"remoteEnv": {"PATH": "/base/bin", "KEEP": "base"},
+		"postCreateCommand": ["old", "argument"],
+		"init": true,
+	}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(additional, []byte(`{
+		// Settings specific to this editor.
+		"name": "vim",
+		"mounts": ["vim-mount"],
+		"remoteEnv": {"PATH": "/vim/bin", "ADD": "vim"},
+		"postCreateCommand": "new command",
+		"init": false
+	}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	path, err := CreateConfigFileForDevcontainer(filepath.Join(dir, "cache"), dir, base, additional)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got map[string]any
+	if err := json.Unmarshal(data, &got); err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]any{
+		"name":              "vim",
+		"mounts":            []any{"base-mount", "vim-mount"},
+		"remoteEnv":         map[string]any{"PATH": "/vim/bin", "KEEP": "base", "ADD": "vim"},
+		"postCreateCommand": "new command",
+		"init":              false,
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("merged configuration = %s, want %v", data, want)
 	}
 }
 

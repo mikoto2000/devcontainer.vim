@@ -202,6 +202,7 @@ but I don't want to add a `mounts` definition specific to `devcontainer.vim` to 
 
 Therefore, the file that is read only by devcontainer.vim is placed in `.devcontainer/devcontainer.vim.json`.
 `devcontainer.vim` merges and executes `.devcontainer/devcontainer.json` and `.devcontainer/devcontainer.vim.json`.
+When a key exists in both files, objects merge recursively and arrays are appended in base-first order. For other values, `devcontainer.vim.json` takes precedence.
 
 ```
 PROJECT_ROOT/
