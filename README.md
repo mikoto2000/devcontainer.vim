@@ -37,6 +37,8 @@ VSCode 向けに作成された `devcontainer.json` に追加する形で Vim �
 
 - docker
 
+GitHub API のリクエスト上限に達する場合は、`DEVCONTAINER_VIM_GITHUB_TOKEN` にトークンを設定するとリリース情報の取得に認証を使えます。
+
 Windows on Arm で Dev Container CLI を使うコマンドには、Windows 11 の x64 エミュレーションが必要です。自動取得する CLI は [Windows x64 版](https://github.com/mikoto2000/devcontainers-cli/releases)です。 [Microsoft のエミュレーション仕様](https://learn.microsoft.com/en-us/windows/arm/apps-on-arm-x86-emulation)
 
 コンテナ内に以下コマンドが存在し、 PATH が通っていること。

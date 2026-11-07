@@ -12,6 +12,46 @@ import (
 	"github.com/google/go-github/v62/github"
 )
 
+func TestReleaseAuthTransportLimitsTokenToGitHubAPI(t *testing.T) {
+	for _, tc := range []struct {
+		url  string
+		want string
+	}{
+		{"https://api.github.com/repos/test-owner/test-repo/releases/latest", "Bearer fixture-token"},
+		{"http://api.github.com/repos/test-owner/test-repo/releases/latest", ""},
+		{"https://api.github.com.example.com/redirect", ""},
+		{"https://example.com/redirect", ""},
+	} {
+		t.Run(tc.url, func(t *testing.T) {
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, tc.url, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			transport := releaseAuthTransport{
+				base: testReleaseRoundTripper(func(r *http.Request) (*http.Response, error) {
+					if got := r.Header.Get("Authorization"); got != tc.want {
+						t.Errorf("Authorization = %q, want %q", got, tc.want)
+					}
+					return &http.Response{StatusCode: http.StatusOK}, nil
+				}),
+				token: "fixture-token",
+			}
+			if _, err := transport.RoundTrip(req); err != nil {
+				t.Fatal(err)
+			}
+			if req.Header.Get("Authorization") != "" {
+				t.Error("the original request was modified")
+			}
+		})
+	}
+}
+
+type testReleaseRoundTripper func(*http.Request) (*http.Response, error)
+
+func (f testReleaseRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
+}
+
 func TestGetLatestReleaseTag(t *testing.T) {
 	for _, tt := range []struct {
 		name   string
