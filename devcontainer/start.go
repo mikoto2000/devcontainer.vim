@@ -451,12 +451,7 @@ func startVim(containerID string, devcontainerPath string, workspaceFolder strin
 		return dockerExec.Process.Signal(os.Interrupt)
 	}
 
-	err = dockerExec.Run()
-	if err != nil {
-		return err
-	} else {
-		return nil
-	}
+	return dockerExec.Run()
 }
 
 func createStartVimCommand(ctx context.Context, devcontainerPath string, devcontainerStartVimArgs []string) *exec.Cmd {
