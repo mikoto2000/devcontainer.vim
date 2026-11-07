@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -266,6 +267,7 @@ func TestGetConfigDir(t *testing.T) {
 }
 
 func TestIsWsl(t *testing.T) {
+	t.Setenv("WSL_INTEROP", "")
 	t.Setenv("WSL_DISTRO_NAME", "")
 	got := IsWsl()
 	if got != true {
@@ -278,6 +280,29 @@ func TestIsWsl(t *testing.T) {
 	got = IsWsl()
 	if got != false {
 		t.Fatalf("error: want false, but got true")
+	}
+}
+
+func TestIsWslUsesInteropSocketWithoutDistroName(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("WSL interop is a Linux-side socket")
+	}
+	t.Setenv("WSL_DISTRO_NAME", "")
+	if err := os.Unsetenv("WSL_DISTRO_NAME"); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "interop")
+	t.Setenv("WSL_INTEROP", path)
+	if IsWsl() {
+		t.Fatal("an absent socket must not identify WSL")
+	}
+	listener, err := net.Listen("unix", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer listener.Close()
+	if !IsWsl() {
+		t.Fatal("the WSL interop socket should identify WSL")
 	}
 }
 

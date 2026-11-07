@@ -41,6 +41,7 @@ func installCleanupTestCommands(t *testing.T, dir string) string {
 	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	t.Setenv(runCleanupTestDirEnv, dir)
 	// Use the native CDR path even when the test runs under WSL.
+	t.Setenv("WSL_INTEROP", "")
 	t.Setenv("WSL_DISTRO_NAME", "")
 	if err := os.Unsetenv("WSL_DISTRO_NAME"); err != nil {
 		t.Fatal(err)

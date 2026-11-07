@@ -91,6 +91,7 @@ func TestCreateStartVimCommandUsesScriptOnWsl(t *testing.T) {
 }
 
 func TestCreateStartVimCommandUsesDirectExecOutsideWsl(t *testing.T) {
+	t.Setenv("WSL_INTEROP", "")
 	originalValue, hadValue := os.LookupEnv("WSL_DISTRO_NAME")
 	err := os.Unsetenv("WSL_DISTRO_NAME")
 	if err != nil {
