@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -164,39 +165,40 @@ func TestGetContainerArch(t *testing.T) {
 
 // setupVim関数の単体テスト（システムVimが存在する場合）
 func TestSetupVimWithSystemVim(t *testing.T) {
-	// Dockerの存在確認
-	_, err := exec.LookPath("docker")
-	if err != nil {
-		t.Skip("docker command not found, skipping test")
+	if err := exec.CommandContext(t.Context(), containerCommand, "info", "--format", "{{.ServerVersion}}").Run(); err != nil {
+		t.Skipf("Docker server not available: %v", err)
 	}
 
-	// テスト用コンテナを起動（Vimがプリインストールされているイメージを使用）
-	args := []string{"alpine:latest"}
-	containerID, err := startContainer(args, []string{})
+	containerID, err := startContainer([]string{"debian:bookworm-slim"}, nil)
 	if err != nil {
-		if strings.Contains(err.Error(), "Cannot connect to the Docker daemon") || strings.Contains(err.Error(), "Container start error") {
-			t.Skip("Docker daemon not running, skipping test")
-		}
 		t.Fatalf("Failed to start container: %v", err)
 	}
-
-	defer func() {
-		exec.Command(containerCommand, "stop", containerID).Start()
-	}()
-
-	// Vimがシステムにインストールされているかどうかをテスト
-	vimFileName, useSystemVim, err := setupVim(containerID, "", false, "amd64")
+	t.Cleanup(func() {
+		if err := docker.Stop(containerID); err != nil {
+			t.Errorf("stop system Vim fixture: %v", err)
+		}
+	})
+	install := exec.CommandContext(t.Context(), containerCommand, "exec", "--user", "root", containerID, "sh", "-c",
+		"apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends vim")
+	if output, err := install.CombinedOutput(); err != nil {
+		t.Fatalf("install system Vim in fixture: %v\n%s", err, output)
+	}
+	arch, err := getContainerArch(containerID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// A regressed probe can reach the fallback without contacting a release server.
+	cache := t.TempDir()
+	if err := os.WriteFile(filepath.Join(cache, "vim_"+arch), nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	vimFileName, useSystemVim, err := setupVim(containerID, cache, false, arch)
 	if err != nil {
 		t.Fatalf("setupVim failed: %v", err)
 	}
-
-	// 結果の検証
-	if vimFileName != "vim" && vimFileName != "nvim" {
-		t.Fatalf("Unexpected vim filename: %s", vimFileName)
+	if vimFileName != "vim" || !useSystemVim {
+		t.Fatalf("setup selected %q (system=%v), want system Vim", vimFileName, useSystemVim)
 	}
-
-	// useSystemVimの値が妥当であることを確認
-	t.Logf("useSystemVim: %v, vimFileName: %s", useSystemVim, vimFileName)
 }
 
 // Run関数の統合テスト（モック使用）
