@@ -79,7 +79,9 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 			return err
 		}
 		fmt.Printf("clipboard-data-receiver PID: %d\n", pid)
-		tools.KillCdr(pid)
+		if err := tools.KillCdr(pid); err != nil {
+			return fmt.Errorf("stop clipboard-data-receiver using PID file %q: %w", pidFile, err)
+		}
 	}
 
 	return os.RemoveAll(configDir)

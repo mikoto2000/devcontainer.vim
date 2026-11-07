@@ -113,7 +113,7 @@ func TestMain(m *testing.M) {
 	}
 	if dir := os.Getenv(stopTestDirEnv); dir != "" {
 		switch strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe") {
-		case "docker", "test-devcontainer":
+		case "docker", "test-devcontainer", "powershell":
 			os.Exit(runStopTestCommand(dir, os.Args))
 		}
 	}

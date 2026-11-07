@@ -302,6 +302,9 @@ func runCdrForWsl(cdrPath string, pidFile string, portFile string) (int, int, er
 }
 
 func KillCdr(pid int) error {
+	if pid <= 0 {
+		return fmt.Errorf("invalid clipboard-data-receiver PID %d: must be positive", pid)
+	}
 	if util.IsWsl() {
 		commandString := fmt.Sprintf("Stop-Process -Id %d -Force", pid)
 		fmt.Printf("Stop clipboard-data-receiver: %s\n", commandString)
