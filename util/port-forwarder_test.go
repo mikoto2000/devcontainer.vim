@@ -57,6 +57,47 @@ func TestForwardingStopsOnCancellation(t *testing.T) {
 	}
 }
 
+func TestForwardingStopsOnPermanentAcceptError(t *testing.T) {
+	listener := listenTCPForTest(t)
+	if err := listener.Close(); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	if err := serveForwarding(ctx, listener, "unused"); !errors.Is(err, net.ErrClosed) {
+		t.Fatalf("serveForwarding returned %v, want closed listener error", err)
+	}
+}
+
+func TestForwardingRetriesTemporaryAcceptError(t *testing.T) {
+	listener := &acceptErrorListener{
+		Listener: listenTCPForTest(t),
+		errors: []error{
+			&net.DNSError{Err: "temporary fixture error", IsTemporary: true},
+			net.ErrClosed,
+		},
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	if err := serveForwarding(ctx, listener, "unused"); !errors.Is(err, net.ErrClosed) || len(listener.errors) != 0 {
+		t.Fatalf("serveForwarding returned %v with %d errors remaining, want a retry followed by the permanent error", err, len(listener.errors))
+	}
+}
+
+type acceptErrorListener struct {
+	net.Listener
+	errors []error
+}
+
+func (l *acceptErrorListener) Accept() (net.Conn, error) {
+	if len(l.errors) == 0 {
+		return nil, net.ErrClosed
+	}
+	err := l.errors[0]
+	l.errors = l.errors[1:]
+	return nil, err
+}
+
 func listenTCPForTest(t *testing.T) *net.TCPListener {
 	t.Helper()
 	listener, err := net.ListenTCP("tcp4", &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1)})
