@@ -1,11 +1,24 @@
 package devcontainer
 
 import (
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
+
+func requireLinuxDocker(t *testing.T) {
+	t.Helper()
+	if testing.Short() {
+		t.Skip("skipping Docker integration test in short mode")
+	}
+	output, err := exec.CommandContext(t.Context(), containerCommand, "info", "--format", "{{.OSType}}").Output()
+	if err != nil || strings.TrimSpace(string(output)) != "linux" {
+		t.Skipf("Linux Docker daemon required: %q, %v", output, err)
+	}
+}
 
 func createTempAppDirs(t *testing.T) (string, string, string, string) {
 	t.Helper()

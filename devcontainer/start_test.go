@@ -4,10 +4,11 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/mikoto2000/devcontainer.vim/v3/tools"
+	"github.com/mikoto2000/devcontainer.vim/v3/docker"
 )
 
 type TestDevcontainerStartUseService struct{}
@@ -17,68 +18,30 @@ func (s TestDevcontainerStartUseService) StartVim(containerID string, devcontain
 }
 
 func TestStart(t *testing.T) {
-	// 統合テストの前提条件をチェック
-	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
-	}
-
-	// Dockerの存在確認
-	_, err := exec.LookPath("docker")
-	if err != nil {
-		t.Skip("docker command not found, skipping integration test")
-	}
-
+	requireLinuxDocker(t)
 	_, binDir, _, configDirForDevcontainer := createTempAppDirs(t)
 
 	// 必要なファイルのダウンロード
-	nvim := false
 	devcontainerPath := requireTestBinary(t, "devcontainer")
 	cdrPath := requireTestBinary(t, "clipboard-data-receiver")
 
 	// devcontainerコマンドが動作するかテスト
-	testCmd := exec.Command(devcontainerPath, "--version")
-	err = testCmd.Run()
-	if err != nil {
+	if err := exec.CommandContext(t.Context(), devcontainerPath, "--version").Run(); err != nil {
 		t.Skipf("devcontainer CLI not working: %v", err)
 	}
 
-	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
-	configFilePath, err := CreateConfigFile(devcontainerPath, "../test/project/TestStart", configDirForDevcontainer)
+	workspace := copyStartTestWorkspace(t, "TestStart")
+	configFilePath, err := CreateConfigFile(devcontainerPath, workspace, configDirForDevcontainer)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			t.Skipf("Configuration file not found: %v", err)
-		} else if strings.Contains(err.Error(), "出力パースに失敗") {
-			t.Skipf("devcontainer CLI parse error (environment issue): %v", err)
-		} else {
-			t.Fatalf("Error creating config file: %v", err)
-		}
+		t.Fatalf("Error creating config file: %v", err)
 	}
 
-	args := []string{"../test/project/TestStart"}
-
-	// devcontainer を用いたコンテナ立ち上げ
-	noCdr := false
-	noPf := false
-	err = Start(TestDevcontainerStartUseService{}, args, devcontainerPath, noCdr, noPf, false, cdrPath, binDir, nvim, "", configFilePath, "../test/resource/TestStart/vimrc")
-	if err != nil {
-		if errors.Is(err, os.ErrPermission) {
-			t.Skipf("Permission error: %v", err)
-		} else if tools.IsCdrStartupTimeout(err) {
-			t.Skipf("clipboard-data-receiver startup timeout (environment issue): %v", err)
-		} else if strings.Contains(err.Error(), "Container start error") {
-			t.Skipf("Container start error (environment issue): %v", err)
-		} else {
-			t.Fatalf("Error executing devcontainer: %v", err)
-		}
-	}
-
-	// 後片付け
-	defer Down([]string{"../test/project/TestStart"}, devcontainerPath, configDirForDevcontainer)
+	startTestWorkspace(t, workspace, devcontainerPath, cdrPath, binDir, configFilePath, configDirForDevcontainer, "../test/resource/TestStart/vimrc")
 
 	// json マージ後の設定でコンテナが起動するか？
 	// 起動したコンテナに所望のファイルが転送されているか？
 	//     ストレージのマウントがされるか
-	vimfilesOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", "../test/project/TestStart", "sh", "-c", "ls -d ~/.vim")
+	vimfilesOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", workspace, "sh", "-c", "ls -d ~/.vim")
 	if err != nil {
 		t.Fatalf("error: %s", err)
 	}
@@ -98,7 +61,7 @@ func TestStart(t *testing.T) {
 	//}
 
 	//     環境変数が設定されるか
-	termOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", "../test/project/TestStart", "sh", "-c", "\"env\"")
+	termOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", workspace, "sh", "-c", "\"env\"")
 	if err != nil {
 		t.Fatalf("error: %s", err)
 	}
@@ -107,7 +70,7 @@ func TestStart(t *testing.T) {
 		t.Fatalf("error: want match %s, but got %s", termWantMatch, termOutput)
 	}
 	//     /vim
-	vimOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", "../test/project/TestStart", "sh", "-c", "ls /vim")
+	vimOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", workspace, "sh", "-c", "ls /vim")
 	if err != nil {
 		t.Fatalf("error: %s", err)
 	}
@@ -116,7 +79,7 @@ func TestStart(t *testing.T) {
 		t.Fatalf("error: want match %s, but got %s", vimWant, vimOutput)
 	}
 	//     /vimrc
-	vimrcOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", "../test/project/TestStart", "sh", "-c", "ls /vimrc")
+	vimrcOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", workspace, "sh", "-c", "ls /vimrc")
 	if err != nil {
 		t.Fatalf("error: %s", err)
 	}
@@ -125,7 +88,7 @@ func TestStart(t *testing.T) {
 		t.Fatalf("error: want match %s, but got %s", vimrcWant, vimrcOutput)
 	}
 	//     /port-forwarder
-	portForwarderOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", "../test/project/TestStart", "sh", "-c", "ls /port-forwarder")
+	portForwarderOutput, err := Execute(devcontainerPath, "exec", "--workspace-folder", workspace, "sh", "-c", "ls /port-forwarder")
 	if err != nil {
 		t.Fatalf("error: %s", err)
 	}
@@ -136,46 +99,21 @@ func TestStart(t *testing.T) {
 }
 
 func TestStartWithDockerCompose(t *testing.T) {
-	workspace := "../test/project/TestStartWithDockerCompose"
+	requireLinuxDocker(t)
 	_, binDir, _, configDirForDevcontainer := createTempAppDirs(t)
 
 	// 必要なファイルのダウンロード
-	nvim := false
 	devcontainerPath := requireTestBinary(t, "devcontainer")
 	cdrPath := requireTestBinary(t, "clipboard-data-receiver")
 
+	workspace := copyStartTestWorkspace(t, "TestStartWithDockerCompose")
 	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
 	configFilePath, err := CreateConfigFile(devcontainerPath, workspace, configDirForDevcontainer)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			t.Skipf("Configuration file not found: %v", err)
-		} else if strings.Contains(err.Error(), "出力パースに失敗") {
-			t.Skipf("devcontainer CLI parse error (environment issue): %v", err)
-		} else {
-			t.Fatalf("Error creating config file: %v", err)
-		}
+		t.Fatalf("Error creating config file: %v", err)
 	}
 
-	args := []string{workspace}
-
-	// devcontainer を用いたコンテナ立ち上げ
-	noCdr := false
-	noPf := false
-	err = Start(TestDevcontainerStartUseService{}, args, devcontainerPath, noCdr, noPf, false, cdrPath, binDir, nvim, "", configFilePath, "../test/resource/TestStartWithDockerCompose/vimrc")
-	if err != nil {
-		if errors.Is(err, os.ErrPermission) {
-			t.Skipf("Permission error: %v", err)
-		} else if tools.IsCdrStartupTimeout(err) {
-			t.Skipf("clipboard-data-receiver startup timeout (environment issue): %v", err)
-		} else if strings.Contains(err.Error(), "Container start error") {
-			t.Skipf("Container start error (environment issue): %v", err)
-		} else {
-			t.Fatalf("Error executing devcontainer: %v", err)
-		}
-	}
-
-	// 後片付け
-	defer Down(args, devcontainerPath, configDirForDevcontainer)
+	startTestWorkspace(t, workspace, devcontainerPath, cdrPath, binDir, configFilePath, configDirForDevcontainer, "../test/resource/TestStartWithDockerCompose/vimrc")
 
 	// json マージ後の設定でコンテナが起動するか？
 	// 起動したコンテナに所望のファイルが転送されているか？
@@ -226,4 +164,40 @@ func TestStartWithDockerCompose(t *testing.T) {
 		t.Fatalf("error: want match %s, but got %s", portForwarderWant, portForwarderOutput)
 	}
 
+}
+
+func copyStartTestWorkspace(t *testing.T, fixture string) string {
+	t.Helper()
+	workspace := t.TempDir()
+	if err := os.CopyFS(workspace, os.DirFS(filepath.Join("..", "test", "project", fixture))); err != nil {
+		t.Fatal(err)
+	}
+	// Bind only test fixtures, including when the caller has real SSH keys.
+	home := t.TempDir()
+	for _, name := range []string{".vim", ".ssh"} {
+		if err := os.Mkdir(filepath.Join(home, name), 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(home, ".gitconfig"), nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("HOME", home)
+	return workspace
+}
+
+func startTestWorkspace(t *testing.T, workspace, devcontainerPath, cdrPath, binDir, configFilePath, cacheDir, vimrc string) {
+	t.Helper()
+	args := []string{workspace}
+	startErr := Start(TestDevcontainerStartUseService{}, args, devcontainerPath, false, false, false, cdrPath, binDir, false, "", configFilePath, vimrc)
+	t.Cleanup(func() {
+		err := Down(args, devcontainerPath, cacheDir)
+		var notFound *docker.ContainerNotFoundError
+		if err != nil && (startErr == nil || !errors.As(err, &notFound)) {
+			t.Errorf("remove devcontainer test workspace: %v", err)
+		}
+	})
+	if startErr != nil {
+		t.Fatalf("Error executing devcontainer: %v", startErr)
+	}
 }
