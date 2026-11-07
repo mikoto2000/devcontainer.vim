@@ -38,6 +38,8 @@ The following commands are installed and in the PATH.
 
 - docker
 
+If you hit GitHub API rate limits, set `DEVCONTAINER_VIM_GITHUB_TOKEN` to authenticate release lookups.
+
 On Arm PCs running Windows, commands that use the Dev Container CLI require Windows 11's x64 emulation. devcontainer.vim downloads the [Windows x64 build](https://github.com/mikoto2000/devcontainers-cli/releases). [Microsoft's emulation documentation](https://learn.microsoft.com/en-us/windows/arm/apps-on-arm-x86-emulation)
 
 The following commands must exist in the container and be in the PATH.
