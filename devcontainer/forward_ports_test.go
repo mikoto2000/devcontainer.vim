@@ -386,6 +386,13 @@ func assertForwardTestArgs(t *testing.T, dir, name string, want []string) {
 func runForwardTestCommand(dir string, argv []string) int {
 	args := argv[1:]
 	if strings.TrimSuffix(filepath.Base(argv[0]), ".exe") == "test-forward-devcontainer" {
+		if args[0] == "up" {
+			if !writeForwardTestArgs(dir, "up-args", args) {
+				return 99
+			}
+			fmt.Println(`{"outcome":"success","containerId":"fixture-up-container"}`)
+			return 0
+		}
 		if args[0] == "read-configuration" {
 			fmt.Printf(`{"configuration":{"forwardPorts":%s}}`, os.Getenv("DEVCONTAINER_VIM_FORWARD_TEST_PORTS"))
 			return 0

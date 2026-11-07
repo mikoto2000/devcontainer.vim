@@ -2,115 +2,62 @@ package devcontainer
 
 import (
 	"context"
+	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/mikoto2000/devcontainer.vim/v3/tools"
 )
 
-// startDevcontainer関数の単体テスト（モック）
-func TestStartDevcontainerMock(t *testing.T) {
-	// パラメータの検証テスト
-	args := []string{"image", "workspace"}
-	devcontainerPath := "/mock/devcontainer"
-	configFilePath := "/mock/config.json"
-	workspaceFolder := "workspace"
-
-	// 引数の妥当性チェック
-	if len(args) < 2 {
-		t.Fatal("args should have at least 2 elements")
+func TestStartDevcontainerPassesWorkspaceAndOptions(t *testing.T) {
+	const workspace = "workspace with spaces"
+	const override = "override with spaces.json"
+	for _, tc := range []struct {
+		name string
+		args []string
+		want []string
+	}{
+		{"workspace only", []string{workspace}, []string{"up", "--override-config", override, "--workspace-folder", workspace}},
+		{"CLI options", []string{"--log-level", "debug", workspace}, []string{"up", "--log-level", "debug", "--override-config", override, "--workspace-folder", workspace}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cli, dir := installForwardTestCommands(t, "[]")
+			id, err := startDevcontainer(cli, tc.args, override, workspace)
+			if err != nil || id != "fixture-up-container" {
+				t.Fatalf("startDevcontainer = %q, %v, want fixture-up-container", id, err)
+			}
+			assertForwardTestArgs(t, dir, "up-args", tc.want)
+		})
 	}
-
-	if devcontainerPath == "" {
-		t.Fatal("devcontainerPath should not be empty")
-	}
-
-	if configFilePath == "" {
-		t.Fatal("configFilePath should not be empty")
-	}
-
-	if workspaceFolder == "" {
-		t.Fatal("workspaceFolder should not be empty")
-	}
-
-	t.Logf("startDevcontainer parameters validated successfully")
 }
 
-// startClipboardReceiverForDevcontainer関数の単体テスト（モック）
-func TestStartClipboardReceiverForDevcontainerMock(t *testing.T) {
-	// パラメータの検証テスト
-	cdrPath := "/mock/cdr"
-	configDirForDevcontainer := "/mock/config"
-
-	// 引数の妥当性チェック
-	if cdrPath == "" {
-		t.Fatal("cdrPath should not be empty")
-	}
-
-	if configDirForDevcontainer == "" {
-		t.Fatal("configDirForDevcontainer should not be empty")
-	}
-
-	t.Logf("startClipboardReceiverForDevcontainer parameters validated successfully")
-}
-
-// setupPortForwarding関数の単体テスト（モック）
-func TestSetupPortForwardingMock(t *testing.T) {
-	// パラメータの検証テスト
-	containerID := "mock-container-id"
-	devcontainerPath := "/mock/devcontainer"
-	workspaceFolder := "/mock/workspace"
-
-	// 引数の妥当性チェック
-	if containerID == "" {
-		t.Fatal("containerID should not be empty")
-	}
-
-	if devcontainerPath == "" {
-		t.Fatal("devcontainerPath should not be empty")
-	}
-
-	if workspaceFolder == "" {
-		t.Fatal("workspaceFolder should not be empty")
-	}
-
-	t.Logf("setupPortForwarding parameters validated successfully")
-}
-
-// Start関数の統合テスト（軽量版）
-func TestStartParameterValidation(t *testing.T) {
-	// 一時ディレクトリを作成
-	tempDir, err := os.MkdirTemp("", "start_test")
+func TestStartClipboardReceiverForDevcontainer(t *testing.T) {
+	dir := t.TempDir()
+	cdr := installCleanupTestCommands(t, dir)
+	pid, port, err := startClipboardReceiverForDevcontainer(cdr, dir)
 	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
+		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
-
-	// テスト用パラメータ
-	services := TestDevcontainerStartUseService{}
-	args := []string{"test-image", "workspace"}
-	devcontainerPath := "/mock/devcontainer"
-	nvim := false
-
-	// パラメータの妥当性を検証
-	if len(args) < 2 {
-		t.Fatal("args should have at least 2 elements")
+	if pid > 0 {
+		t.Cleanup(func() {
+			if err := tools.KillCdr(pid); err != nil {
+				t.Error(err)
+			}
+		})
 	}
-
-	workspaceFolder := args[len(args)-1]
-	if workspaceFolder == "" {
-		t.Fatal("workspaceFolder should not be empty")
+	if pid <= 0 || port <= 0 {
+		t.Fatalf("clipboard receiver reported pid=%d port=%d", pid, port)
 	}
-
-	// その他のパラメータも検証
-	if devcontainerPath == "" {
-		t.Fatal("devcontainerPath should not be empty")
+	address := net.JoinHostPort("127.0.0.1", strconv.Itoa(port))
+	conn, err := net.DialTimeout("tcp", address, time.Second)
+	if err != nil {
+		t.Fatalf("connect to clipboard receiver at %s: %v", address, err)
 	}
-
-	t.Logf("Start function parameters validated: args=%v, workspace=%s, nvim=%v", args, workspaceFolder, nvim)
-
-	// サービスインターフェースも検証
-	_ = services
+	conn.Close()
 }
 
 func TestCreateStartVimCommandUsesScriptOnWsl(t *testing.T) {
