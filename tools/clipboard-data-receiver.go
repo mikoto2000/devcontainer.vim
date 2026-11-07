@@ -112,13 +112,13 @@ var CDR = func(services InstallerUseServices) Tool {
 	var err error
 	if util.IsWsl() {
 		cdrFileName = cdrFileNameForWindows
-		tmpl, err = template.New("ducp").Parse(downloadURLCdrPatternForWindows)
+		tmpl, err = template.New("clipboard-data-receiver-windows-download-url").Parse(downloadURLCdrPatternForWindows)
 	} else if runtime.GOOS == "darwin" {
 		cdrFileName = CdrFileNameForMac
-		tmpl, err = template.New("ducp").Parse(downloadURLCdrPatternForMac)
+		tmpl, err = template.New("clipboard-data-receiver-macos-download-url").Parse(downloadURLCdrPatternForMac)
 	} else {
 		cdrFileName = CdrFileName
-		tmpl, err = template.New("ducp").Parse(downloadURLCdrPattern)
+		tmpl, err = template.New("clipboard-data-receiver-linux-download-url").Parse(downloadURLCdrPattern)
 	}
 	if err != nil {
 		return Tool{

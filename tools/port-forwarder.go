@@ -20,12 +20,11 @@ var PortForwarderContainer = func(services InstallerUseServices) Tool {
 				return "", err
 			}
 
-			pattern := "pattern"
 			var tmpl *template.Template
 			if containerArch == "amd64" {
-				tmpl, err = template.New(pattern).Parse(downloadURLPortForwarderContainerAmd64Pattern)
+				tmpl, err = template.New("port-forwarder-amd64-download-url").Parse(downloadURLPortForwarderContainerAmd64Pattern)
 			} else if containerArch == "aarch64" {
-				tmpl, err = template.New(pattern).Parse(downloadURLPortForwarderContainerArm64Pattern)
+				tmpl, err = template.New("port-forwarder-arm64-download-url").Parse(downloadURLPortForwarderContainerArm64Pattern)
 			} else {
 				return "", fmt.Errorf("port-forwarder-container download error: Unknown Architecture: %q", containerArch)
 			}
