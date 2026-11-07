@@ -91,29 +91,27 @@ func TestGetConfigDirectoryFailed(t *testing.T) {
 func TestCreateCacheDirectorySuccess(t *testing.T) {
 	base := t.TempDir()
 	wantBase := filepath.Join(base, "success")
-	_, _, _, _, err := CreateCacheDirectory(func() (string, error) { return base, nil }, "success")
+	cache, bin, dockerConfig, devcontainerConfig, err := CreateCacheDirectory(func() (string, error) { return base, nil }, "success")
 	if err != nil {
 		t.Fatalf("error: %s", err)
 	}
 
-	_, err = os.Stat(filepath.Join(wantBase))
-	if err != nil {
-		t.Fatalf("error: %s", err)
-	}
-
-	_, err = os.Stat(filepath.Join(wantBase, "bin"))
-	if err != nil {
-		t.Fatalf("error: %s", err)
-	}
-
-	_, err = os.Stat(filepath.Join(wantBase, "config", "docker"))
-	if err != nil {
-		t.Fatalf("error: %s", err)
-	}
-
-	_, err = os.Stat(filepath.Join(wantBase, "config", "devcontainer"))
-	if err != nil {
-		t.Fatalf("error: %s", err)
+	for _, tt := range []struct{ name, got, want string }{
+		{"cache", cache, wantBase},
+		{"bin", bin, filepath.Join(wantBase, "bin")},
+		{"Docker configuration", dockerConfig, filepath.Join(wantBase, "config", "docker")},
+		{"Dev Container configuration", devcontainerConfig, filepath.Join(wantBase, "config", "devcontainer")},
+	} {
+		if tt.got != tt.want {
+			t.Errorf("%s path = %q, want %q", tt.name, tt.got, tt.want)
+			continue
+		}
+		info, err := os.Stat(tt.got)
+		if err != nil {
+			t.Error(err)
+		} else if !info.IsDir() {
+			t.Errorf("%s path %q is not a directory", tt.name, tt.got)
+		}
 	}
 }
 
