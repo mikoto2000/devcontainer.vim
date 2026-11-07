@@ -26,6 +26,7 @@ type stopTestFixture struct {
 	Unlabeled      bool
 	Fail           bool
 	DockerPSOutput string
+	ForbidDocker   bool
 }
 
 type stopTestCall struct {
@@ -123,6 +124,41 @@ func TestStopAndDownWaitForDocker(t *testing.T) {
 					assertStopTestCall(t, filepath.Join(dir, "finished"), want)
 				})
 			}
+		}
+	}
+}
+
+func TestStopAndDownRejectInvalidComposeFileArray(t *testing.T) {
+	for _, action := range []struct {
+		name string
+		run  func([]string, string, string) error
+	}{
+		{name: "stop", run: Stop},
+		{name: "down", run: Down},
+	} {
+		for _, tc := range []struct {
+			name, wantErr string
+			files         []any
+		}{
+			{name: "empty", files: []any{}, wantErr: "dockerComposeFile must contain at least one path"},
+			{name: "non-string", files: []any{"compose.yaml", 5}, wantErr: "dockerComposeFile entries must be paths"},
+		} {
+			t.Run(action.name+"/"+tc.name, func(t *testing.T) {
+				dir := t.TempDir()
+				workspace := filepath.Join(dir, "workspace")
+				fixture := stopTestFixture{Workspace: workspace, ForbidDocker: true}
+				fixture.Config.ConfigFilePath = ConfigFilePath{FsPath: filepath.Join(workspace, "devcontainer.json")}
+				fixture.Config.DockerComposeFile = tc.files
+				cli := installStopTestCommands(t, dir, fixture)
+				err := action.run([]string{workspace}, cli, filepath.Join(dir, "cache"))
+				var configErr *UnknownTypeError
+				if !errors.As(err, &configErr) || configErr.Error() != tc.wantErr {
+					t.Errorf("%s error = %v, want %q", action.name, err, tc.wantErr)
+				}
+				if _, err := os.Stat(filepath.Join(dir, "docker-attempt")); !errors.Is(err, os.ErrNotExist) {
+					t.Errorf("Docker was invoked for invalid configuration: %v", err)
+				}
+			})
 		}
 	}
 }
@@ -338,6 +374,12 @@ func runStopTestCommand(dir string, argv []string) int {
 		return 0
 	}
 	args := argv[1:]
+	if fixture.ForbidDocker {
+		if err := os.WriteFile(filepath.Join(dir, "docker-attempt"), []byte(strings.Join(args, " ")), 0600); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		return 99
+	}
 	switch args[0] {
 	case "ps":
 		if !slices.Contains(args, "--all") {

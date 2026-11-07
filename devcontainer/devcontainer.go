@@ -142,6 +142,9 @@ func resolveComposeFiles(config Configuration) ([]string, error) {
 	case string:
 		files = []string{value}
 	case []any:
+		if len(value) == 0 {
+			return nil, &UnknownTypeError{msg: "dockerComposeFile must contain at least one path"}
+		}
 		for _, item := range value {
 			file, ok := item.(string)
 			if !ok {
