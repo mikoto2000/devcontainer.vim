@@ -2,16 +2,19 @@ package tools
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 type TestInstallerUseServices struct{}
@@ -110,6 +113,40 @@ func TestDownloadPreservesExecutableOnFailure(t *testing.T) {
 			err := download(server.URL, executablePath)
 			if err == nil || !strings.Contains(err.Error(), tt.want) {
 				t.Fatalf("download error = %v, want %q", err, tt.want)
+			}
+			assertExecutableRuns(t, executablePath)
+		})
+	}
+}
+
+func TestDownloadPreservesExecutableOnTimeout(t *testing.T) {
+	for _, phase := range []string{"headers", "body"} {
+		t.Run(phase, func(t *testing.T) {
+			executablePath := copyTestExecutable(t)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if phase == "body" {
+					w.Header().Set("Content-Length", "100")
+					io.WriteString(w, "partial")
+					w.(http.Flusher).Flush()
+				}
+				// Keep the fixture bounded even if the downloader stops canceling requests.
+				limit := time.NewTimer(4 * time.Second)
+				defer limit.Stop()
+				select {
+				case <-r.Context().Done():
+				case <-limit.C:
+				}
+			}))
+			defer server.Close()
+
+			client := &http.Client{Timeout: 500 * time.Millisecond}
+			err := downloadWithClient(client, server.URL, executablePath)
+			if !errors.Is(err, context.DeadlineExceeded) {
+				t.Fatalf("download error = %v, want a deadline error", err)
+			}
+			var requestErr *url.Error
+			if gotHeadersError := errors.As(err, &requestErr); gotHeadersError != (phase == "headers") {
+				t.Errorf("download error during %s = %v", phase, err)
 			}
 			assertExecutableRuns(t, executablePath)
 		})

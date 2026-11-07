@@ -10,9 +10,12 @@ import (
 	"runtime"
 	"runtime/debug"
 	"slices"
+	"time"
 
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
+
+var artifactHTTPClient = &http.Client{Timeout: 10 * time.Minute}
 
 type InstallerUseServices interface {
 	GetLatestReleaseFromGitHub(owner string, repository string) (string, error)
@@ -129,10 +132,14 @@ func (p *ProgressWriter) Write(data []byte) (int, error) {
 //
 // downloadURL からファイルをダウンロードし、 destPath へ配置する。
 func download(downloadURL string, destPath string) error {
+	return downloadWithClient(artifactHTTPClient, downloadURL, destPath)
+}
+
+func downloadWithClient(client *http.Client, downloadURL, destPath string) error {
 	fmt.Printf("Download %s from %s ...", filepath.Base(destPath), downloadURL)
 
 	// HTTP GETリクエストを送信
-	resp, err := http.Get(downloadURL)
+	resp, err := client.Get(downloadURL)
 	if err != nil {
 		return err
 	}
