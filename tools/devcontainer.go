@@ -1,44 +1,41 @@
 package tools
 
 import (
+	"fmt"
 	"runtime"
-	"strings"
-	"text/template"
 )
 
 // devcontainer/cli のツール情報
 var DEVCONTAINER = func(services InstallerUseServices) Tool {
+	return devcontainerToolForHost(services, runtime.GOOS, runtime.GOARCH)
+}
+
+func devcontainerToolForHost(services InstallerUseServices, hostOS, hostArch string) Tool {
+	const owner, repository = "mikoto2000", "devcontainers-cli"
+	const baseName = "devcontainer"
+	suffix := ""
+	assetArch := hostArch
+	if hostOS == "windows" {
+		suffix = ".exe"
+		assetArch = "x64"
+	} else if assetArch == "amd64" {
+		assetArch = "x64"
+	}
 
 	return Tool{
-		FileName: devcontainerFileName,
+		FileName: baseName + suffix,
 		CalculateDownloadURL: func(_ string) (string, error) {
-			latestTagName, err := services.GetLatestReleaseFromGitHub("mikoto2000", "devcontainers-cli")
+			switch hostOS {
+			case "darwin", "linux", "windows":
+			default:
+				return "", fmt.Errorf("unsupported Dev Container CLI host OS: %q", hostOS)
+			}
+			tag, err := services.GetLatestReleaseFromGitHub(owner, repository)
 			if err != nil {
 				return "", err
 			}
-
-			pattern := "pattern"
-			tmpl, err := template.New(pattern).Parse(downloadURLDevcontainersCliPattern)
-			if err != nil {
-				return "", err
-			}
-
-			// GOARCH が amd64 だった場合、 x64 に変換する
-			arch := runtime.GOARCH
-			if arch == "amd64" {
-				arch = "x64"
-			}
-
-			tmplParams := map[string]string{
-				"TagName": latestTagName,
-				"Arch":    arch,
-			}
-			var downloadURL strings.Builder
-			err = tmpl.Execute(&downloadURL, tmplParams)
-			if err != nil {
-				return "", err
-			}
-			return downloadURL.String(), nil
+			asset := fmt.Sprintf("%s-%s-%s-%s%s", baseName, hostOS, assetArch, tag, suffix)
+			return fmt.Sprintf("https://github.com/%s/%s/releases/download/%s/%s", owner, repository, tag, asset), nil
 		},
 		installFunc: func(downloadFunc func(downloadURL string, destPath string) error, downloadURL string, filePath string, containerArch string) (string, error) {
 			return simpleInstall(downloadFunc, downloadURL, filePath)
