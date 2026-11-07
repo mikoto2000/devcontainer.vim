@@ -1,7 +1,7 @@
 package tools
 
 import (
-	"errors"
+	"fmt"
 	"strings"
 	"text/template"
 )
@@ -54,7 +54,7 @@ var NVIM = func(service InstallerUseServices) Tool {
 				}
 				return downloadURL.String(), nil
 			} else {
-				return "", errors.New("Unknown Architecture")
+				return "", fmt.Errorf("Unknown Architecture: %q", containerArch)
 			}
 		},
 		installFunc: func(downloadFunc func(downloadURL string, destPath string) error, downloadURL string, filePath string, containerArch string) (string, error) {

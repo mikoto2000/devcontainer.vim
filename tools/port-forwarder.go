@@ -1,7 +1,7 @@
 package tools
 
 import (
-	"errors"
+	"fmt"
 	"strings"
 	"text/template"
 )
@@ -27,7 +27,7 @@ var PortForwarderContainer = func(services InstallerUseServices) Tool {
 			} else if containerArch == "aarch64" {
 				tmpl, err = template.New(pattern).Parse(downloadURLPortForwarderContainerArm64Pattern)
 			} else {
-				return "", errors.New("port-forwarder-container download error: Unknown arch")
+				return "", fmt.Errorf("port-forwarder-container download error: Unknown Architecture: %q", containerArch)
 			}
 			if err != nil {
 				return "", err

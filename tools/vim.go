@@ -1,7 +1,6 @@
 package tools
 
 import (
-	"errors"
 	"fmt"
 	"runtime"
 )
@@ -34,7 +33,7 @@ func vimDownloadURL(service InstallerUseServices, hostOS, containerArch string) 
 	case "arm64", "aarch64":
 		assetPattern = "vim-%s-aarch64.tar.gz"
 	default:
-		return "", errors.New("Unknown Architecture")
+		return "", fmt.Errorf("Unknown Architecture: %q", containerArch)
 	}
 
 	tag, err := service.GetLatestReleaseFromGitHub(owner, repository)

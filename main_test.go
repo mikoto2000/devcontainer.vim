@@ -237,7 +237,7 @@ func TestToolDownloadRejectsUnknownArchitecture(t *testing.T) {
 	output, err := cmd.CombinedOutput()
 	var exit *exec.ExitError
 	if !errors.As(err, &exit) || exit.ExitCode() != 1 ||
-		!strings.Contains(string(output), "Error installing vim: Unknown Architecture") {
+		!strings.Contains(string(output), `Error installing vim: Unknown Architecture: "riscv64"`) {
 		t.Fatalf("tool download with unknown architecture = %v, output %q, want architecture error and exit code 1", err, output)
 	}
 }
