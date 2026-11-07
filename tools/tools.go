@@ -118,6 +118,9 @@ type ProgressWriter struct {
 func (p *ProgressWriter) Write(data []byte) (int, error) {
 	n := len(data)
 	p.Current += int64(n)
+	if p.Total <= 0 {
+		return n, nil
+	}
 
 	percentage := float64(p.Current) / float64(p.Total) * 100.0
 	fmt.Printf("%6.2f%%", percentage)
