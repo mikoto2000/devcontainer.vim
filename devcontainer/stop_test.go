@@ -309,6 +309,7 @@ func TestDownCdrPidFile(t *testing.T) {
 
 			devcontainerPath := installStopTestCommands(t, dir, fixture, "run-test-cdr")
 			// Exercise the native signal path even when running under WSL.
+			t.Setenv("WSL_INTEROP", "")
 			t.Setenv("WSL_DISTRO_NAME", "")
 			if err := os.Unsetenv("WSL_DISTRO_NAME"); err != nil {
 				t.Fatal(err)

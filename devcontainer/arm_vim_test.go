@@ -18,6 +18,7 @@ const armVimFailCopyEnv = "DEVCONTAINER_VIM_ARM_TEST_FAIL_LAUNCH_COPY"
 
 func TestArmContainerEditor(t *testing.T) {
 	// Keep the CDR fixture and the fake CLI on the native exec path under WSL.
+	t.Setenv("WSL_INTEROP", "")
 	t.Setenv("WSL_DISTRO_NAME", "")
 	if err := os.Unsetenv("WSL_DISTRO_NAME"); err != nil {
 		t.Fatal(err)

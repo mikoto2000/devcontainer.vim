@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/Jeffail/gabs/v2"
@@ -210,8 +211,17 @@ func GetConfigDir(configDirForDevcontainer string, workspaceFolder string) (stri
 
 // WSL 上で動いているかを判定する
 func IsWsl() bool {
-	_, exists := os.LookupEnv("WSL_DISTRO_NAME")
-	return exists
+	if _, exists := os.LookupEnv("WSL_DISTRO_NAME"); exists {
+		return true
+	}
+	// A WSL session can still launch Windows processes if the distribution
+	// name was removed but its interop socket is available.
+	socket := os.Getenv("WSL_INTEROP")
+	if runtime.GOOS != "linux" || !filepath.IsAbs(socket) {
+		return false
+	}
+	info, err := os.Stat(socket)
+	return err == nil && info.Mode()&os.ModeSocket != 0
 }
 
 func CreateFileWithContents(file string, content string, permission fs.FileMode) error {

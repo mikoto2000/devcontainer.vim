@@ -63,6 +63,7 @@ func TestRunargsCLI(t *testing.T) {
 			t.Setenv("HOME", home)
 			t.Setenv("XDG_CONFIG_HOME", filepath.Join(dir, "config"))
 			t.Setenv("XDG_CACHE_HOME", filepath.Join(dir, "cache"))
+			t.Setenv("WSL_INTEROP", "")
 			t.Setenv("WSL_DISTRO_NAME", "")
 			if err := os.Unsetenv("WSL_DISTRO_NAME"); err != nil {
 				t.Fatal(err)
