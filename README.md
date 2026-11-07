@@ -45,6 +45,8 @@ VSCode 向けに作成された `devcontainer.json` に追加する形で Vim �
 
 ARM の場合、コンテナ内に `tar` コマンドが存在していること
 
+Apple Silicon 搭載の Mac でクリップボード連携を使うには Rosetta が必要です。自動取得する clipboard-data-receiver は [Intel Mac 向けの配布バイナリ](https://github.com/mikoto2000/clipboard-data-receiver/releases)です。 [Apple の Rosetta の説明](https://support.apple.com/ja-jp/102527)
+
 
 ## Usage:
 
