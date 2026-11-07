@@ -147,7 +147,7 @@ func startPortForwarders(ctx context.Context, containerID, containerIp, devconta
 					continue
 				}
 
-				util.StartForwarding("0.0.0.0:"+fc.Port, destination)
+				util.StartForwardingContext(ctx, "0.0.0.0:"+fc.Port, destination)
 			}
 		}()
 	}
@@ -155,7 +155,7 @@ func startPortForwarders(ctx context.Context, containerID, containerIp, devconta
 	return nil
 }
 
-func restorePortForwarders(containerIp string, forwardConfigs []string) {
+func restorePortForwarders(ctx context.Context, containerIp string, forwardConfigs []string) {
 	for _, forwardConfig := range forwardConfigs {
 		containerSrcPort, containerDestPort, err := parsePortForwarderMarker(forwardConfig)
 		if err != nil {
@@ -166,7 +166,7 @@ func restorePortForwarders(containerIp string, forwardConfigs []string) {
 		go func() {
 			destination := net.JoinHostPort(containerIp, containerDestPort)
 			fmt.Printf("listen: %s, forward: %s.\n", "0.0.0.0:"+containerSrcPort, destination)
-			util.StartForwarding("0.0.0.0:"+containerSrcPort, destination)
+			util.StartForwardingContext(ctx, "0.0.0.0:"+containerSrcPort, destination)
 		}()
 	}
 }
@@ -230,7 +230,7 @@ func setupPortForwarding(ctx context.Context, containerID, devcontainerPath, wor
 	}
 
 	fmt.Println("port-forwarder already running.")
-	restorePortForwarders(containerIp, markers)
+	restorePortForwarders(ctx, containerIp, markers)
 
 	return nil
 }
