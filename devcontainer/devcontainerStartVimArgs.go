@@ -1,6 +1,7 @@
 package devcontainer
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -74,7 +75,9 @@ func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFil
 		return nil, err
 	}
 
-	docker.Cp("Vim launch script", vimLaunchScript, containerID, "/VimRun.sh")
+	if err := docker.Cp("Vim launch script", vimLaunchScript, containerID, "/VimRun.sh"); err != nil && shell == "" {
+		return nil, fmt.Errorf("copy Vim launch script: %w", err)
+	}
 
 	return buildDevcontainerStartVimExecArgs(containerID, workspaceFolder, shell), nil
 }

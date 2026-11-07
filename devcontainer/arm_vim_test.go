@@ -1,9 +1,11 @@
 package devcontainer
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -12,6 +14,7 @@ import (
 )
 
 const armVimTestDirEnv = "DEVCONTAINER_VIM_ARM_VIM_TEST_DIR"
+const armVimFailCopyEnv = "DEVCONTAINER_VIM_ARM_TEST_FAIL_LAUNCH_COPY"
 
 func TestArmContainerEditor(t *testing.T) {
 	// Keep the CDR fixture and the fake CLI on the native exec path under WSL.
@@ -20,13 +23,19 @@ func TestArmContainerEditor(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, tc := range []struct {
-		name       string
-		run        bool
-		systemNvim bool
+		name           string
+		run            bool
+		systemNvim     bool
+		failLaunchCopy bool
+		shell          string
 	}{
 		{name: "run/fallback", run: true},
 		{name: "start/fallback"},
 		{name: "start/system Neovim", systemNvim: true},
+		{name: "run/launch copy failure", run: true, failLaunchCopy: true},
+		{name: "start/launch copy failure", failLaunchCopy: true},
+		{name: "run/custom shell with copy failure", run: true, failLaunchCopy: true, shell: "/bin/test-shell"},
+		{name: "start/custom shell with copy failure", failLaunchCopy: true, shell: "/bin/test-shell"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
@@ -36,6 +45,13 @@ func TestArmContainerEditor(t *testing.T) {
 			}
 			t.Setenv(armVimTestDirEnv, containerDir)
 			t.Setenv("DEVCONTAINER_VIM_ARM_TEST_SYSTEM_NVIM", fmt.Sprint(tc.systemNvim))
+			t.Setenv(armVimFailCopyEnv, fmt.Sprint(tc.failLaunchCopy))
+			if tc.failLaunchCopy {
+				// Keep an older script in the container to detect attempts to run it.
+				if err := os.WriteFile(filepath.Join(containerDir, "VimRun.sh"), []byte("previous script"), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
 			t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
 			t.Setenv(runCleanupTestDirEnv, dir)
 
@@ -71,14 +87,30 @@ func TestArmContainerEditor(t *testing.T) {
 			vimrc := filepath.Join(dir, "vimrc")
 			if tc.run {
 				cdr := filepath.Join(dir, "run-test-cdr"+suffix)
-				err = Run([]string{"arm-image"}, false, true, true, cdr, dir, true, "", dir, vimrc, nil)
+				err = Run([]string{"arm-image"}, tc.failLaunchCopy, true, true, cdr, dir, true, tc.shell, dir, vimrc, nil)
 			} else {
 				cli := filepath.Join(dir, "test-arm-devcontainer"+suffix)
 				config := filepath.Join(dir, "devcontainer.json")
-				err = Start(DefaultDevcontainerStartUseService{}, []string{dir}, cli, true, true, true, "", dir, true, "", config, vimrc)
+				err = Start(DefaultDevcontainerStartUseService{}, []string{dir}, cli, true, true, true, "", dir, true, tc.shell, config, vimrc)
+			}
+			if tc.failLaunchCopy && tc.shell == "" {
+				var exit *exec.ExitError
+				if !errors.As(err, &exit) || exit.ExitCode() != 99 || !strings.Contains(err.Error(), "copy Vim launch script") {
+					t.Errorf("launch result = %v, want script copy failure", err)
+				}
+				if _, err := os.Stat(filepath.Join(containerDir, "launched")); !errors.Is(err, os.ErrNotExist) {
+					t.Errorf("a stale script was launched after copying failed: %v", err)
+				}
+				return
 			}
 			if err != nil {
 				t.Fatal(err)
+			}
+			if tc.shell != "" {
+				if _, err := os.Stat(filepath.Join(containerDir, "shell-launched")); err != nil {
+					t.Errorf("custom shell was not launched: %v", err)
+				}
+				return
 			}
 
 			read := func(dir, name string) string {
@@ -142,6 +174,9 @@ func runArmVimTestCommand(dir string, args []string) error {
 			if dest == "port-forwarder" {
 				return fmt.Errorf("unexpected port-forwarder copy with forwarding disabled")
 			}
+			if dest == "VimRun.sh" && os.Getenv(armVimFailCopyEnv) == "true" {
+				return errors.New("fixture launch script copy failed")
+			}
 			if dest == "" {
 				dest = filepath.Base(args[1])
 			}
@@ -163,6 +198,8 @@ func runArmVimTestCommand(dir string, args []string) error {
 			}
 		case args[1] == "--user":
 			return nil
+		case args[len(args)-1] == "/bin/test-shell":
+			return os.WriteFile(filepath.Join(dir, "shell-launched"), nil, 0600)
 		case args[len(args)-1] == "/VimRun.sh":
 			data, err := os.ReadFile(filepath.Join(dir, "VimRun.sh"))
 			if err != nil {

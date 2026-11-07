@@ -1,6 +1,7 @@
 package devcontainer
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -81,7 +82,9 @@ func dockerRunVimArgs(containerID string, vimFileName string, tmuxFileName strin
 		return nil, err
 	}
 
-	docker.Cp("Vim launch script", vimLaunchScript, containerID, "/VimRun.sh")
+	if err := docker.Cp("Vim launch script", vimLaunchScript, containerID, "/VimRun.sh"); err != nil && shell == "" {
+		return nil, fmt.Errorf("copy Vim launch script: %w", err)
+	}
 
 	return buildDockerRunVimExecArgs(containerID, shell), nil
 }
