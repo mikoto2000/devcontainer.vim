@@ -93,9 +93,9 @@ func setupTmux(containerID, vimInstallDir string, containerArch string) (string,
 		return "", false, err
 	}
 
-	dockerChownArgs := []string{"exec", "--user", "root", containerID, "sh", "-c", "chmod +x /tmux"}
-	fmt.Printf("Chown tmux: `%s \"%s\"` ...", containerCommand, strings.Join(dockerChownArgs, "\" \""))
-	chmodResult, err := exec.Command(containerCommand, dockerChownArgs...).CombinedOutput()
+	dockerChmodArgs := []string{"exec", "--user", "root", containerID, "sh", "-c", "chmod +x /tmux"}
+	fmt.Printf("Make tmux executable: `%s \"%s\"` ...", containerCommand, strings.Join(dockerChmodArgs, "\" \""))
+	chmodResult, err := exec.Command(containerCommand, dockerChmodArgs...).CombinedOutput()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "chmod error.")
 		fmt.Fprintln(os.Stderr, string(chmodResult))
@@ -133,9 +133,9 @@ func setupVim(containerID, vimInstallDir string, nvim bool, containerArch string
 		return vimFileName, false, err
 	}
 
-	dockerChownArgs := []string{"exec", "--user", "root", containerID, "sh", "-c", "chmod +x /" + vimFileName}
-	fmt.Printf("Chown AppImage: `%s \"%s\"` ...", containerCommand, strings.Join(dockerChownArgs, "\" \""))
-	chmodResult, err := exec.Command(containerCommand, dockerChownArgs...).CombinedOutput()
+	dockerChmodArgs := []string{"exec", "--user", "root", containerID, "sh", "-c", "chmod +x /" + vimFileName}
+	fmt.Printf("Make %s executable: `%s \"%s\"` ...", vimFileName, containerCommand, strings.Join(dockerChmodArgs, "\" \""))
+	chmodResult, err := exec.Command(containerCommand, dockerChmodArgs...).CombinedOutput()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "chmod error.")
 		fmt.Fprintln(os.Stderr, string(chmodResult))
