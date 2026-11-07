@@ -1,7 +1,8 @@
 {
   "remoteEnv": {
-    "EDITOR": "~/squashfs-root/AppRun",
-    "PAGER": "sed -r 's/\\x1B\\[[0-9;]*[mGKH]//g' | ~/squashfs-root/AppRun -R -",
+    // To override the container's editor or pager, choose commands it provides.
+    // "EDITOR": "vim",
+    // "PAGER": "less",
     "LESSCHARSET": "utf-8",
     "SHELL": "bash",
     "TERM": "xterm-256color",

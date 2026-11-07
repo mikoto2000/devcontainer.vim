@@ -15,6 +15,7 @@ import (
 
 	"github.com/mikoto2000/devcontainer.vim/v3/devcontainer"
 	"github.com/mikoto2000/devcontainer.vim/v3/tools"
+	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
 const runDockerLogEnv = "DEVCONTAINER_VIM_TEST_DOCKER_LOG"
@@ -137,6 +138,39 @@ func TestStartWithoutWorkspace(t *testing.T) {
 	if !errors.As(err, &exit) || exit.ExitCode() != 1 ||
 		!strings.Contains(string(output), "Usage: devcontainer.vim start <WORKSPACE_FOLDER>") {
 		t.Fatalf("start without workspace = %v, output %q, want usage and exit code 1", err, output)
+	}
+}
+
+func TestGeneratedConfigDoesNotOverrideEditorOrPager(t *testing.T) {
+	dir := isolateCLIHome(t)
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "devcontainer.vim.json")
+	cmd := exec.CommandContext(t.Context(), self, "-test.run=^TestCLIProcess$", "--", "config", "-g", "-o", path)
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "DEVCONTAINER_VIM_TEST_CLI=1")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("config generation failed: %v\n%s", err, output)
+	}
+	data, err := util.ParseJwcc(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var config struct {
+		RemoteEnv map[string]string `json:"remoteEnv"`
+	}
+	if err := json.Unmarshal(data, &config); err != nil {
+		t.Fatal(err)
+	}
+	if config.RemoteEnv["TERM"] != "xterm-256color" {
+		t.Fatalf("missing terminal setting in generated remoteEnv: %v", config.RemoteEnv)
+	}
+	for _, name := range []string{"EDITOR", "PAGER"} {
+		if value, ok := config.RemoteEnv[name]; ok {
+			t.Errorf("generated config overrides %s with %q", name, value)
+		}
 	}
 }
 
