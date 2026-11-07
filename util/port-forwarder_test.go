@@ -57,6 +57,63 @@ func TestForwardingStopsOnCancellation(t *testing.T) {
 	}
 }
 
+func TestForwardingRelaysHalfCloseInBothDirections(t *testing.T) {
+	for _, firstSender := range []string{"client", "server"} {
+		t.Run(firstSender, func(t *testing.T) {
+			listener := listenTCPForTest(t)
+			backend := listenTCPForTest(t)
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			done := make(chan error, 1)
+			go func() { done <- serveForwarding(ctx, listener, backend.Addr().String()) }()
+
+			conn, err := net.DialTimeout("tcp", listener.Addr().String(), time.Second)
+			if err != nil {
+				t.Fatal(err)
+			}
+			client := conn.(*net.TCPConn)
+			defer client.Close()
+			backend.SetDeadline(time.Now().Add(time.Second))
+			server, err := backend.AcceptTCP()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer server.Close()
+			for _, conn := range []*net.TCPConn{client, server} {
+				conn.SetDeadline(time.Now().Add(2 * time.Second))
+			}
+
+			sendAndCloseWrite := func(from, to *net.TCPConn, payload string) {
+				t.Helper()
+				if _, err := io.WriteString(from, payload); err != nil {
+					t.Fatal(err)
+				}
+				if err := from.CloseWrite(); err != nil {
+					t.Fatal(err)
+				}
+				if data, err := io.ReadAll(to); err != nil || string(data) != payload {
+					t.Fatalf("received %q, %v; want %q followed by EOF", data, err, payload)
+				}
+			}
+			first, second := client, server
+			if firstSender == "server" {
+				first, second = server, client
+			}
+			sendAndCloseWrite(first, second, "request")
+			sendAndCloseWrite(second, first, "reply")
+			cancel()
+			select {
+			case err := <-done:
+				if err != nil {
+					t.Fatal(err)
+				}
+			case <-time.After(time.Second):
+				t.Fatal("forwarder did not return after both directions finished")
+			}
+		})
+	}
+}
+
 func TestForwardingStopsOnPermanentAcceptError(t *testing.T) {
 	listener := listenTCPForTest(t)
 	if err := listener.Close(); err != nil {
