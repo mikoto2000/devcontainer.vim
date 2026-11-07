@@ -121,46 +121,30 @@ func TestStartContainer(t *testing.T) {
 	}
 }
 
-// getContainerArch関数の単体テスト
 func TestGetContainerArch(t *testing.T) {
-	// Dockerの存在確認
-	_, err := exec.LookPath("docker")
-	if err != nil {
-		t.Skip("docker command not found, skipping test")
-	}
-
-	// テスト用コンテナを起動
-	args := []string{"alpine:latest"}
-	containerID, err := startContainer(args, []string{})
-	if err != nil {
-		if strings.Contains(err.Error(), "Cannot connect to the Docker daemon") || strings.Contains(err.Error(), "Container start error") {
-			t.Skip("Docker daemon not running, skipping test")
-		}
-		t.Fatalf("Failed to start container: %v", err)
-	}
-
-	defer func() {
-		exec.Command(containerCommand, "stop", containerID).Start()
-	}()
-
-	// アーキテクチャを取得
-	arch, err := getContainerArch(containerID)
-	if err != nil {
-		t.Fatalf("getContainerArch failed: %v", err)
-	}
-
-	// 有効なアーキテクチャが返されることを確認
-	validArchs := []string{"amd64", "arm64", "x86_64", "aarch64"}
-	found := false
-	for _, validArch := range validArchs {
-		if arch == validArch {
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		t.Fatalf("Unexpected architecture: %s", arch)
+	installCleanupTestCommands(t, t.TempDir())
+	for _, tc := range []struct {
+		name  string
+		uname string
+		want  string
+	}{
+		{"x86_64", " x86_64\r", "amd64"},
+		{"amd64", "amd64", "amd64"},
+		{"arm64", "arm64", "aarch64"},
+		{"aarch64", "aarch64", "aarch64"},
+		{"unsupported", "riscv64", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv(runCleanupTestArchEnv, tc.uname)
+			got, err := getContainerArch("test-container")
+			if tc.want == "" {
+				if got != "" || err == nil || !strings.Contains(err.Error(), "Unknown Architecture") {
+					t.Fatalf("getContainerArch() = %q, %v, want an unsupported architecture error", got, err)
+				}
+			} else if got != tc.want || err != nil {
+				t.Fatalf("getContainerArch() = %q, %v, want %q, nil", got, err, tc.want)
+			}
+		})
 	}
 }
 

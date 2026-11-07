@@ -162,6 +162,8 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+const runCleanupTestArchEnv = "DEVCONTAINER_VIM_RUN_CLEANUP_TEST_ARCH"
+
 func runCleanupTestDocker(dir string, args []string) int {
 	command := args[0]
 	if command == "exec" && len(args) > 2 && args[1] == "test-container" {
@@ -197,7 +199,14 @@ func runCleanupTestDocker(dir string, args []string) int {
 		if fail == "uname" {
 			return 17
 		}
-		fmt.Println("x86_64")
+		if len(args) != 4 || args[3] != "-m" {
+			return 99
+		}
+		arch, ok := os.LookupEnv(runCleanupTestArchEnv)
+		if !ok {
+			arch = "x86_64"
+		}
+		fmt.Println(arch)
 	case "probe-vim", "probe-tmux":
 		if fail == command {
 			fmt.Fprintln(os.Stderr, runCleanupProbeDiagnostic)
