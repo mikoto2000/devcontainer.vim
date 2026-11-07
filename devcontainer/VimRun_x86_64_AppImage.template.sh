@@ -1,11 +1,11 @@
 #!/bin/sh
 
 cd ~
-/{{ .VimFileName }} --appimage-extract > /dev/null
+{{ shellQuote (print "/" .VimFileName) }} --appimage-extract > /dev/null
 
 cd -
 {{- if .UseTmux }}
-{{ .TmuxCommand }} -u set-option -g prefix None \; unbind-key C-b \; set-option -g status off \; set-option -g set-clipboard on \; new-session -s "devcontainer.vim" -A ~/squashfs-root/AppRun --cmd "let g:devcontainer_vim = v:true" -S /{{ .SendToTcp }} -S /vimrc $*
+{{ shellQuote .TmuxCommand }} -u set-option -g prefix None \; unbind-key C-b \; set-option -g status off \; set-option -g set-clipboard on \; new-session -s "devcontainer.vim" -A ~/squashfs-root/AppRun --cmd "let g:devcontainer_vim = v:true" -S {{ shellQuote (print "/" .SendToTcp) }} -S /vimrc $*
 {{- else }}
-~/squashfs-root/AppRun --cmd "let g:devcontainer_vim = v:true" -S /{{ .SendToTcp }} -S /vimrc $*
+~/squashfs-root/AppRun --cmd "let g:devcontainer_vim = v:true" -S {{ shellQuote (print "/" .SendToTcp) }} -S /vimrc $*
 {{- end }}
