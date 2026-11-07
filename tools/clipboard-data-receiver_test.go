@@ -17,26 +17,19 @@ import (
 
 const nativeCdrTestEnv = "DEVCONTAINER_VIM_NATIVE_CDR_TEST"
 const wslpathTestEnv = "DEVCONTAINER_VIM_TEST_WSLPATH"
+const cdrTestPollInterval = 5 * time.Millisecond
 
-func nativeCdrFixture(t *testing.T, mode string, timeout time.Duration) (string, string, string) {
+func nativeCdrFixture(t *testing.T, mode string) (string, string, string) {
 	t.Helper()
 	t.Setenv(nativeCdrTestEnv, mode)
-	originalTimeout := cdrStartupTimeout
-	originalInterval := cdrPollInterval
-	cdrStartupTimeout = timeout
-	cdrPollInterval = 5 * time.Millisecond
-	t.Cleanup(func() {
-		cdrStartupTimeout = originalTimeout
-		cdrPollInterval = originalInterval
-	})
 	executable := copyTestExecutable(t)
 	dir := filepath.Dir(executable)
 	return executable, filepath.Join(dir, "pid"), filepath.Join(dir, "port")
 }
 
 func TestRunCdrForNativeStarts(t *testing.T) {
-	executable, pidFile, portFile := nativeCdrFixture(t, "ready", 5*time.Second)
-	pid, port, err := runCdrForNative(executable, pidFile, portFile)
+	executable, pidFile, portFile := nativeCdrFixture(t, "ready")
+	pid, port, err := runCdrForNative(executable, pidFile, portFile, 5*time.Second, cdrTestPollInterval)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,8 +49,8 @@ func TestRunCdrForNativeStarts(t *testing.T) {
 }
 
 func TestRunCdrTimesOutWhenStartupNeverCompletes(t *testing.T) {
-	executable, pidFile, portFile := nativeCdrFixture(t, "timeout", 2*time.Second)
-	pid, port, err := runCdrForNative(executable, pidFile, portFile)
+	executable, pidFile, portFile := nativeCdrFixture(t, "timeout")
+	pid, port, err := runCdrForNative(executable, pidFile, portFile, 2*time.Second, cdrTestPollInterval)
 	if !IsCdrStartupTimeout(err) || pid != 0 || port != 0 {
 		t.Fatalf("expected timeout without process info, got pid=%d port=%d err=%v", pid, port, err)
 	}
@@ -81,7 +74,7 @@ func TestRunCdrForWsl(t *testing.T) {
 			if mode == "wsl-timeout" {
 				timeout = 500 * time.Millisecond
 			}
-			executable, _, _ := nativeCdrFixture(t, mode, timeout)
+			executable, _, _ := nativeCdrFixture(t, mode)
 			dir := filepath.Dir(executable)
 			t.Chdir(dir)
 			fakeConverter := filepath.Join(dir, "wslpath")
@@ -100,7 +93,7 @@ func TestRunCdrForWsl(t *testing.T) {
 			}
 			pidFile := filepath.Join(dir, "pid ' & $(touch marker)")
 			portFile := filepath.Join(dir, "port ' & $(touch marker)")
-			pid, port, err := runCdrForWsl(cdr, pidFile, portFile)
+			pid, port, err := runCdrForWsl(cdr, pidFile, portFile, timeout, cdrTestPollInterval)
 			if _, err := os.Stat("marker"); !errors.Is(err, os.ErrNotExist) {
 				t.Errorf("shell substitution was executed: %v", err)
 			}

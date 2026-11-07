@@ -22,8 +22,9 @@ const CdrFileNameForMac = "clipboard-data-receiver"
 const cdrFileNameForWindows = "clipboard-data-receiver.exe"
 
 var errCdrStartupTimeout = errors.New("clipboard-data-receiver startup timed out")
-var cdrStartupTimeout = 10 * time.Second
-var cdrPollInterval = 1 * time.Second
+
+const cdrStartupTimeout = 10 * time.Second
+const cdrPollInterval = time.Second
 
 func IsCdrStartupTimeout(err error) bool {
 	return errors.Is(err, errCdrStartupTimeout)
@@ -158,16 +159,10 @@ func RunCdr(cdrPath string, configFileDir string) (int, int, error) {
 	pidFile := filepath.Join(configFileDir, "pid")
 	portFile := filepath.Join(configFileDir, "port")
 
-	// Windows 判定
-	if runtime.GOOS == "windows" {
-		return runCdrForNative(cdrPath, pidFile, portFile)
-	} else {
-		if util.IsWsl() {
-			return runCdrForWsl(cdrPath, pidFile, portFile)
-		} else {
-			return runCdrForNative(cdrPath, pidFile, portFile)
-		}
+	if runtime.GOOS != "windows" && util.IsWsl() {
+		return runCdrForWsl(cdrPath, pidFile, portFile, cdrStartupTimeout, cdrPollInterval)
 	}
+	return runCdrForNative(cdrPath, pidFile, portFile, cdrStartupTimeout, cdrPollInterval)
 }
 
 // cdrOutputBuffer synchronizes startup polling with the os/exec output writer.
@@ -189,7 +184,7 @@ func (o *cdrOutputBuffer) String() string {
 }
 
 // clipboard-data-receiver を、 WSL でない環境で実行する場合の処理
-func runCdrForNative(cdrPath string, pidFile string, portFile string) (int, int, error) {
+func runCdrForNative(cdrPath, pidFile, portFile string, startupTimeout, pollInterval time.Duration) (int, int, error) {
 	fmt.Println("\""+cdrPath+"\"", "--pid-file", pidFile, "--port-file", portFile, "--random-port")
 	cdrRunCommand := exec.Command(cdrPath, "--pid-file", pidFile, "--port-file", portFile, "--random-port")
 	var output cdrOutputBuffer
@@ -205,7 +200,7 @@ func runCdrForNative(cdrPath string, pidFile string, portFile string) (int, int,
 		waitCh <- cdrRunCommand.Wait()
 	}()
 
-	deadline := time.Now().Add(cdrStartupTimeout)
+	deadline := time.Now().Add(startupTimeout)
 	var lastErr error
 	for time.Now().Before(deadline) {
 		pid, _, port, parseErr := GetProcessInfo(output.String())
@@ -224,7 +219,7 @@ func runCdrForNative(cdrPath string, pidFile string, portFile string) (int, int,
 				return 0, 0, fmt.Errorf("clipboard-data-receiver exited before startup completed: %w; output: %s", waitErr, strings.TrimSpace(output.String()))
 			}
 			return 0, 0, fmt.Errorf("clipboard-data-receiver exited without reporting pid/port; output: %s", strings.TrimSpace(output.String()))
-		case <-time.After(cdrPollInterval):
+		case <-time.After(pollInterval):
 		}
 	}
 
@@ -233,7 +228,7 @@ func runCdrForNative(cdrPath string, pidFile string, portFile string) (int, int,
 	return 0, 0, fmt.Errorf("%w: %v; output: %s", errCdrStartupTimeout, lastErr, strings.TrimSpace(output.String()))
 }
 
-func runCdrForWsl(cdrPath string, pidFile string, portFile string) (int, int, error) {
+func runCdrForWsl(cdrPath, pidFile, portFile string, startupTimeout, pollInterval time.Duration) (int, int, error) {
 	windowsPidFile, err := wslCdrPath(pidFile)
 	if err != nil {
 		return 0, 0, err
@@ -257,10 +252,10 @@ func runCdrForWsl(cdrPath string, pidFile string, portFile string) (int, int, er
 		close(done)
 	}()
 
-	pid, err := waitForWslCdrFile(pidFile, done)
+	pid, err := waitForWslCdrFile(pidFile, done, startupTimeout, pollInterval)
 	if err == nil {
 		var port int
-		port, err = waitForWslCdrFile(portFile, done)
+		port, err = waitForWslCdrFile(portFile, done, startupTimeout, pollInterval)
 		if err == nil {
 			select {
 			case <-done:
@@ -303,10 +298,10 @@ func wslCdrPath(path string) (string, error) {
 	return converted, nil
 }
 
-func waitForWslCdrFile(path string, done <-chan struct{}) (int, error) {
-	timeout := time.NewTimer(cdrStartupTimeout)
+func waitForWslCdrFile(path string, done <-chan struct{}, startupTimeout, pollInterval time.Duration) (int, error) {
+	timeout := time.NewTimer(startupTimeout)
 	defer timeout.Stop()
-	poll := time.NewTicker(cdrPollInterval)
+	poll := time.NewTicker(pollInterval)
 	defer poll.Stop()
 	read := func() (int, error) {
 		data, err := os.ReadFile(path)
