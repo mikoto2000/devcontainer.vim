@@ -71,16 +71,18 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 		pidFile := filepath.Join(configDir, "pid")
 		fmt.Printf("Read PID file: %s\n", pidFile)
 		pidStringBytes, err := os.ReadFile(pidFile)
-		if err != nil {
+		switch {
+		case err == nil:
+			pid, err := strconv.Atoi(string(pidStringBytes))
+			if err != nil {
+				return err
+			}
+			fmt.Printf("clipboard-data-receiver PID: %d\n", pid)
+			if err := tools.KillCdr(pid); err != nil {
+				return fmt.Errorf("stop clipboard-data-receiver using PID file %q: %w", pidFile, err)
+			}
+		case !errors.Is(err, os.ErrNotExist):
 			return err
-		}
-		pid, err := strconv.Atoi(string(pidStringBytes))
-		if err != nil {
-			return err
-		}
-		fmt.Printf("clipboard-data-receiver PID: %d\n", pid)
-		if err := tools.KillCdr(pid); err != nil {
-			return fmt.Errorf("stop clipboard-data-receiver using PID file %q: %w", pidFile, err)
 		}
 	}
 

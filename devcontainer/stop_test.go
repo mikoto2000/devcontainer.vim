@@ -222,6 +222,53 @@ func TestStopAndDownSelectSingleDockerContainer(t *testing.T) {
 	}
 }
 
+func TestDownWithUnavailableCdrPidFile(t *testing.T) {
+	for _, name := range []string{"missing", "directory"} {
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			workspace := filepath.Join(dir, "workspace")
+			cache := filepath.Join(dir, "cache")
+			configDir, err := util.GetConfigDir(cache, workspace)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.MkdirAll(configDir, 0700); err != nil {
+				t.Fatal(err)
+			}
+			pidFile := filepath.Join(configDir, "pid")
+			if name == "directory" {
+				if err := os.Mkdir(pidFile, 0700); err != nil {
+					t.Fatal(err)
+				}
+			}
+			t.Setenv("WSL_DISTRO_NAME", "test")
+			cli := installStopTestCommands(t, dir, stopTestFixture{Workspace: workspace}, "powershell.exe")
+
+			err = Down([]string{workspace}, cli, cache)
+			_, statErr := os.Stat(configDir)
+			if name == "missing" {
+				if err != nil || !errors.Is(statErr, os.ErrNotExist) {
+					t.Errorf("Down error = %v, cache stat error = %v; want success and cache removed", err, statErr)
+				}
+			} else {
+				var pathErr *os.PathError
+				if !errors.As(err, &pathErr) || pathErr.Path != pidFile || errors.Is(err, os.ErrNotExist) {
+					t.Errorf("Down error = %v, want a read error for %q", err, pidFile)
+				}
+				if statErr != nil {
+					t.Errorf("cache should remain after a read error: %v", statErr)
+				}
+			}
+			if _, err := os.Stat(filepath.Join(dir, "finished")); err != nil {
+				t.Errorf("Docker removal did not complete: %v", err)
+			}
+			if _, err := os.Stat(filepath.Join(dir, "cdr-signal-attempt")); !errors.Is(err, os.ErrNotExist) {
+				t.Errorf("a CDR stop was attempted: %v", err)
+			}
+		})
+	}
+}
+
 func TestDownCdrPidFile(t *testing.T) {
 	for _, pid := range []string{"0", "-1", "-2", "positive"} {
 		t.Run(pid, func(t *testing.T) {
