@@ -2,87 +2,45 @@ package tools
 
 import (
 	"errors"
+	"fmt"
 	"runtime"
-	"strings"
-	"text/template"
 )
-
-// Vim のダウンロード URL
-const vimAppImageDownloadURLPattern = "https://github.com/vim/vim-appimage/releases/download/{{ .TagName }}/Vim-{{ .TagName }}.glibc2.34-x86_64.AppImage"
-const vimX64StaticDownloadURLPattern = "https://github.com/mikoto2000/vim-static/releases/download/{{ .TagName }}/vim-{{ .TagName }}-x86_64.tar.gz"
-const vimArmStaticDownloadURLPattern = "https://github.com/mikoto2000/vim-static/releases/download/{{ .TagName }}/vim-{{ .TagName }}-aarch64.tar.gz"
 
 // Vim のツール情報
 var VIM = func(service InstallerUseServices) Tool {
 	return Tool{
 		FileName: "vim",
 		CalculateDownloadURL: func(containerArch string) (string, error) {
-			if containerArch == "amd64" || containerArch == "x86_64" {
-				if runtime.GOOS != "darwin" {
-					latestTagName, err := service.GetLatestReleaseFromGitHub("vim", "vim-appimage")
-					if err != nil {
-						return "", err
-					}
-
-					pattern := "pattern"
-					tmpl, err := template.New(pattern).Parse(vimAppImageDownloadURLPattern)
-					if err != nil {
-						return "", err
-					}
-
-					tmplParams := map[string]string{"TagName": latestTagName}
-					var downloadURL strings.Builder
-					err = tmpl.Execute(&downloadURL, tmplParams)
-					if err != nil {
-						return "", err
-					}
-					return downloadURL.String(), nil
-				} else {
-					latestTagName, err := service.GetLatestReleaseFromGitHub("vim", "vim-appimage")
-					if err != nil {
-						return "", err
-					}
-
-					pattern := "pattern"
-					tmpl, err := template.New(pattern).Parse(vimX64StaticDownloadURLPattern)
-					if err != nil {
-						return "", err
-					}
-
-					tmplParams := map[string]string{"TagName": latestTagName}
-					var downloadURL strings.Builder
-					err = tmpl.Execute(&downloadURL, tmplParams)
-					if err != nil {
-						return "", err
-					}
-					return downloadURL.String(), nil
-				}
-			} else if containerArch == "arm64" || containerArch == "aarch64" {
-				latestTagName, err := service.GetLatestReleaseFromGitHub("mikoto2000", "vim-static")
-				if err != nil {
-					return "", err
-				}
-
-				pattern := "pattern"
-				tmpl, err := template.New(pattern).Parse(vimArmStaticDownloadURLPattern)
-				if err != nil {
-					return "", err
-				}
-
-				tmplParams := map[string]string{"TagName": latestTagName}
-				var downloadURL strings.Builder
-				err = tmpl.Execute(&downloadURL, tmplParams)
-				if err != nil {
-					return "", err
-				}
-				return downloadURL.String(), nil
-			} else {
-				return "", errors.New("Unknown Architecture")
-			}
+			return vimDownloadURL(service, runtime.GOOS, containerArch)
 		},
 		installFunc: func(downloadFunc func(downloadURL string, destPath string) error, downloadURL string, filePath string, containerArch string) (string, error) {
 			return simpleInstall(downloadFunc, downloadURL, filePath)
 		},
 		DownloadFunc: download,
 	}
+}
+
+func vimDownloadURL(service InstallerUseServices, hostOS, containerArch string) (string, error) {
+	owner, repository := "mikoto2000", "vim-static"
+	var assetPattern string
+	switch containerArch {
+	case "amd64", "x86_64":
+		if hostOS == "darwin" {
+			assetPattern = "vim-%s-x86_64.tar.gz"
+		} else {
+			owner, repository = "vim", "vim-appimage"
+			assetPattern = "Vim-%s.glibc2.34-x86_64.AppImage"
+		}
+	case "arm64", "aarch64":
+		assetPattern = "vim-%s-aarch64.tar.gz"
+	default:
+		return "", errors.New("Unknown Architecture")
+	}
+
+	tag, err := service.GetLatestReleaseFromGitHub(owner, repository)
+	if err != nil {
+		return "", err
+	}
+	assetName := fmt.Sprintf(assetPattern, tag)
+	return fmt.Sprintf("https://github.com/%s/%s/releases/download/%s/%s", owner, repository, tag, assetName), nil
 }
