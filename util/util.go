@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/Jeffail/gabs/v2"
@@ -213,22 +212,6 @@ func GetConfigDir(configDirForDevcontainer string, workspaceFolder string) (stri
 func IsWsl() bool {
 	_, exists := os.LookupEnv("WSL_DISTRO_NAME")
 	return exists
-}
-
-// 関連付けられたアプリケーションで開く
-func OpenFileWithDefaultApp(filePath string) error {
-	var cmd *exec.Cmd
-
-	switch runtime.GOOS {
-	case "darwin":
-		cmd = exec.Command("open", filePath) // macOS
-	case "windows":
-		cmd = exec.Command("cmd", "/c", "start", "", filePath) // Windows
-	default:
-		cmd = exec.Command("xdg-open", filePath) // Linux
-	}
-
-	return cmd.Run()
 }
 
 func CreateFileWithContents(file string, content string, permission fs.FileMode) error {
