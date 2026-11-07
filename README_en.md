@@ -249,6 +249,8 @@ PROJECT_ROOT/
 
 The source template uses the devcontainer.vim placeholder `{{ remoteEnv:HOME }}`. The generator replaces it with `--home`, which defaults to `/home/vscode`. If you copy the source template manually, replace the placeholder with the home directory inside the container before using it.
 
+The generated configuration bind-mounts the host's `.ssh` directory, giving container processes access to SSH files, including private keys. Remove this mount if the container does not need SSH. [Docker bind mount documentation](https://docs.docker.com/engine/storage/bind-mounts/)
+
 ```sh
 devcontainer.vim config -g --home /home/containerUser > .devcontainer/devcontainer.vim.json
 ```

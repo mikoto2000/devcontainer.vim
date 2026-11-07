@@ -41,6 +41,8 @@
       "source": "${localEnv:HOME}/.gitconfig",
       "target": "{{ remoteEnv:HOME }}/.gitconfig"
     },
+    // This bind mount gives the container access to the host's SSH files,
+    // including any private keys. Remove it if the container does not need SSH.
     {
       "type": "bind",
       "source": "${localEnv:HOME}/.ssh",
