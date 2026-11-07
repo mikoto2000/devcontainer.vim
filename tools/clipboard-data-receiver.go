@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -168,11 +170,29 @@ func RunCdr(cdrPath string, configFileDir string) (int, int, error) {
 	}
 }
 
+// cdrOutputBuffer synchronizes startup polling with the os/exec output writer.
+type cdrOutputBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (o *cdrOutputBuffer) Write(p []byte) (int, error) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	return o.buf.Write(p)
+}
+
+func (o *cdrOutputBuffer) String() string {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	return o.buf.String()
+}
+
 // clipboard-data-receiver を、 WSL でない環境で実行する場合の処理
 func runCdrForNative(cdrPath string, pidFile string, portFile string) (int, int, error) {
 	fmt.Println("\""+cdrPath+"\"", "--pid-file", pidFile, "--port-file", portFile, "--random-port")
 	cdrRunCommand := exec.Command(cdrPath, "--pid-file", pidFile, "--port-file", portFile, "--random-port")
-	var output strings.Builder
+	var output cdrOutputBuffer
 	cdrRunCommand.Stdout = &output
 	cdrRunCommand.Stderr = &output
 	err := cdrRunCommand.Start()
