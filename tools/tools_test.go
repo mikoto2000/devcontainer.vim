@@ -193,8 +193,20 @@ func TestToolInstallRejectsUnknownArchitecture(t *testing.T) {
 		},
 	}
 	path, err := tool.Install(dir, "riscv64", true)
-	if path != "" || err == nil || !strings.Contains(err.Error(), "Unknown Architecture") {
+	if path != "" || err == nil || !strings.Contains(err.Error(), `Unknown Architecture: "riscv64"`) {
 		t.Fatalf("Install returned %q, %v; want an empty path and an architecture error", path, err)
+	}
+}
+
+func TestContainerToolDownloadURLsReportUnsupportedArchitecture(t *testing.T) {
+	service := TestInstallerUseServices{}
+	for _, tool := range []Tool{VIM(service), NVIM(service), Tmux(service), PortForwarderContainer(service)} {
+		t.Run(tool.FileName, func(t *testing.T) {
+			url, err := tool.CalculateDownloadURL("riscv64")
+			if url != "" || err == nil || !strings.Contains(err.Error(), `Unknown Architecture: "riscv64"`) {
+				t.Fatalf("CalculateDownloadURL() = %q, %v, want an error naming riscv64", url, err)
+			}
+		})
 	}
 }
 

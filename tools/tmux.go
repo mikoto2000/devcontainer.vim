@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -23,7 +24,7 @@ var Tmux = func(service InstallerUseServices) Tool {
 			case "arm64", "aarch64":
 				platform = "linux-arm64"
 			default:
-				return "", errors.New("Unknown Architecture")
+				return "", fmt.Errorf("Unknown Architecture: %q", containerArch)
 			}
 
 			latestTagName, err := service.GetLatestReleaseFromGitHub("tmux", "tmux-builds")

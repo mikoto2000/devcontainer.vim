@@ -3,7 +3,7 @@ package util
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -243,7 +243,7 @@ func NormalizeContainerArch(containerArch string) (string, error) {
 	} else if containerArch == "" {
 		return "", nil
 	} else {
-		return "", errors.New("Unknown Architecture")
+		return "", fmt.Errorf("Unknown Architecture: %q", containerArch)
 	}
 }
 
