@@ -44,21 +44,7 @@ func buildDockerRunVimExecArgs(containerID string, shell string) []string {
 //
 //	`docker exec` に使うコマンドライン引数の配列
 func dockerRunVimArgs(containerID string, vimFileName string, tmuxFileName string, sendToTCP string, containerArch string, useSystemVim bool, useSystemTmux bool, noTmux bool, shell string, configFilePath string) ([]string, error) {
-	var templateSource string
-	var err error
-	if useSystemVim {
-		templateSource = vimRunX8664System
-	} else {
-		if containerArch == "amd64" {
-			if runtime.GOOS != "darwin" {
-				templateSource = vimRunX8664AppImage
-			} else {
-				templateSource = vimRunX8664Static
-			}
-		} else {
-			templateSource = vimRunAarch64
-		}
-	}
+	templateSource := selectVimRunTemplate(runtime.GOOS, containerArch, useSystemVim)
 
 	tmuxCommand := "/" + tmuxFileName
 	if useSystemTmux {

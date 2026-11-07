@@ -10,6 +10,27 @@ import (
 	"testing"
 )
 
+func TestSelectVimRunTemplate(t *testing.T) {
+	for _, tc := range []struct {
+		name, hostOS, arch, want string
+		useSystem                bool
+	}{
+		{name: "system on ARM", hostOS: "linux", arch: "aarch64", useSystem: true, want: vimRunX8664System},
+		{name: "system on macOS", hostOS: "darwin", arch: "amd64", useSystem: true, want: vimRunX8664System},
+		{name: "Linux AppImage", hostOS: "linux", arch: "amd64", want: vimRunX8664AppImage},
+		{name: "Windows AppImage", hostOS: "windows", arch: "amd64", want: vimRunX8664AppImage},
+		{name: "macOS static x86_64", hostOS: "darwin", arch: "amd64", want: vimRunX8664Static},
+		{name: "macOS static ARM", hostOS: "darwin", arch: "aarch64", want: vimRunAarch64},
+		{name: "Linux static ARM", hostOS: "linux", arch: "aarch64", want: vimRunAarch64},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := selectVimRunTemplate(tc.hostOS, tc.arch, tc.useSystem); got != tc.want {
+				t.Errorf("unexpected template for host %q, architecture %q, system=%t:\n%s", tc.hostOS, tc.arch, tc.useSystem, got)
+			}
+		})
+	}
+}
+
 func TestRenderVimRunScriptWrapsWithTmux(t *testing.T) {
 	script, err := renderVimRunScript(vimRunX8664System, vimRunScriptParams{
 		VimFileName: "vim",
