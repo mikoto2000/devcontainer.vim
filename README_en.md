@@ -48,6 +48,8 @@ The following commands must exist in the container and be in the PATH.
 
 For ARM, the `tar` command must be present in the container.
 
+Clipboard integration on Apple silicon requires Rosetta. devcontainer.vim downloads the [Intel Mac build of clipboard-data-receiver](https://github.com/mikoto2000/clipboard-data-receiver/releases). [Apple's Rosetta documentation](https://support.apple.com/en-us/102527)
+
 
 ## Usage:
 
