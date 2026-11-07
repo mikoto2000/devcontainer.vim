@@ -283,13 +283,15 @@ func TestGetConfigDir(t *testing.T) {
 }
 
 func TestIsWsl(t *testing.T) {
-	os.Setenv("WSL_DISTRO_NAME", "")
+	t.Setenv("WSL_DISTRO_NAME", "")
 	got := IsWsl()
 	if got != true {
 		t.Fatalf("error: want true, but got false")
 	}
 
-	os.Unsetenv("WSL_DISTRO_NAME")
+	if err := os.Unsetenv("WSL_DISTRO_NAME"); err != nil {
+		t.Fatal(err)
+	}
 	got = IsWsl()
 	if got != false {
 		t.Fatalf("error: want false, but got true")
