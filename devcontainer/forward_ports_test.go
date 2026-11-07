@@ -1,6 +1,7 @@
 package devcontainer
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -67,7 +68,7 @@ func TestSetupPortForwardingRejectsInvalidBeforeRunningCommands(t *testing.T) {
 }
 
 func TestSetupPortForwardingAcceptsNumberAndHostPort(t *testing.T) {
-	// The host forwarding listeners live until process exit.
+	// Isolate the fake Docker and Dev Containers subprocesses.
 	const childEnv = "DEVCONTAINER_VIM_FORWARD_TEST_CHILD"
 	if os.Getenv(childEnv) == "" {
 		self, err := os.Executable()
@@ -102,7 +103,9 @@ func TestSetupPortForwardingAcceptsNumberAndHostPort(t *testing.T) {
 
 	devcontainerPath, dir := installForwardTestCommands(t, fmt.Sprintf(`[%s,"api:%s"]`, firstPort, secondPort))
 	t.Setenv("DEVCONTAINER_VIM_FORWARD_TEST_DEST", destination.Addr().String())
-	if err := setupPortForwarding(t.Context(), "container-id", devcontainerPath, "workspace", "override.json"); err != nil {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	if err := setupPortForwarding(ctx, "container-id", devcontainerPath, "workspace", "override.json"); err != nil {
 		t.Fatal(err)
 	}
 	for _, target := range []ForwardConfig{{Host: "localhost", Port: firstPort}, {Host: "api", Port: secondPort}} {
@@ -131,6 +134,22 @@ func TestSetupPortForwardingAcceptsNumberAndHostPort(t *testing.T) {
 			"--override-config", "override.json", "/port-forwarder", "-l", "0.0.0.0:0", "-f", targetAddr})
 		assertForwardTestArgs(t, dir, "marker-"+target.Port, []string{"exec", "-t", "container-id", "sh", "-c",
 			`dir="$HOME/.config/devcontainer.vim/pf"; mkdir -p "$dir" && touch "$dir/$1"`, "port-forwarder-marker", targetAddr + "_" + destination.Addr().String()})
+	}
+	cancel()
+	for _, port := range []string{firstPort, secondPort} {
+		addr := net.JoinHostPort("127.0.0.1", port)
+		deadline := time.Now().Add(time.Second)
+		for {
+			conn, err := net.DialTimeout("tcp", addr, 100*time.Millisecond)
+			if err != nil {
+				break
+			}
+			conn.Close()
+			if time.Now().After(deadline) {
+				t.Fatalf("forwarding for %s continued after cancellation", addr)
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
 	}
 }
 

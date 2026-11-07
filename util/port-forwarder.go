@@ -1,49 +1,76 @@
 package util
 
 import (
+	"context"
 	"io"
 	"net"
+	"sync"
 )
 
-// ポートフォワーディングの主処理を行う。
-// 転送先・転送元のデータ通信をリレーする。
-func forward(src net.Conn, dstAddr string) error {
-	defer src.Close()
-
-	// 転送先に接続
-	dst, err := net.Dial("tcp", dstAddr)
+// forward relays traffic between an accepted client and the destination.
+func forward(ctx context.Context, src net.Conn, dstAddr string) error {
+	var dialer net.Dialer
+	dst, err := dialer.DialContext(ctx, "tcp", dstAddr)
 	if err != nil {
+		src.Close()
 		return err
 	}
-	defer dst.Close()
+	closeConnections := func() {
+		src.Close()
+		dst.Close()
+	}
+	stop := context.AfterFunc(ctx, closeConnections)
+	defer stop()
 
-	// 双方向のデータ転送を行う
-	// クライアント → 転送先
-	go io.Copy(dst, src)
-
-	// 転送先 → クライアント
+	clientDone := make(chan struct{})
+	go func() {
+		defer close(clientDone)
+		io.Copy(dst, src)
+	}()
+	defer func() {
+		closeConnections()
+		<-clientDone
+	}()
 	io.Copy(src, dst)
-
 	return nil
 }
 
-// ポートフォワーディング開始
+// StartForwarding relays TCP connections without a cancellation context.
 func StartForwarding(listenAddr, forwardAddr string) error {
-	// listener 生成
-	listener, err := net.Listen("tcp", listenAddr)
+	return StartForwardingContext(context.Background(), listenAddr, forwardAddr)
+}
+
+// StartForwardingContext relays TCP connections until ctx is canceled.
+func StartForwardingContext(ctx context.Context, listenAddr, forwardAddr string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	var config net.ListenConfig
+	listener, err := config.Listen(ctx, "tcp", listenAddr)
 	if err != nil {
 		return err
 	}
-	defer listener.Close()
+	return serveForwarding(ctx, listener, forwardAddr)
+}
 
+func serveForwarding(ctx context.Context, listener net.Listener, forwardAddr string) error {
+	ctx, cancel := context.WithCancel(ctx)
+	var workers sync.WaitGroup
+	stop := context.AfterFunc(ctx, func() { listener.Close() })
+	defer func() {
+		cancel()
+		stop()
+		listener.Close()
+		workers.Wait()
+	}()
 	for {
-		// listen 開始
 		client, err := listener.Accept()
 		if err != nil {
+			if ctx.Err() != nil {
+				return nil
+			}
 			continue
 		}
-
-		// 主処理(バケツリレー)を実行
-		go forward(client, forwardAddr)
+		workers.Go(func() { _ = forward(ctx, client, forwardAddr) })
 	}
 }
