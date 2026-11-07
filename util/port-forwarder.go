@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log"
 	"net"
 	"sync"
 	"time"
@@ -93,6 +94,10 @@ func ServeForwarding(ctx context.Context, listener net.Listener, forwardAddr str
 			continue
 		}
 		retryDelay = 0
-		workers.Go(func() { _ = forward(ctx, client, forwardAddr) })
+		workers.Go(func() {
+			if err := forward(ctx, client, forwardAddr); err != nil && ctx.Err() == nil {
+				log.Printf("port forwarding to %s failed: %v", forwardAddr, err)
+			}
+		})
 	}
 }
