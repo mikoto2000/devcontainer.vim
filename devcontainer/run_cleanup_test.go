@@ -163,10 +163,10 @@ func TestMain(m *testing.M) {
 
 func runCleanupTestDocker(dir string, args []string) int {
 	command := args[0]
-	if command == "exec" && len(args) > 3 && args[1] == "-t" {
-		command = args[3]
-		if command == "sh" && len(args) == 8 && args[4] == "-c" && args[5] == containerToolProbe && args[6] == "devcontainer-vim-tool-probe" {
-			command = "probe-" + args[7]
+	if command == "exec" && len(args) > 2 && args[1] == "test-container" {
+		command = args[2]
+		if command == "sh" && len(args) == 7 && args[3] == "-c" && args[4] == containerToolProbe && args[5] == "devcontainer-vim-tool-probe" {
+			command = "probe-" + args[6]
 		}
 	}
 	log, err := os.OpenFile(filepath.Join(dir, "commands"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)

@@ -276,7 +276,7 @@ func TestSetupPortForwardingAcceptsNumberAndHostPort(t *testing.T) {
 		targetAddr := net.JoinHostPort(target.Host, target.Port)
 		assertForwardTestArgs(t, dir, "exec-"+target.Port, []string{"exec", "--container-id", "container-id", "--workspace-folder", "workspace",
 			"--override-config", "override.json", "/port-forwarder", "-l", "0.0.0.0:0", "-f", targetAddr})
-		assertForwardTestArgs(t, dir, "marker-"+target.Port, []string{"exec", "-t", "container-id", "sh", "-c",
+		assertForwardTestArgs(t, dir, "marker-"+target.Port, []string{"exec", "container-id", "sh", "-c",
 			`dir="$HOME/.config/devcontainer.vim/pf"; mkdir -p "$dir" && touch "$dir/$1"`, "port-forwarder-marker", targetAddr + "_" + destination.Addr().String()})
 	}
 	// A child exit must release its relay and be reaped while the session is still active.
@@ -450,11 +450,14 @@ func runForwardTestCommand(dir string, argv []string) int {
 		}
 		return 0
 	}
-	if len(args) >= 4 && args[3] == "hostname" {
+	if len(args) < 3 || args[0] != "exec" || args[1] != "container-id" {
+		return 99
+	}
+	if args[2] == "hostname" {
 		fmt.Println("127.0.0.1")
-	} else if len(args) == 6 {
+	} else if len(args) == 5 {
 		if shell := os.Getenv("DEVCONTAINER_VIM_FORWARD_TEST_MARKER_SHELL"); shell != "" {
-			cmd := exec.Command(shell, "-c", args[5])
+			cmd := exec.Command(shell, "-c", args[4])
 			cmd.Env = append(os.Environ(), "HOME="+filepath.Join(dir, "home"), "PATH="+dir, "LC_ALL=C")
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
@@ -464,14 +467,14 @@ func runForwardTestCommand(dir string, argv []string) int {
 			return 0
 		}
 		if markers, err := os.ReadFile(filepath.Join(dir, "markers")); err == nil {
-			if strings.HasPrefix(args[5], "grep ") {
+			if strings.HasPrefix(args[4], "grep ") {
 				fmt.Println("/proc/123/comm")
 			} else {
 				os.Stdout.Write(markers)
 			}
 		}
-	} else if len(args) == 8 {
-		target, _, _ := strings.Cut(args[7], "_")
+	} else if len(args) == 7 {
+		target, _, _ := strings.Cut(args[6], "_")
 		_, port, err := net.SplitHostPort(target)
 		if err != nil || !writeForwardTestArgs(dir, "marker-"+port, args) {
 			return 99

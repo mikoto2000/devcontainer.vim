@@ -35,10 +35,10 @@ func GetContainerIDFromWorkspaceFolder(workspaceFolder string) (string, error) {
 	return GetID(psResult)
 }
 
-// `docker exec` コマンドを実行する。
+// Exec runs a noninteractive command and returns its standard output.
 func Exec(containerID string, command ...string) (string, error) {
 
-	dockerExecArgs := []string{"exec", "-t", containerID}
+	dockerExecArgs := []string{"exec", containerID}
 	dockerExecArgs = append(dockerExecArgs, command...)
 
 	dockerExecCommand := exec.Command(containerCommand, dockerExecArgs...)
