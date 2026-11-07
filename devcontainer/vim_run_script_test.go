@@ -68,6 +68,68 @@ func TestRenderVimRunScriptWithoutTmux(t *testing.T) {
 	}
 }
 
+func TestRenderBundledVimRunScripts(t *testing.T) {
+	for _, variant := range []struct {
+		name, template, unpack, prepare, editor string
+	}{
+		{
+			name: "AppImage", template: vimRunX8664AppImage,
+			unpack: "'/vim archive' --appimage-extract", prepare: "cd -",
+			editor: "~/squashfs-root/AppRun",
+		},
+		{
+			name: "x86_64 static", template: vimRunX8664Static,
+			unpack: "tar zxf './vim archive' -C ~/", prepare: "mv $(ls -d ~/vim-*-x86_64) ~/vim-static",
+			editor: "~/vim-static/AppRun",
+		},
+		{
+			name: "ARM static", template: vimRunAarch64,
+			unpack: "tar zxf './vim archive' -C ~/", prepare: "mv $(ls -d ~/vim-*-aarch64) ~/vim-static",
+			editor: "~/vim-static/AppRun",
+		},
+	} {
+		for _, mode := range []struct {
+			name    string
+			useTmux bool
+		}{
+			{name: "direct"},
+			{name: "tmux", useTmux: true},
+		} {
+			t.Run(variant.name+"/"+mode.name, func(t *testing.T) {
+				script, err := renderVimRunScript(variant.template, vimRunScriptParams{
+					VimFileName: "vim archive",
+					SendToTcp:   "Send To Tcp.vim",
+					UseTmux:     mode.useTmux,
+					TmuxCommand: "/tmux custom",
+				})
+				if err != nil {
+					t.Fatal(err)
+				}
+				editor := variant.editor + ` --cmd "let g:devcontainer_vim = v:true" -S '/Send To Tcp.vim' -S /vimrc "$@"`
+				launch := "\n" + editor
+				if mode.useTmux {
+					launch = `new-session -s "devcontainer.vim" -A ` + editor
+				}
+				for _, want := range []string{variant.unpack, variant.prepare, launch} {
+					if !strings.Contains(script, want) {
+						t.Errorf("launcher missing %q:\n%s", want, script)
+					}
+				}
+				if hasTmux := strings.Contains(script, "'/tmux custom' -u "); hasTmux != mode.useTmux {
+					t.Errorf("tmux command presence = %t, want %t:\n%s", hasTmux, mode.useTmux, script)
+				}
+				if runtime.GOOS != "windows" {
+					cmd := exec.Command("/bin/sh", "-n")
+					cmd.Stdin = strings.NewReader(script)
+					if output, err := cmd.CombinedOutput(); err != nil {
+						t.Errorf("invalid shell script: %v\n%s", err, output)
+					}
+				}
+			})
+		}
+	}
+}
+
 func TestVimRunScriptPreservesShellArguments(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("requires POSIX executable paths and /bin/sh")
