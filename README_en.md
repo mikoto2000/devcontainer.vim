@@ -215,8 +215,8 @@ When a key exists in both files, objects merge recursively and arrays are append
 ```
 PROJECT_ROOT/
     +- .devcontainer/
-    |   +- devcontainer.json      # 普通の devcontainer 向けの設定を記述
-    |   +- devcontainer.vim.json  # .vim のマウントなど、 devcontainer.vim のみで利用したい設定を記述
+    |   +- devcontainer.json      # Standard Dev Container settings
+    |   +- devcontainer.vim.json  # Settings for devcontainer.vim, such as mounting .vim
     |
     +- ...(other project files)
 ```
