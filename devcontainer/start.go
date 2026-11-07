@@ -267,9 +267,10 @@ func Start(
 	}
 
 	// 3. port-forwarderをインストール
-	err = installPortForwarder(containerID, vimInstallDir, containerArch)
-	if err != nil {
-		return err
+	if !noPf {
+		if err := installPortForwarder(containerID, vimInstallDir, containerArch); err != nil {
+			return err
+		}
 	}
 
 	// 4. clipboard-data-receiverを起動

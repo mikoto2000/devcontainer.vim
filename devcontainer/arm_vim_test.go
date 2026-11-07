@@ -137,6 +137,11 @@ func runArmVimTestCommand(dir string, args []string) error {
 		return nil
 	case "cp":
 		if dest, ok := strings.CutPrefix(args[2], "arm-container:/"); ok {
+			// These launch cases disable port forwarding. A cached binary keeps
+			// the old install path offline so an attempted copy fails the test.
+			if dest == "port-forwarder" {
+				return fmt.Errorf("unexpected port-forwarder copy with forwarding disabled")
+			}
 			if dest == "" {
 				dest = filepath.Base(args[1])
 			}

@@ -411,10 +411,7 @@ func main() {
 					}
 
 					// port-forwarder 使用判定
-					noPf := false
-					if cCtx.String(flagNameNoCdr) != "" {
-						noPf = cCtx.Bool(flagNameNoPf)
-					}
+					noPf := cCtx.Bool(flagNameNoPf)
 
 					// tmux 使用判定
 					noTmux := false
