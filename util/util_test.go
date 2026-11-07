@@ -158,13 +158,15 @@ func TestParseJwcc(t *testing.T) {
 	}
 
 	var unmarshaledJson map[string]interface{}
-	json.Unmarshal(jsonBytes, &unmarshaledJson)
+	if err := json.Unmarshal(jsonBytes, &unmarshaledJson); err != nil {
+		t.Fatalf("decode standardized JSON: %v", err)
+	}
 
 	want := "test_value"
 	got := unmarshaledJson["test_key"]
 
 	if got != want {
-		t.Fatalf("error: want %s but got %s", got, want)
+		t.Fatalf("test_key = %v, want %q", got, want)
 	}
 }
 
