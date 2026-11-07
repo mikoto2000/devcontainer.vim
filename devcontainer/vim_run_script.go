@@ -1,6 +1,8 @@
 package devcontainer
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 )
@@ -8,6 +10,22 @@ import (
 // Docker copies the launcher into the container as root, but the editor may
 // run as the workspace user.
 const vimRunScriptMode = 0755
+
+func writeVimRunScript(path, script string) error {
+	dir, err := os.MkdirTemp(filepath.Dir(path), ".vim-run-*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(dir)
+
+	staged := filepath.Join(dir, filepath.Base(path))
+	defer os.Remove(staged)
+	if err := os.WriteFile(staged, []byte(script), vimRunScriptMode); err != nil {
+		return err
+	}
+	// A rename replaces the file without following a symlink or removing a directory.
+	return os.Rename(staged, path)
+}
 
 type vimRunScriptParams struct {
 	VimFileName string

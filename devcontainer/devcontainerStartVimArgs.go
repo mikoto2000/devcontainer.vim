@@ -2,7 +2,6 @@ package devcontainer
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"runtime"
 
@@ -55,9 +54,7 @@ func devcontainerStartVimArgs(containerID string, workspaceFolder string, vimFil
 
 	// Vim 起動スクリプトを出力
 	vimLaunchScript := filepath.Join(configDirForDevcontainer, "VimRun.sh")
-	os.RemoveAll(vimLaunchScript)
-	err = os.WriteFile(vimLaunchScript, []byte(vimRunScript), vimRunScriptMode)
-	if err != nil {
+	if err := writeVimRunScript(vimLaunchScript, vimRunScript); err != nil {
 		return nil, err
 	}
 
