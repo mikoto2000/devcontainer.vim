@@ -59,7 +59,7 @@ build-all:
 		ext=""; [ $$GOOS = "windows" ] && ext=".exe"; \
 		out="$(DEST)/$(APP_NAME)-$${GOOS}-$${GOARCH}$$ext"; \
 		echo "Building $$out"; \
-		GOOS=$$GOOS GOARCH=$$GOARCH go build -ldflags "-s -w -X main.version=$(VERSION)" -o $$out $(PKG); \
+		GOOS=$$GOOS GOARCH=$$GOARCH go build -ldflags "-s -w -X main.version=$(VERSION)" -o $$out .; \
 	done
 
 
