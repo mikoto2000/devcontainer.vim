@@ -80,19 +80,18 @@ func downloadTemplateIndex(ctx context.Context, cacheDir string) error {
 	return oras.Pull(ctx, "ghcr.io/devcontainers/index", "latest", cacheDir)
 }
 
-func main() {
-	validateWorkspaceFolder := func(workspaceFolder string) {
-		fileInfo, err := os.Stat(workspaceFolder)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: workspace folder not found: %s\n", workspaceFolder)
-			os.Exit(1)
-		}
-		if !fileInfo.IsDir() {
-			fmt.Fprintf(os.Stderr, "Error: workspace folder is not a directory: %s\n", workspaceFolder)
-			os.Exit(1)
-		}
+func validateWorkspaceFolder(workspaceFolder string) error {
+	fileInfo, err := os.Stat(workspaceFolder)
+	if err != nil {
+		return fmt.Errorf("workspace folder not found: %s", workspaceFolder)
 	}
+	if !fileInfo.IsDir() {
+		return fmt.Errorf("workspace folder is not a directory: %s", workspaceFolder)
+	}
+	return nil
+}
 
+func main() {
 	// Windows でも `${ localEnv:HOME }` でホームディレクトリの指定ができるように、
 	// 環境変数を更新
 	if runtime.GOOS == "windows" {
@@ -294,7 +293,9 @@ func main() {
 								fmt.Fprintf(os.Stderr, "Usage: devcontainer.vim templates apply <WORKSPACE_FOLDER>\n")
 								os.Exit(1)
 							}
-							validateWorkspaceFolder(args[len(args)-1])
+							if err := validateWorkspaceFolder(args[len(args)-1]); err != nil {
+								return cli.Exit(fmt.Errorf("Error: %w", err), 1)
+							}
 
 							// Features の一覧をダウンロード
 							indexFileName := "devcontainer-index.json"
@@ -402,7 +403,9 @@ func main() {
 						os.Exit(1)
 					}
 					// 引数の末尾が存在するディレクトリかどうか確認
-					validateWorkspaceFolder(args[len(args)-1])
+					if err := validateWorkspaceFolder(args[len(args)-1]); err != nil {
+						return cli.Exit(fmt.Errorf("Error: %w", err), 1)
+					}
 
 					// シェル使用判定
 					shell := ""
@@ -523,7 +526,9 @@ func main() {
 						fmt.Fprintf(os.Stderr, "Usage: devcontainer.vim down <WORKSPACE_FOLDER>\n")
 						os.Exit(1)
 					}
-					validateWorkspaceFolder(args[len(args)-1])
+					if err := validateWorkspaceFolder(args[len(args)-1]); err != nil {
+						return cli.Exit(fmt.Errorf("Error: %w", err), 1)
+					}
 
 					// 必要なファイルのダウンロード
 					devcontainerPath, err := tools.InstallDevcontainerTools(binDir)

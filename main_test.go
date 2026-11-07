@@ -225,6 +225,58 @@ func TestConfigDirectoryPermissions(t *testing.T) {
 	assertMode(0755, filepath.Dir(outputDir), outputDir)
 }
 
+func TestValidateWorkspaceFolder(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "file")
+	if err := os.WriteFile(file, nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	missing := filepath.Join(dir, "missing")
+	for _, tc := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{"directory", dir, ""},
+		{"missing", missing, "workspace folder not found: " + missing},
+		{"file", file, "workspace folder is not a directory: " + file},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateWorkspaceFolder(tc.path)
+			if tc.want == "" {
+				if err != nil {
+					t.Fatalf("validateWorkspaceFolder() = %v, want nil", err)
+				}
+			} else if err == nil || err.Error() != tc.want {
+				t.Fatalf("validateWorkspaceFolder() = %v, want %q", err, tc.want)
+			}
+		})
+	}
+}
+
+func TestWorkspaceCommandsRejectMissingFolder(t *testing.T) {
+	dir := isolateCLIHome(t)
+	missing := filepath.Join(dir, "missing workspace")
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, command := range [][]string{{"start"}, {"down"}, {"templates", "apply"}} {
+		t.Run(strings.Join(command, " "), func(t *testing.T) {
+			args := append([]string{"-test.run=^TestCLIProcess$", "--"}, command...)
+			cmd := exec.CommandContext(t.Context(), self, append(args, missing)...)
+			cmd.Dir = dir
+			cmd.Env = append(os.Environ(), "DEVCONTAINER_VIM_TEST_CLI=1")
+			output, err := cmd.CombinedOutput()
+			var exit *exec.ExitError
+			want := "Error: workspace folder not found: " + missing
+			if !errors.As(err, &exit) || exit.ExitCode() != 1 || !strings.Contains(string(output), want) {
+				t.Fatalf("CLI returned %v, output %q, want exit code 1 and %q", err, output, want)
+			}
+		})
+	}
+}
+
 func TestToolDownloadRejectsUnknownArchitecture(t *testing.T) {
 	dir := isolateCLIHome(t)
 	self, err := os.Executable()
