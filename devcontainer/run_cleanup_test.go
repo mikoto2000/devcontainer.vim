@@ -193,7 +193,7 @@ func runCleanupTestDocker(dir string, args []string) int {
 		if err := os.WriteFile(container, nil, 0600); err != nil {
 			return 99
 		}
-		fmt.Println("test-container")
+		fmt.Print("  test-container\r\n")
 		fmt.Fprintln(os.Stderr, "fixture Docker warning")
 	case "uname":
 		if fail == "uname" {
