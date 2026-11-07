@@ -18,6 +18,36 @@ const runCleanupTestDirEnv = "DEVCONTAINER_VIM_RUN_CLEANUP_TEST_DIR"
 const runCleanupDockerDiagnostic = "fixture Docker daemon rejected the image"
 const runCleanupProbeDiagnostic = "fixture Docker daemon could not exec the tool probe"
 
+func installCleanupTestCommands(t *testing.T, dir string) string {
+	t.Helper()
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	binary, err := os.ReadFile(self)
+	if err != nil {
+		t.Fatal(err)
+	}
+	suffix := ""
+	if runtime.GOOS == "windows" {
+		suffix = ".exe"
+	}
+	cdr := filepath.Join(dir, "run-test-cdr"+suffix)
+	for _, path := range []string{filepath.Join(dir, "docker"+suffix), cdr} {
+		if err := os.WriteFile(path, binary, 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv(runCleanupTestDirEnv, dir)
+	// Use the native CDR path even when the test runs under WSL.
+	t.Setenv("WSL_DISTRO_NAME", "")
+	if err := os.Unsetenv("WSL_DISTRO_NAME"); err != nil {
+		t.Fatal(err)
+	}
+	return cdr
+}
+
 func TestRunCleansUpAfterSetupFailure(t *testing.T) {
 	for _, tt := range []struct {
 		name     string
@@ -34,40 +64,16 @@ func TestRunCleansUpAfterSetupFailure(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			dir := t.TempDir()
-			self, err := os.Executable()
-			if err != nil {
-				t.Fatal(err)
-			}
-			binary, err := os.ReadFile(self)
-			if err != nil {
-				t.Fatal(err)
-			}
-			suffix := ""
-			if runtime.GOOS == "windows" {
-				suffix = ".exe"
-			}
-			cdr := filepath.Join(dir, "run-test-cdr"+suffix)
-			for _, path := range []string{filepath.Join(dir, "docker"+suffix), cdr} {
-				if err := os.WriteFile(path, binary, 0700); err != nil {
-					t.Fatal(err)
-				}
-			}
+			cdr := installCleanupTestCommands(t, dir)
 			// Keep an incorrect fallback offline and detect its attempted Docker copy.
 			for _, name := range []string{"vim_amd64", "tmux_amd64"} {
 				if err := os.WriteFile(filepath.Join(dir, name), nil, 0600); err != nil {
 					t.Fatal(err)
 				}
 			}
-			t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
-			t.Setenv(runCleanupTestDirEnv, dir)
 			t.Setenv("DEVCONTAINER_VIM_RUN_CLEANUP_TEST_FAIL", tt.name)
-			// Use the native CDR path even when the test runs under WSL.
-			t.Setenv("WSL_DISTRO_NAME", "")
-			if err := os.Unsetenv("WSL_DISTRO_NAME"); err != nil {
-				t.Fatal(err)
-			}
 
-			err = Run([]string{"test-image"}, !tt.startCDR, true, !tt.withTmux, cdr, dir, false, "", dir, "", nil)
+			err := Run([]string{"test-image"}, !tt.startCDR, true, !tt.withTmux, cdr, dir, false, "", dir, "", nil)
 			if tt.name == "run" {
 				var startErr *ContainerStartError
 				if !errors.As(err, &startErr) || !strings.Contains(err.Error(), runCleanupDockerDiagnostic) {

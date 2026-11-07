@@ -202,39 +202,6 @@ func TestSetupVimWithSystemVim(t *testing.T) {
 	}
 }
 
-// Run関数の統合テスト（モック使用）
-func TestRunWithMock(t *testing.T) {
-	// このテストは実際のDockerコンテナを使用しないモックテスト
-	// Run関数の構造をテストするが、実際のVim実行はスキップ
-
-	// テスト用の一時ディレクトリを作成
-	tempDir, err := os.MkdirTemp("", "devcontainer_run_test")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	// モック用のパラメータ
-	args := []string{"test-image"}
-	nvim := false
-	configDirForDocker := tempDir
-
-	// Run関数は実際のDockerコンテナが必要なため、
-	// ここでは関数の呼び出し可能性のみをテスト
-	// 実際の実行は統合テスト環境で行う
-
-	// パラメータの妥当性をテスト
-	if len(args) == 0 {
-		t.Fatal("args should not be empty")
-	}
-
-	if configDirForDocker == "" {
-		t.Fatal("configDirForDocker should not be empty")
-	}
-
-	t.Logf("Run function parameters validated: args=%v, nvim=%v", args, nvim)
-}
-
 // Run関数の統合テスト（実際のコンテナ使用）
 func TestRunIntegration(t *testing.T) {
 	// 長時間実行されるテストなので、短いタイムアウトでスキップも可能
