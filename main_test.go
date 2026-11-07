@@ -123,6 +123,23 @@ func TestRunWithoutImage(t *testing.T) {
 	}
 }
 
+func TestStartWithoutWorkspace(t *testing.T) {
+	dir := isolateCLIHome(t)
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.CommandContext(t.Context(), self, "-test.run=^TestCLIProcess$", "--", "start")
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "DEVCONTAINER_VIM_TEST_CLI=1")
+	output, err := cmd.CombinedOutput()
+	var exit *exec.ExitError
+	if !errors.As(err, &exit) || exit.ExitCode() != 1 ||
+		!strings.Contains(string(output), "Usage: devcontainer.vim start <WORKSPACE_FOLDER>") {
+		t.Fatalf("start without workspace = %v, output %q, want usage and exit code 1", err, output)
+	}
+}
+
 func TestConfigDirectoryPermissions(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("POSIX permission bits are not applied on Windows")

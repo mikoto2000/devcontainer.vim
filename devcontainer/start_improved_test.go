@@ -2,6 +2,7 @@ package devcontainer
 
 import (
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -159,17 +160,11 @@ func TestStartConditional(t *testing.T) {
 // エラーケーステスト
 func TestStartErrorCases(t *testing.T) {
 	t.Run("Empty args", func(t *testing.T) {
-		// 空の引数でのテスト - panicを期待しない適切なエラーハンドリング
-		args := []string{} // 空の配列
-		if len(args) > 0 {
-			workspaceFolder := args[len(args)-1]
-			_ = workspaceFolder
-			t.Error("Should not reach here with empty args")
-		} else {
-			// 空の引数の場合のエラーハンドリングをテスト
-			t.Log("Empty args handled correctly")
+		cliPath := filepath.Join(t.TempDir(), "unused-devcontainer")
+		err := Start(nil, nil, cliPath, true, true, true, "", "", false, "", "", "")
+		if err == nil || !strings.Contains(err.Error(), "missing workspace folder") {
+			t.Fatalf("Start with no arguments = %v, want a missing workspace error", err)
 		}
-		// テスト成功 - panicせずに適切にハンドリングされた
 	})
 
 	t.Run("Single arg", func(t *testing.T) {
