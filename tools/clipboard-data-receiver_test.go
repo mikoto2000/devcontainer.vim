@@ -64,6 +64,26 @@ func TestRunCdrTimesOutWhenStartupNeverCompletes(t *testing.T) {
 	}
 }
 
+func TestRunCdrForNativeRejectsZeroPidOrPort(t *testing.T) {
+	for _, mode := range []string{"zero-pid", "zero-port"} {
+		t.Run(mode, func(t *testing.T) {
+			executable, pidFile, portFile := nativeCdrFixture(t, mode)
+			pid, port, err := runCdrForNative(executable, pidFile, portFile, 2*time.Second, cdrTestPollInterval)
+			if err == nil {
+				process, findErr := os.FindProcess(readNativeCdrFixtureNumber(t, pidFile))
+				if findErr == nil {
+					_ = process.Kill()
+					_ = process.Release()
+				}
+			}
+			if !IsCdrStartupTimeout(err) || pid != 0 || port != 0 ||
+				!strings.Contains(err.Error(), "invalid clipboard-data-receiver output") {
+				t.Fatalf("CDR with %s = %d, %d, %v, want invalid output and timeout", mode, pid, port, err)
+			}
+		})
+	}
+}
+
 func TestRunCdrForWsl(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("exercises the Linux side of WSL")
@@ -198,11 +218,16 @@ func runNativeCdrFixture(mode, pidFile, portFile string) error {
 	if err := os.WriteFile(portFile, []byte(strconv.Itoa(port)), 0600); err != nil {
 		return err
 	}
-	if mode == "ready" {
+	switch mode {
+	case "ready":
 		fmt.Printf("{\"pid\":%d,", pid)
 		time.Sleep(40 * time.Millisecond)
 		fmt.Printf("\"port\":%d}\n", port)
-	} else {
+	case "zero-pid":
+		fmt.Printf("{\"pid\":0,\"port\":%d}\n", port)
+	case "zero-port":
+		fmt.Printf("{\"pid\":%d,\"port\":0}\n", pid)
+	default:
 		fmt.Fprintln(os.Stderr, "waiting for CDR startup")
 	}
 	// Bound the fixture lifetime even if the caller does not terminate it.
@@ -210,7 +235,7 @@ func runNativeCdrFixture(mode, pidFile, portFile string) error {
 	return nil
 }
 
-func TestGetProcessInfoRejectsZeroPidOrPort(t *testing.T) {
+func TestGetProcessInfoParsesZeroPidAndPort(t *testing.T) {
 	output := `{"pid":0,"address":"0.0.0.0","port":0}`
 	pid, _, port, err := GetProcessInfo(output)
 	if err != nil {
