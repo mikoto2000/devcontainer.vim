@@ -66,7 +66,7 @@ func (paths commandPaths) downloadClipboardReceiver(*cli.Context) error {
 }
 
 func (paths commandPaths) downloadPortForwarder(cCtx *cli.Context) error {
-	// clipboard-data-receiver のダウンロード
+	// port-forwarder のダウンロード
 	_, err := tools.PortForwarderContainer(tools.DefaultInstallerUseServices{}).Install(paths.binDir, cCtx.String(flagNameArch), true)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error installing port-forwarder: %v\n", err)
