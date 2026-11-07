@@ -209,11 +209,13 @@ func runArmVimTestCommand(dir string, args []string) error {
 		case slices.Equal(args[1:], []string{"-t", "arm-container", "uname", "-m"}):
 			fmt.Println("aarch64")
 			return nil
-		case slices.Equal(args[1:], []string{"-t", "arm-container", "which", "nvim"}):
+		case slices.Equal(args[1:], []string{"-t", "arm-container", "sh", "-c", containerToolProbe, "devcontainer-vim-tool-probe", "nvim"}):
 			if os.Getenv("DEVCONTAINER_VIM_ARM_TEST_SYSTEM_NVIM") == "true" {
-				fmt.Println("/usr/bin/nvim")
-				return nil
+				fmt.Println("found")
+			} else {
+				fmt.Println("missing")
 			}
+			return nil
 		case args[1] == "--user":
 			return nil
 		case args[len(args)-1] == "/bin/test-shell":

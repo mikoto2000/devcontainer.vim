@@ -1,6 +1,7 @@
 package devcontainer
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -11,6 +12,33 @@ import (
 	"github.com/mikoto2000/devcontainer.vim/v3/tools"
 	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
+
+// Both probe results exit successfully so Docker execution errors stay distinct.
+const containerToolProbe = `if command -v "$1" >/dev/null; then printf 'found\n'; else printf 'missing\n'; fi`
+
+func probeContainerTool(containerID, name string) (bool, error) {
+	out, err := docker.Exec(containerID, "sh", "-c", containerToolProbe, "devcontainer-vim-tool-probe", name)
+	if err != nil {
+		var exit *exec.ExitError
+		if errors.As(err, &exit) {
+			out += "\n" + string(exit.Stderr)
+		}
+		if diagnostic := strings.TrimSpace(out); diagnostic != "" {
+			return false, fmt.Errorf("detect %s in container %s: %w: %s", name, containerID, err, diagnostic)
+		}
+		return false, fmt.Errorf("detect %s in container %s: %w", name, containerID, err)
+	}
+	switch strings.TrimSpace(out) {
+	case "found":
+		fmt.Printf("System %s found.\n", name)
+		return true, nil
+	case "missing":
+		fmt.Printf("System %s not found.\n", name)
+		return false, nil
+	default:
+		return false, fmt.Errorf("detect %s in container %s: unexpected probe output %q", name, containerID, out)
+	}
+}
 
 // コンテナのアーキテクチャを取得する
 func getContainerArch(containerID string) (string, error) {
@@ -42,17 +70,10 @@ func installPortForwarder(containerID, vimInstallDir, containerArch string) erro
 
 // tmuxの検出とインストールを行う
 func setupTmux(containerID, vimInstallDir string, containerArch string) (string, bool, error) {
-	useSystemTmux := false
-	fmt.Printf("Check system installed tmux ... ")
-	out, _ := docker.Exec(containerID, "which", "tmux")
-	if out != "" {
-		fmt.Printf("found.\n")
-		useSystemTmux = true
-	} else {
-		fmt.Printf("not found.\n")
+	useSystemTmux, err := probeContainerTool(containerID, "tmux")
+	if err != nil {
+		return "", false, err
 	}
-	fmt.Printf("docker exec output: \"%s\".\n", strings.TrimSpace(out))
-
 	if useSystemTmux {
 		return "tmux", true, nil
 	}
@@ -87,15 +108,13 @@ func setupVim(containerID, vimInstallDir string, nvim bool, containerArch string
 		vimFileName = "nvim"
 	}
 
-	fmt.Printf("Check system installed %s ... ", vimFileName)
-	out, _ := docker.Exec(containerID, "which", vimFileName)
-	if out != "" {
-		fmt.Printf("found.\n")
-		fmt.Printf("docker exec output: \"%s\".\n", strings.TrimSpace(out))
+	useSystemVim, err := probeContainerTool(containerID, vimFileName)
+	if err != nil {
+		return "", false, err
+	}
+	if useSystemVim {
 		return vimFileName, true, nil
 	}
-	fmt.Printf("not found.\n")
-	fmt.Printf("docker exec output: \"%s\".\n", strings.TrimSpace(out))
 
 	vimFilePath, err := tools.InstallVim(vimInstallDir, nvim, containerArch)
 	if err != nil {
