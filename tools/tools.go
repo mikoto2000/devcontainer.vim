@@ -59,7 +59,7 @@ func (t Tool) Install(installDir string, containerArch string, override bool) (s
 	filePath := filepath.Join(installDir, fileName)
 
 	if util.IsExists(filePath) && !override {
-		fmt.Printf("%s aleady exist, use this.\n", filePath)
+		fmt.Printf("%s already exists, using it.\n", filePath)
 		return filePath, nil
 	} else {
 		downloadURL, err := t.CalculateDownloadURL(containerArch)
