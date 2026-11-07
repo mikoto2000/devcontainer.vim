@@ -62,25 +62,13 @@ func TestIsExistsFalse(t *testing.T) {
 
 }
 
-func pathFuncHello() (string, error) {
-	return "Hello", nil
-}
-
-func pathFuncFailed() (string, error) {
-	return "", errors.New("failed!")
-}
-
 func TestGetConfigDirectorySuccess(t *testing.T) {
-	want := "Hello/success"
-	// 存在しないファイルの存在確認
-	got, err := CreateConfigDirectory(pathFuncHello, "success")
+	base := t.TempDir()
+	want := filepath.Join(base, "success")
+	_, err := CreateConfigDirectory(func() (string, error) { return base, nil }, "success")
 	if err != nil {
 		t.Fatalf("error: %s", err)
 	}
-
-	defer func() {
-		os.RemoveAll(filepath.Dir(got))
-	}()
 
 	_, err = os.Stat(want)
 	if err != nil {
@@ -89,34 +77,24 @@ func TestGetConfigDirectorySuccess(t *testing.T) {
 }
 
 func TestGetConfigDirectoryFailed(t *testing.T) {
-	want := "Hello/failed"
-	// 存在しないファイルの存在確認
-	got, err := CreateConfigDirectory(pathFuncFailed, "failed")
-	if err == nil {
-		t.Fatalf("not return error got: %s", got)
+	base := t.TempDir()
+	wantErr := errors.New("base directory lookup failed")
+	got, err := CreateConfigDirectory(func() (string, error) { return base, wantErr }, "failed")
+	if got != "" || !errors.Is(err, wantErr) {
+		t.Fatalf("CreateConfigDirectory = %q, %v, want an empty path and %v", got, err, wantErr)
 	}
-
-	defer func() {
-		os.RemoveAll(filepath.Dir(got))
-	}()
-
-	_, err = os.Stat(want)
-	if err == nil {
-		t.Fatalf("not return error found: %s", got)
+	if _, err := os.Stat(filepath.Join(base, "failed")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("directory created after lookup failure: %v", err)
 	}
 }
 
 func TestCreateCacheDirectorySuccess(t *testing.T) {
-	wantBase := "Hello/success"
-	// 存在しないファイルの存在確認
-	gotAppCacheDir, _, _, _, err := CreateCacheDirectory(pathFuncHello, "success")
+	base := t.TempDir()
+	wantBase := filepath.Join(base, "success")
+	_, _, _, _, err := CreateCacheDirectory(func() (string, error) { return base, nil }, "success")
 	if err != nil {
 		t.Fatalf("error: %s", err)
 	}
-
-	defer func() {
-		os.RemoveAll(filepath.Dir(gotAppCacheDir))
-	}()
 
 	_, err = os.Stat(filepath.Join(wantBase))
 	if err != nil {
