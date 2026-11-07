@@ -2,7 +2,6 @@ package util
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/google/go-github/v62/github"
@@ -20,8 +19,7 @@ func getLatestReleaseTag(client *github.Client, owner, repository string) (strin
 
 	release, _, err := client.Repositories.GetLatestRelease(ctx, owner, repository)
 	if err != nil {
-		message := fmt.Sprintf("Error getting latest release: %v", err)
-		return "", errors.New(message)
+		return "", fmt.Errorf("Error getting latest release: %w", err)
 	}
 
 	tag := release.GetTagName()
