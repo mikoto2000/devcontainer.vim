@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	_ "embed"
 	"encoding/json"
 	"errors"
@@ -72,6 +73,12 @@ const runargsContent = "-v \"$(pwd):/work\" -v \"$HOME/.vim:/root/.vim\" -v \"$H
 var additionalVimrc string
 
 const appName = "devcontainer.vim"
+
+func downloadTemplateIndex(ctx context.Context, cacheDir string) error {
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	defer cancel()
+	return oras.Pull(ctx, "ghcr.io/devcontainers/index", "latest", cacheDir)
+}
 
 func main() {
 	validateWorkspaceFolder := func(workspaceFolder string) {
@@ -294,9 +301,7 @@ func main() {
 							indexFile := filepath.Join(appCacheDir, indexFileName)
 							if !util.IsExists(indexFile) {
 								fmt.Println("Download template index ... ")
-								ctx, cancel := signal.NotifyContext(cCtx.Context, os.Interrupt)
-								err := oras.Pull(ctx, "ghcr.io/devcontainers/index", "latest", appCacheDir)
-								cancel()
+								err := downloadTemplateIndex(cCtx.Context, appCacheDir)
 								if err != nil {
 									fmt.Fprintf(os.Stderr, "Error downloading template index: %v\n", err)
 									os.Exit(1)
@@ -981,9 +986,7 @@ func main() {
 						Action: func(cCtx *cli.Context) error {
 
 							// Features の一覧をダウンロード
-							ctx, cancel := signal.NotifyContext(cCtx.Context, os.Interrupt)
-							err := oras.Pull(ctx, "ghcr.io/devcontainers/index", "latest", appCacheDir)
-							cancel()
+							err := downloadTemplateIndex(cCtx.Context, appCacheDir)
 							if err != nil {
 								if errors.Is(err, os.ErrNotExist) {
 									fmt.Fprintf(os.Stderr, "Index file not found: %v\n", err)
