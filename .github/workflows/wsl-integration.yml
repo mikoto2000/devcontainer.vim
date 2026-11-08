@@ -36,7 +36,7 @@ jobs:
             build-essential ca-certificates curl docker.io docker-compose-v2 jq
           archive=go1.26.6.linux-amd64.tar.gz
           curl --fail --silent --show-error --location --retry 2 "https://go.dev/dl/$archive" -o "/tmp/$archive"
-          printf '%s  %s\n' 5c2c3b16caefa1d968a94c1daca04a7ca301a496d9b086e17ad77bb81393f053 "/tmp/$archive" | sha256sum --check
+          printf '%s  %s\n' 708effb774be8237570d0add163225abbdfaf4fca28b2611df167beba4feef89 "/tmp/$archive" | sha256sum --check
           tar -xzf "/tmp/$archive" -C /opt
 
       - name: Prepare fixtures and run race tests
