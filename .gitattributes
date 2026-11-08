@@ -1,1 +1,2 @@
 scripts/prepare-wsl-integration-fixtures.sh text eol=lf
+devcontainer/VimRun_*.template.sh text eol=lf

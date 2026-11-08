@@ -1,0 +1,79 @@
+name: WSL integration
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  race:
+    name: WSL race tests
+    runs-on: windows-2025
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: wsl-bash_Ubuntu-24.04 {0}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: Vampire/setup-wsl@4c48163d9f981914dd8caa0fc335fe19cca5bff4 # v7.2.0
+        with:
+          distribution: Ubuntu-24.04
+          wsl-version: '2'
+          wsl-shell-user: root
+          wsl-conf: |
+            [boot]
+            systemd=false
+
+      - name: Install Linux test tools
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            build-essential ca-certificates curl docker.io docker-compose-v2 jq
+          archive=go1.26.6.linux-amd64.tar.gz
+          curl --fail --silent --show-error --location --retry 2 "https://go.dev/dl/$archive" -o "/tmp/$archive"
+          printf '%s  %s\n' 708effb774be8237570d0add163225abbdfaf4fca28b2611df167beba4feef89 "/tmp/$archive" | sha256sum --check
+          tar -xzf "/tmp/$archive" -C /opt
+
+      - name: Prepare fixtures and run race tests
+        env:
+          DEVCONTAINER_VIM_GITHUB_TOKEN: ${{ github.token }}
+          WSLENV: DEVCONTAINER_VIM_GITHUB_TOKEN/u
+        run: |
+          export PATH="/opt/go/bin:$PATH"
+          go version
+          state=$(mktemp -d)
+          dockerd >"$state/dockerd.log" 2>&1 &
+          daemon=$!
+          trap 'kill "$daemon" 2>/dev/null || true' EXIT
+          if ! timeout 60 bash -c 'until [[ $(docker info --format "{{.OSType}}" 2>/dev/null) == linux ]]; do sleep 1; done'; then
+            cat "$state/dockerd.log"
+            exit 1
+          fi
+          docker compose version
+          bash scripts/prepare-wsl-integration-fixtures.sh
+          go test -race -count=1 -json ./... | tee "$state/tests.json"
+
+          jq --slurp --exit-status --raw-output '
+            def result($test):
+              [.[] | select(.Package == "github.com/mikoto2000/devcontainer.vim/v3/devcontainer" and .Test == $test)
+                | .Action | select(. == "pass" or . == "skip" or . == "fail")]
+              | if length == 1 then .[0] else "missing or repeated result" end;
+
+            [
+              "TestSetupContainer",
+              "TestRunIntegration",
+              "TestStart",
+              "TestStartWithDockerCompose",
+              "TestStartStepByStep/Config_File_Creation"
+            ] as $required
+            | [$required[] as $test | {test: $test, result: result($test)}]
+            | if all(.[]; .result == "pass")
+              then .[] | "\(.test): \(.result)"
+              else error(map("\(.test): \(.result)") | join("\n"))
+              end
+          ' "$state/tests.json"
