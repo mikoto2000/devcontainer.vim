@@ -10,7 +10,7 @@ PLATFORMS := \
 
 GO_BIN := ${GOPATH}/bin
 STATICCHECK_VERSION := v0.7.0
-VERSION := 4.0.1
+VERSION := 4.1.0
 LD_FLAGS := "-s -w -X main.version=${VERSION}"
 
 DEST := ./build
