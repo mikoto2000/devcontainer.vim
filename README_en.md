@@ -493,6 +493,20 @@ rm -rf ~/Library/Caches/devcontainer.vim
 ```
 
 
+## Integration tests on WSL
+
+Use x86_64 WSL with Windows interop enabled so WSL can launch `powershell.exe`. In WSL, install Go 1.26 or later, a C compiler for the race detector, `curl`, and Docker with Docker Compose and a Linux container daemon. The tests use TCP port 8888 and download container images and tools.
+
+Run these commands from the repository root.
+
+```sh
+bash scripts/prepare-wsl-integration-fixtures.sh
+go test -race -count=1 -v ./...
+```
+
+The script verifies the SHA-256 checksums of pinned releases of the Linux Dev Container CLI and Windows `clipboard-data-receiver` before placing them in `test/resource/bin/`. It reuses matching executables. The `-count=1` flag disables test caching, and `-v` shows whether each integration test ran.
+
+
 ## License:
 
 Copyright (C) 2025 mikoto2000

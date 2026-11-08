@@ -486,6 +486,20 @@ rm -rf ~/Library/Caches/devcontainer.vim
 ```
 
 
+## WSL での統合テスト
+
+x86_64 の WSL で Windows 相互運用を有効にし、`powershell.exe` を呼び出せるようにしてください。WSL 内で Go 1.26 以上、レース検出用の C コンパイラ、`curl`、Linux コンテナを起動できる Docker と Docker Compose が必要です。テストは TCP ポート 8888 を使い、コンテナイメージやツールなどをダウンロードします。
+
+リポジトリのルートで次を実行します。
+
+```sh
+bash scripts/prepare-wsl-integration-fixtures.sh
+go test -race -count=1 -v ./...
+```
+
+スクリプトは、固定バージョンの Linux 用 Dev Container CLI と Windows 用 `clipboard-data-receiver` の SHA-256 を検証して `test/resource/bin/` に配置します。一致する実行ファイルがあれば再利用します。`-count=1` でテストキャッシュを無効にし、`-v` で各統合テストが実行されたことを確認できます。
+
+
 ## License:
 
 Copyright (C) 2025 mikoto2000
