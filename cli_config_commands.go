@@ -9,7 +9,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/mikoto2000/devcontainer.vim/v3/util"
+	"github.com/mikoto2000/devcontainer.vim/v3/internal/host"
 )
 
 func generateConfig(cCtx *cli.Context) error {
@@ -67,7 +67,7 @@ func (paths commandPaths) configureVimrc(cCtx *cli.Context) error {
 	}
 
 	if cCtx.Bool(flagNameOpen) {
-		err := util.OpenFileWithDefaultApp(paths.vimrcPath)
+		err := host.OpenFileWithDefaultApp(paths.vimrcPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error opening vimrc: %v\n", err)
 			os.Exit(1)
@@ -95,7 +95,7 @@ func (paths commandPaths) configureRunargs(cCtx *cli.Context) error {
 	}
 
 	if cCtx.Bool(flagNameOpen) {
-		err := util.OpenFileWithDefaultApp(paths.runargsPath)
+		err := host.OpenFileWithDefaultApp(paths.runargsPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error opening runargs: %v\n", err)
 			os.Exit(1)

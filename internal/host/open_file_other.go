@@ -1,6 +1,6 @@
 //go:build !windows
 
-package util
+package host
 
 import (
 	"os/exec"

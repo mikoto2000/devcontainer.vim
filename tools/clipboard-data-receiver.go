@@ -14,7 +14,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/mikoto2000/devcontainer.vim/v3/util"
+	"github.com/mikoto2000/devcontainer.vim/v3/internal/host"
 )
 
 const CdrFileName = "clipboard-data-receiver"
@@ -110,7 +110,7 @@ var CDR = func(services InstallerUseServices) Tool {
 	cdrFileName := CdrFileName
 	var tmpl *template.Template
 	var err error
-	if util.IsWsl() {
+	if host.IsWsl() {
 		cdrFileName = cdrFileNameForWindows
 		tmpl, err = template.New("clipboard-data-receiver-windows-download-url").Parse(downloadURLCdrPatternForWindows)
 	} else if runtime.GOOS == "darwin" {
@@ -163,7 +163,7 @@ func RunCdr(cdrPath string, configFileDir string) (int, int, error) {
 	pidFile := filepath.Join(configFileDir, "pid")
 	portFile := filepath.Join(configFileDir, "port")
 
-	if runtime.GOOS != "windows" && util.IsWsl() {
+	if runtime.GOOS != "windows" && host.IsWsl() {
 		return runCdrForWsl(cdrPath, pidFile, portFile, cdrStartupTimeout, cdrPollInterval)
 	}
 	return runCdrForNative(cdrPath, pidFile, portFile, cdrStartupTimeout, cdrPollInterval)
@@ -350,7 +350,7 @@ func KillCdr(pid int) error {
 	if pid <= 0 {
 		return fmt.Errorf("invalid clipboard-data-receiver PID %d: must be positive", pid)
 	}
-	if util.IsWsl() {
+	if host.IsWsl() {
 		commandString := fmt.Sprintf("Stop-Process -Id %d -Force", pid)
 		fmt.Printf("Stop clipboard-data-receiver: %s\n", commandString)
 		cdrRunCommand := exec.Command("powershell.exe", "-Command", commandString)

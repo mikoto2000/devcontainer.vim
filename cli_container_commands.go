@@ -10,8 +10,8 @@ import (
 
 	"github.com/mikoto2000/devcontainer.vim/v3/devcontainer"
 	"github.com/mikoto2000/devcontainer.vim/v3/docker"
+	"github.com/mikoto2000/devcontainer.vim/v3/internal/host"
 	"github.com/mikoto2000/devcontainer.vim/v3/tools"
-	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
 func (paths commandPaths) runContainer(cCtx *cli.Context) error {
@@ -23,7 +23,7 @@ func (paths commandPaths) runContainer(cCtx *cli.Context) error {
 
 	// Requirements のチェック
 	// 1. docker
-	isExistsDocker := util.IsExistsCommand(docker.Command)
+	isExistsDocker := host.IsExistsCommand(docker.Command)
 	if !isExistsDocker {
 		fmt.Fprintf(os.Stderr, "docker not found.")
 		os.Exit(1)
@@ -73,13 +73,16 @@ func (paths commandPaths) runContainer(cCtx *cli.Context) error {
 	if cCtx.Bool(flagNameNeoVim) || os.Getenv(envDevcontainerVimType) == "nvim" {
 		nvim = true
 	}
-	cdrPath, err := tools.InstallRunTools(paths.binDir)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error installing run tools: %v\n", err)
-		os.Exit(1)
+	cdrPath := ""
+	if !noCdr {
+		var err error
+		cdrPath, err = tools.InstallRunTools(paths.binDir)
+		if err != nil {
+			return fmt.Errorf("install clipboard receiver: %w", err)
+		}
 	}
 
-	err = devcontainer.Run(args, noCdr, noPf, noTmux, cdrPath, paths.binDir, nvim, shell, paths.dockerConfigDir, paths.vimrcPath, defaultRunargs)
+	err := devcontainer.Run(args, noCdr, noPf, noTmux, cdrPath, paths.binDir, nvim, shell, paths.dockerConfigDir, paths.vimrcPath, defaultRunargs)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error running docker: %v\n", err)
 		os.Exit(1)
@@ -132,10 +135,17 @@ func (paths commandPaths) startContainer(cCtx *cli.Context) error {
 	if cCtx.Bool(flagNameNeoVim) || os.Getenv(envDevcontainerVimType) == "nvim" {
 		nvim = true
 	}
-	devcontainerPath, cdrPath, err := tools.InstallStartTools(tools.DefaultInstallerUseServices{}, paths.binDir)
+	devcontainerPath, err := tools.InstallDevcontainerTools(paths.binDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error installing start tools: %v\n", err)
 		os.Exit(1)
+	}
+	cdrPath := ""
+	if !noCdr {
+		cdrPath, err = tools.InstallRunTools(paths.binDir)
+		if err != nil {
+			return fmt.Errorf("install clipboard receiver: %w", err)
+		}
 	}
 
 	workspaceFolder := args[len(args)-1]
@@ -233,30 +243,6 @@ func (paths commandPaths) downContainer(cCtx *cli.Context) error {
 			fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
 		} else {
 			fmt.Fprintf(os.Stderr, "Error downing devcontainer: %v\n", err)
-		}
-		os.Exit(1)
-	}
-
-	// 設定ファイルを削除
-	// コマンドライン引数の末尾は `--workspace-folder` の値として使う
-	workspaceFolder := args[len(args)-1]
-	configDir, err := util.GetConfigDir(paths.cacheDir, workspaceFolder)
-	if err != nil {
-		if errors.Is(err, os.ErrPermission) {
-			fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
-		} else {
-			fmt.Fprintf(os.Stderr, "Error getting configuration file path: %v\n", err)
-		}
-		os.Exit(1)
-	}
-
-	fmt.Printf("Remove configuration file: `%s`\n", configDir)
-	err = os.RemoveAll(configDir)
-	if err != nil {
-		if errors.Is(err, os.ErrPermission) {
-			fmt.Fprintf(os.Stderr, "Permission error: %v\n", err)
-		} else {
-			fmt.Fprintf(os.Stderr, "Error removing configuration file: %v\n", err)
 		}
 		os.Exit(1)
 	}

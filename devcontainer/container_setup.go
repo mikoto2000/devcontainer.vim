@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/mikoto2000/devcontainer.vim/v3/docker"
+	"github.com/mikoto2000/devcontainer.vim/v3/internal/host"
 	"github.com/mikoto2000/devcontainer.vim/v3/tools"
-	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
 const containerPortForwarderPath = "/port-forwarder"
@@ -48,7 +48,7 @@ func getContainerArch(containerID string) (string, error) {
 		return "", err
 	}
 	containerArch = strings.TrimSpace(containerArch)
-	containerArch, err = util.NormalizeContainerArch(containerArch)
+	containerArch, err = host.NormalizeContainerArch(containerArch)
 	if err != nil {
 		return "", err
 	}

@@ -11,12 +11,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mikoto2000/devcontainer.vim/v3/internal/configstore"
 	"github.com/mikoto2000/devcontainer.vim/v3/tools"
 )
 
 const startCLIFixtureEnv = "DEVCONTAINER_VIM_TEST_START_CLI_DIR"
 
-func TestStartCLIDisablesPortForwarding(t *testing.T) {
+func prepareStartCLIFixture(t *testing.T) (string, string, string, string) {
+	t.Helper()
 	dir := isolateCLIHome(t)
 	t.Setenv("WSL_INTEROP", "")
 	t.Setenv("WSL_DISTRO_NAME", "")
@@ -66,6 +68,11 @@ func TestStartCLIDisablesPortForwarding(t *testing.T) {
 		}
 	}
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	return dir, bin, workspace, self
+}
+
+func TestStartCLIDisablesPortForwarding(t *testing.T) {
+	dir, _, workspace, self := prepareStartCLIFixture(t)
 	cmd := exec.CommandContext(t.Context(), self, "-test.run=^TestCLIProcess$", "--", "--nopf", "--nocdr", "--notmux", "start", workspace)
 	cmd.Dir = dir
 	cmd.Env = append(os.Environ(), "DEVCONTAINER_VIM_TEST_CLI=1")
@@ -98,6 +105,18 @@ func runStartCLIFixture(dir string, argv []string) error {
 		}
 	} else {
 		switch {
+		case len(args) > 0 && args[0] == "run":
+			fmt.Println("fixture-container")
+			return nil
+		case slices.Equal(args, []string{"stop", "fixture-container"}):
+			return nil
+		case slices.Equal(args, []string{"exec", "--detach-keys", "ctrl-\\\\", "-it", "fixture-container", "/VimRun.sh"}):
+			return os.WriteFile(filepath.Join(dir, "editor-launched"), nil, 0600)
+		case len(args) >= 4 && slices.Equal(args[:3], []string{"ps", "--format", "json"}):
+			fmt.Println(`{"ID":"fixture-container"}`)
+			return nil
+		case slices.Equal(args, []string{"rm", "-f", "fixture-container"}):
+			return os.WriteFile(filepath.Join(dir, "container-removed"), nil, 0600)
 		case slices.Equal(args, []string{"exec", "fixture-container", "uname", "-m"}):
 			fmt.Println("x86_64")
 			return nil
@@ -112,4 +131,76 @@ func runStartCLIFixture(dir string, argv []string) error {
 		}
 	}
 	return fmt.Errorf("unexpected fixture command with --nopf: %q", args)
+}
+
+func TestDisabledClipboardSkipsInstaller(t *testing.T) {
+	for _, command := range []string{"start", "run"} {
+		t.Run(command, func(t *testing.T) {
+			dir, bin, workspace, _ := prepareStartCLIFixture(t)
+			previous := tools.CDR
+			tools.CDR = func(tools.InstallerUseServices) tools.Tool {
+				t.Fatal("clipboard installer was used with --nocdr")
+				return tools.Tool{}
+			}
+			t.Cleanup(func() { tools.CDR = previous })
+			paths := commandPaths{
+				binDir:                bin,
+				dockerConfigDir:       filepath.Join(dir, "docker-config"),
+				devcontainerConfigDir: filepath.Join(dir, "devcontainer-config"),
+				runargsPath:           filepath.Join(dir, "runargs"),
+				vimrcPath:             filepath.Join(dir, "vimrc"),
+			}
+			if err := os.MkdirAll(paths.dockerConfigDir, 0700); err != nil {
+				t.Fatal(err)
+			}
+			for _, file := range []string{paths.runargsPath, paths.vimrcPath} {
+				if err := os.WriteFile(file, nil, 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			argument := workspace
+			if command == "run" {
+				argument = "fixture-image"
+			}
+			if err := newCLI(paths).Run([]string{"devcontainer.vim", "--nocdr", "--nopf", "--notmux", command, argument}); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := os.Stat(filepath.Join(dir, "editor-launched")); err != nil {
+				t.Fatalf("disabled clipboard prevented editor startup: %v", err)
+			}
+		})
+	}
+}
+
+func TestDownCLIKeepsUnrelatedCache(t *testing.T) {
+	dir, bin, workspace, _ := prepareStartCLIFixture(t)
+	paths := commandPaths{
+		cacheDir: filepath.Dir(bin), binDir: bin,
+		devcontainerConfigDir: filepath.Join(filepath.Dir(bin), "config", "devcontainer"),
+	}
+	workspaceCache, err := configstore.GetConfigDir(paths.devcontainerConfigDir, workspace)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unrelatedCache, err := configstore.GetConfigDir(paths.cacheDir, workspace)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{workspaceCache, unrelatedCache} {
+		if err := os.MkdirAll(path, 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := newCLI(paths).Run([]string{"devcontainer.vim", "down", "--nocdr", workspace}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(workspaceCache); !os.IsNotExist(err) {
+		t.Errorf("workspace configuration cache remains after down: %v", err)
+	}
+	if _, err := os.Stat(unrelatedCache); err != nil {
+		t.Errorf("CLI removed a cache outside the workspace configuration directory: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "container-removed")); err != nil {
+		t.Fatal(err)
+	}
 }

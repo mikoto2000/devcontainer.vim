@@ -12,7 +12,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/mikoto2000/devcontainer.vim/v3/util"
+	"github.com/mikoto2000/devcontainer.vim/v3/internal/githubrelease"
+	"github.com/mikoto2000/devcontainer.vim/v3/internal/host"
 )
 
 var artifactHTTPClient = &http.Client{Timeout: 10 * time.Minute}
@@ -25,7 +26,7 @@ type InstallerUseServices interface {
 type DefaultInstallerUseServices struct{}
 
 func (s DefaultInstallerUseServices) GetLatestReleaseFromGitHub(owner string, repository string) (string, error) {
-	return util.GetLatestReleaseFromGitHub(owner, repository)
+	return githubrelease.GetLatestReleaseFromGitHub(owner, repository)
 }
 
 func (s DefaultInstallerUseServices) Download(downloadURL string, destPath string) error {
@@ -44,7 +45,7 @@ type Tool struct {
 func (t Tool) Install(installDir string, containerArch string, override bool) (string, error) {
 
 	// tool download から直接呼ばれることもあるのでここでも正規化する
-	containerArch, err := util.NormalizeContainerArch(containerArch)
+	containerArch, err := host.NormalizeContainerArch(containerArch)
 	if err != nil {
 		return "", err
 	}
@@ -58,7 +59,7 @@ func (t Tool) Install(installDir string, containerArch string, override bool) (s
 	}
 	filePath := filepath.Join(installDir, fileName)
 
-	if util.IsExists(filePath) && !override {
+	if host.IsExists(filePath) && !override {
 		fmt.Printf("%s already exists, using it.\n", filePath)
 		return filePath, nil
 	} else {
@@ -101,7 +102,7 @@ func simpleInstall(downloadFunc func(downloadURL string, destPath string) error,
 	}
 
 	// 実行権限の付与
-	err = util.AddExecutePermission(filePath)
+	err = host.AddExecutePermission(filePath)
 	if err != nil {
 		return filePath, err
 	}

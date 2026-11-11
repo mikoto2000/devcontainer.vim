@@ -29,7 +29,7 @@ func GetContainerIDFromWorkspaceFolder(workspaceFolder string) (string, error) {
 		return "", err
 	}
 
-	psResult, err := Ps("label=devcontainer.local_folder=" + workspaceFolderAbs)
+	psResult, err := ps("label=devcontainer.local_folder="+workspaceFolderAbs, true)
 	if err != nil {
 		return "", err
 	}
@@ -49,9 +49,16 @@ func Exec(containerID string, command ...string) (string, error) {
 
 // `docker ps --format json` コマンドを実行する。
 func Ps(filter string) (string, error) {
+	return ps(filter, false)
+}
+
+func ps(filter string, includeStopped bool) (string, error) {
 	args := []string{"ps", "--format", "json"}
 	if filter != "" {
 		args = append(args, "--filter", filter)
+	}
+	if includeStopped {
+		args = append(args, "--all")
 	}
 	dockerPsCommand := exec.Command(Command, args...)
 	stdout, err := dockerPsCommand.Output()
