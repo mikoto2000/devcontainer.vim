@@ -110,7 +110,7 @@ func runStartCLIFixture(dir string, argv []string) error {
 			return nil
 		case slices.Equal(args, []string{"stop", "fixture-container"}):
 			return nil
-		case slices.Equal(args, []string{"exec", "--detach-keys", "ctrl-\\\\", "-it", "fixture-container", "/VimRun.sh"}):
+		case slices.Equal(args, []string{"exec", "--detach-keys", `ctrl-\`, "-it", "fixture-container", "/VimRun.sh"}):
 			return os.WriteFile(filepath.Join(dir, "editor-launched"), nil, 0600)
 		case len(args) >= 4 && slices.Equal(args[:3], []string{"ps", "--format", "json"}):
 			fmt.Println(`{"ID":"fixture-container"}`)

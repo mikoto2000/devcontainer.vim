@@ -1,11 +1,14 @@
 package devcontainer
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mikoto2000/devcontainer.vim/v3/docker"
 	"github.com/mikoto2000/devcontainer.vim/v3/tools"
@@ -152,27 +155,58 @@ func TestSetupVimWithSystemVim(t *testing.T) {
 
 // Run関数の統合テスト（実際のコンテナ使用）
 func TestRunIntegration(t *testing.T) {
-	requireLinuxDocker(t)
-	_, binDir, configDirForDocker, _ := createTempAppDirs(t)
-
-	nvim := false
-	cdrPath := requireTestBinary(t, "clipboard-data-receiver")
-
-	args := []string{bundledVimTestImage}
-	vimrc := "../test/resource/TestRun/vimrc"
-	defaultRunargs := []string{}
-	noCdr := false
-	noPf := false
-
-	// Exercise setup directly so it finishes before test cleanup starts.
-	setup, err := setupContainer(args, noCdr, noPf, false, cdrPath, binDir, nvim, configDirForDocker, vimrc, defaultRunargs)
-	cleanupTestContainerSetup(t, setup)
-
-	if err != nil {
-		t.Fatalf("Run integration test failed: %v", err)
+	const cidFileEnv = "DEVCONTAINER_VIM_RUN_TEST_CIDFILE"
+	const started = "devcontainer.vim integration: VimEnter"
+	if cidFile := os.Getenv(cidFileEnv); cidFile != "" {
+		_, binDir, configDirForDocker, _ := createTempAppDirs(t)
+		vimrc := filepath.Join(t.TempDir(), "vimrc")
+		contents := "set nomore\nautocmd VimEnter * call writefile(['" + started + "'], '/dev/stdout', 'a') | qa!\n"
+		if err := os.WriteFile(vimrc, []byte(contents), 0600); err != nil {
+			t.Fatal(err)
+		}
+		args := []string{"--cidfile", cidFile, bundledVimTestImage}
+		if err := Run(args, true, true, true, "", binDir, false, "", configDirForDocker, vimrc, nil); err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+		return
 	}
-	if setup.vimFileName != "vim" || setup.useSystemVim {
-		t.Fatalf("setup selected %q (system=%v), want bundled Vim", setup.vimFileName, setup.useSystemVim)
+
+	requireLinuxDocker(t)
+	script, err := exec.LookPath("script")
+	if err != nil {
+		t.Skip("script is required to provide a terminal for Docker exec")
+	}
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cidFile := filepath.Join(t.TempDir(), "container-id")
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Minute)
+	defer cancel()
+	// Docker exec -it needs a terminal even when go test has redirected stdin.
+	const testArg = "-test.run=^TestRunIntegration$"
+	scriptArgs := []string{"-qefc", "exec " + shellQuote(self) + " " + testArg, "/dev/null"}
+	if runtime.GOOS == "darwin" {
+		scriptArgs = []string{"-q", "/dev/null", self, testArg}
+	}
+	cmd := exec.CommandContext(ctx, script, scriptArgs...)
+	cmd.Env = append(os.Environ(), cidFileEnv+"="+cidFile, "SHELL=/bin/sh", "TERM=xterm")
+	cmd.WaitDelay = 5 * time.Second
+	output, err := cmd.CombinedOutput()
+	if ctx.Err() != nil {
+		// The subprocess may have been interrupted before Run could stop the container.
+		if id, readErr := os.ReadFile(cidFile); readErr == nil && len(id) != 0 {
+			cleanupCtx, cancelCleanup := context.WithTimeout(t.Context(), 15*time.Second)
+			defer cancelCleanup()
+			_ = exec.CommandContext(cleanupCtx, docker.Command, "rm", "-f", strings.TrimSpace(string(id))).Run()
+		}
+		t.Fatalf("Run did not finish: %v\n%s", ctx.Err(), output)
+	}
+	if err != nil {
+		t.Fatalf("Run subprocess failed: %v\n%s", err, output)
+	}
+	if !strings.Contains(string(output), started) {
+		t.Fatalf("Vim did not report VimEnter:\n%s", output)
 	}
 }
 
