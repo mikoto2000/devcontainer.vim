@@ -10,8 +10,9 @@ import (
 
 	"github.com/urfave/cli/v2"
 
+	"github.com/mikoto2000/devcontainer.vim/v3/internal/configstore"
+	"github.com/mikoto2000/devcontainer.vim/v3/internal/host"
 	"github.com/mikoto2000/devcontainer.vim/v3/tools"
-	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
 var version = "dev"
@@ -86,12 +87,12 @@ func main() {
 	//    `os.UserConfigDir` + `devcontainer.vim`
 	// 2. ユーザーキャッシュ用ディレクトリ
 	//    `os.UserCacheDir` + `devcontainer.vim`
-	appConfigDir, err := util.CreateConfigDirectory(os.UserConfigDir, appName)
+	appConfigDir, err := configstore.CreateConfigDirectory(os.UserConfigDir, appName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating config directory: %v\n", err)
 		os.Exit(1)
 	}
-	appCacheDir, binDir, configDirForDocker, configDirForDevcontainer, err := util.CreateCacheDirectory(os.UserCacheDir, appName)
+	appCacheDir, binDir, configDirForDocker, configDirForDevcontainer, err := configstore.CreateCacheDirectory(os.UserCacheDir, appName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating cache directory: %v\n", err)
 		os.Exit(1)
@@ -100,8 +101,8 @@ func main() {
 	// vimrc ファイルの出力先を組み立て
 	// vimrc を出力(既に存在するなら何もしない)
 	vimrc := filepath.Join(appConfigDir, "vimrc")
-	if !util.IsExists(vimrc) {
-		err := util.CreateFileWithContents(vimrc, additionalVimrc, 0666)
+	if !host.IsExists(vimrc) {
+		err := host.CreateFileWithContents(vimrc, additionalVimrc, 0666)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating vimrc file: %v\n", err)
 			os.Exit(1)
@@ -112,8 +113,8 @@ func main() {
 	// runargs ファイルの出力先を組み立て
 	// runargs を出力(既に存在するなら何もしない)
 	runargs := filepath.Join(appConfigDir, "runargs")
-	if !util.IsExists(runargs) {
-		err := util.CreateFileWithContents(runargs, runargsContent, 0666)
+	if !host.IsExists(runargs) {
+		err := host.CreateFileWithContents(runargs, runargsContent, 0666)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating runargs file: %v\n", err)
 			os.Exit(1)

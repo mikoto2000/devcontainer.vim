@@ -2,6 +2,7 @@ package oras
 
 import (
 	"context"
+	"errors"
 
 	"oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/content/file"
@@ -16,15 +17,11 @@ func Pull(ctx context.Context, id string, tagName string, destDir string) error 
 		return err
 	}
 
-	// メモリストアの作成
+	// ローカルファイルストアの作成
 	dst, err := file.New(destDir)
 	if err != nil {
 		return err
 	}
 	_, err = oras.Copy(ctx, src, tagName, dst, tagName, oras.DefaultCopyOptions)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return errors.Join(err, dst.Close())
 }

@@ -10,10 +10,15 @@ import (
 
 type ReadConfigurationError struct {
 	msg string
+	err error
 }
 
 func (e *ReadConfigurationError) Error() string {
 	return e.msg
+}
+
+func (e *ReadConfigurationError) Unwrap() error {
+	return e.err
 }
 
 // `devcontainers read-configuration` コマンドの実行結果スキーマ
@@ -65,7 +70,7 @@ var forwardHostPattern = regexp.MustCompile(`^` + forwardHostLabel + `(\.` + for
 func GetForwardPorts(readConfigurationCommandResult string) ([]ForwardConfig, error) {
 	result, err := UnmarshalReadConfigurationCommandResult([]byte(readConfigurationCommandResult))
 	if err != nil {
-		return []ForwardConfig{}, &ReadConfigurationError{msg: "`devcontainer read-configuration` の出力パースに失敗しました。`.devcontainer.json が存在することと、 docker エンジンが起動していることを確認してください。"}
+		return []ForwardConfig{}, &ReadConfigurationError{msg: "`devcontainer read-configuration` の出力パースに失敗しました。`.devcontainer.json が存在することと、 docker エンジンが起動していることを確認してください。", err: err}
 	}
 
 	rawPorts := result.Configuration.ForwardPorts
@@ -112,10 +117,14 @@ func parseForwardPort(port string) (uint64, error) {
 func GetConfigFilePath(readConfigurationCommandResult string) (string, error) {
 	result, err := UnmarshalReadConfigurationCommandResult([]byte(readConfigurationCommandResult))
 	if err != nil {
-		return "", &ReadConfigurationError{msg: "`devcontainer read-configuration` の出力パースに失敗しました。`.devcontainer.json が存在することと、 docker エンジンが起動していることを確認してください。"}
+		return "", &ReadConfigurationError{msg: "`devcontainer read-configuration` の出力パースに失敗しました。`.devcontainer.json が存在することと、 docker エンジンが起動していることを確認してください。", err: err}
 	}
 
-	return result.Configuration.ConfigFilePath.FsPath, nil
+	path := result.Configuration.ConfigFilePath.FsPath
+	if path == "" {
+		return "", &ReadConfigurationError{msg: "devcontainer read-configuration returned no configuration file path"}
+	}
+	return path, nil
 }
 
 func UnmarshalReadConfigurationCommandResult(data []byte) (ReadConfigurationCommandResult, error) {

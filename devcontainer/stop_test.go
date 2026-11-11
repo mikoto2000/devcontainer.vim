@@ -27,6 +27,7 @@ type stopTestFixture struct {
 	Fail           bool
 	DockerPSOutput string
 	ForbidDocker   bool
+	ConfigExit     int
 }
 
 type stopTestCall struct {
@@ -418,6 +419,10 @@ func runStopTestCommand(dir string, argv []string) int {
 		}
 		return 0
 	case "test-devcontainer":
+		if fixture.ConfigExit != 0 {
+			fmt.Fprintln(os.Stderr, "fixture configuration rejected")
+			return fixture.ConfigExit
+		}
 		json.NewEncoder(os.Stdout).Encode(ReadConfigurationCommandResult{Configuration: fixture.Config})
 		return 0
 	}
@@ -430,9 +435,16 @@ func runStopTestCommand(dir string, argv []string) int {
 	}
 	switch args[0] {
 	case "ps":
-		if !slices.Contains(args, "--all") {
+		if slices.Contains(args, "json") {
+			if _, err := os.Stat(filepath.Join(dir, "stopped")); err == nil && !slices.Contains(args, "--all") {
+				return 0
+			}
 			if fixture.DockerPSOutput != "" {
-				if !slices.Equal(args, []string{"ps", "--format", "json", "--filter", "label=devcontainer.local_folder=" + fixture.Workspace}) {
+				want := []string{"ps", "--format", "json", "--filter", "label=devcontainer.local_folder=" + fixture.Workspace}
+				if slices.Contains(args, "--all") {
+					want = append(want, "--all")
+				}
+				if !slices.Equal(args, want) {
 					return 99
 				}
 				fmt.Print(fixture.DockerPSOutput)
@@ -475,6 +487,11 @@ func runStopTestCommand(dir string, argv []string) int {
 	if fixture.Fail {
 		fmt.Fprintln(os.Stderr, "simulated Docker failure")
 		return 23
+	}
+	if args[0] == "stop" {
+		if err := os.WriteFile(filepath.Join(dir, "stopped"), nil, 0600); err != nil {
+			return 99
+		}
 	}
 	return 0
 }

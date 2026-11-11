@@ -10,7 +10,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/mikoto2000/devcontainer.vim/v3/util"
+	"github.com/mikoto2000/devcontainer.vim/v3/internal/host"
 )
 
 const tmuxDownloadURLPattern = "https://github.com/tmux/tmux-builds/releases/download/{{ .TagName }}/tmux-{{ .Version }}-{{ .Platform }}.tar.gz"
@@ -65,7 +65,7 @@ var Tmux = func(service InstallerUseServices) Tool {
 				return filePath, err
 			}
 
-			err = util.AddExecutePermission(filePath)
+			err = host.AddExecutePermission(filePath)
 			if err != nil {
 				return filePath, err
 			}

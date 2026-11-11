@@ -14,9 +14,9 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/mikoto2000/devcontainer.vim/v3/devcontainer"
+	"github.com/mikoto2000/devcontainer.vim/v3/internal/host"
 	"github.com/mikoto2000/devcontainer.vim/v3/oras"
 	"github.com/mikoto2000/devcontainer.vim/v3/tools"
-	"github.com/mikoto2000/devcontainer.vim/v3/util"
 )
 
 type IndexRoot struct {
@@ -53,7 +53,7 @@ func (paths commandPaths) applyTemplate(cCtx *cli.Context) error {
 	// Features の一覧をダウンロード
 	indexFileName := "devcontainer-index.json"
 	indexFile := filepath.Join(paths.cacheDir, indexFileName)
-	if !util.IsExists(indexFile) {
+	if !host.IsExists(indexFile) {
 		fmt.Println("Download template index ... ")
 		err := downloadTemplateIndex(cCtx.Context, paths.cacheDir)
 		if err != nil {
