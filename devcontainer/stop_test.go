@@ -26,6 +26,7 @@ type stopTestFixture struct {
 	Unlabeled      bool
 	Fail           bool
 	DockerPSOutput string
+	ContainerID    string
 	ForbidDocker   bool
 	ConfigExit     int
 }
@@ -381,6 +382,11 @@ func installStopTestCommands(t *testing.T, dir string, fixture stopTestFixture, 
 	if err := os.WriteFile(filepath.Join(dir, "fixture.json"), data, 0600); err != nil {
 		t.Fatal(err)
 	}
+	if fixture.ContainerID != "" {
+		if err := os.WriteFile(filepath.Join(dir, "container-state"), []byte("running"), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
 	t.Setenv(stopTestDirEnv, dir)
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	return commandPath("test-devcontainer")
@@ -427,6 +433,7 @@ func runStopTestCommand(dir string, argv []string) int {
 		return 0
 	}
 	args := argv[1:]
+	statePath := filepath.Join(dir, "container-state")
 	if fixture.ForbidDocker {
 		if err := os.WriteFile(filepath.Join(dir, "docker-attempt"), []byte(strings.Join(args, " ")), 0600); err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -436,17 +443,24 @@ func runStopTestCommand(dir string, argv []string) int {
 	switch args[0] {
 	case "ps":
 		if slices.Contains(args, "json") {
-			if _, err := os.Stat(filepath.Join(dir, "stopped")); err == nil && !slices.Contains(args, "--all") {
-				return 0
-			}
-			if fixture.DockerPSOutput != "" {
-				want := []string{"ps", "--format", "json", "--filter", "label=devcontainer.local_folder=" + fixture.Workspace}
-				if slices.Contains(args, "--all") {
-					want = append(want, "--all")
-				}
-				if !slices.Equal(args, want) {
+			if fixture.ContainerID != "" || fixture.DockerPSOutput != "" {
+				filter := slices.Index(args, "--filter")
+				if filter < 0 || filter+1 >= len(args) || args[filter+1] != "label=devcontainer.local_folder="+fixture.Workspace {
 					return 99
 				}
+			}
+			if fixture.ContainerID != "" {
+				state, err := os.ReadFile(statePath)
+				if errors.Is(err, os.ErrNotExist) {
+					return 0
+				}
+				if err != nil {
+					return 99
+				}
+				if string(state) == "running" || slices.Contains(args, "--all") || slices.Contains(args, "-a") {
+					fmt.Printf("{\"ID\":%q}\n", fixture.ContainerID)
+				}
+			} else if fixture.DockerPSOutput != "" {
 				fmt.Print(fixture.DockerPSOutput)
 			} else {
 				fmt.Println(`{"ID":"container-id"}`)
@@ -488,8 +502,25 @@ func runStopTestCommand(dir string, argv []string) int {
 		fmt.Fprintln(os.Stderr, "simulated Docker failure")
 		return 23
 	}
-	if args[0] == "stop" {
-		if err := os.WriteFile(filepath.Join(dir, "stopped"), nil, 0600); err != nil {
+	if fixture.ContainerID != "" && (args[0] == "stop" || args[0] == "rm") {
+		targets := args[1:]
+		if args[0] == "rm" {
+			targets = slices.DeleteFunc(slices.Clone(targets), func(arg string) bool {
+				return arg == "-f" || arg == "--force"
+			})
+		}
+		if len(targets) != 1 || targets[0] != fixture.ContainerID {
+			return 99
+		}
+		if _, err := os.Stat(statePath); err != nil {
+			return 99
+		}
+		if args[0] == "rm" {
+			err = os.Remove(statePath)
+		} else {
+			err = os.WriteFile(statePath, []byte("stopped"), 0600)
+		}
+		if err != nil {
 			return 99
 		}
 	}

@@ -74,22 +74,22 @@ func TestStopAndDownRejectMissingWorkspace(t *testing.T) {
 	}
 }
 
-func TestStopThenDownIncludesStoppedContainer(t *testing.T) {
+func TestStopThenDownRemovesStoppedContainer(t *testing.T) {
 	dir := t.TempDir()
-	cli := installStopTestCommands(t, dir, stopTestFixture{Workspace: dir, DockerPSOutput: `{"ID":"container-id"}`})
+	cli := installStopTestCommands(t, dir, stopTestFixture{Workspace: dir, ContainerID: "container-id"})
+	statePath := filepath.Join(dir, "container-state")
 	args := []string{"--nocdr", dir}
 	cache := t.TempDir()
 	if err := Stop(args, cli, cache); err != nil {
 		t.Fatal(err)
 	}
+	if state, err := os.ReadFile(statePath); err != nil || string(state) != "stopped" {
+		t.Fatalf("container state after Stop = %q, %v, want stopped", state, err)
+	}
 	if err := Down(args, cli, cache); err != nil {
 		t.Fatalf("Down after Stop failed: %v", err)
 	}
-	cwd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
+	if _, err := os.Stat(statePath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("container state after Down: %v, want container removed", err)
 	}
-	assertStopTestCall(t, filepath.Join(dir, "finished"), stopTestCall{
-		Dir: cwd, Args: []string{"rm", "-f", "container-id"},
-	})
 }
