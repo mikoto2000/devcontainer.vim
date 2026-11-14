@@ -113,6 +113,14 @@ func TestRunCdrForWsl(t *testing.T) {
 			}
 			pidFile := filepath.Join(dir, "pid ' & $(touch marker)")
 			portFile := filepath.Join(dir, "port ' & $(touch marker)")
+			if mode == "wsl-timeout" {
+				for path, value := range map[string]string{pidFile: "123456", portFile: "34567"} {
+					if err := os.WriteFile(path, []byte(value), 0600); err != nil {
+						t.Fatal(err)
+					}
+				}
+				t.Setenv("DEVCONTAINER_VIM_TEST_CDR_LISTENER", portFile+".listener")
+			}
 			pid, port, err := runCdrForWsl(cdr, pidFile, portFile, timeout, cdrTestPollInterval)
 			if _, err := os.Stat("marker"); !errors.Is(err, os.ErrNotExist) {
 				t.Errorf("shell substitution was executed: %v", err)
@@ -213,7 +221,7 @@ func runNativeCdrFixture(mode, pidFile, portFile string) error {
 		return err
 	}
 	if mode == "wsl-timeout" {
-		portFile += ".listener"
+		portFile = os.Getenv("DEVCONTAINER_VIM_TEST_CDR_LISTENER")
 	}
 	if err := os.WriteFile(portFile, []byte(strconv.Itoa(port)), 0600); err != nil {
 		return err
