@@ -53,8 +53,8 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 	if err != nil {
 		return err
 	}
-	removed, err := stopWorkspaceContainers(workspaceFolder, devcontainerPath, configDir, true)
-	if err != nil || !removed {
+	readyForCleanup, err := stopWorkspaceContainers(workspaceFolder, devcontainerPath, configDir, true)
+	if err != nil || !readyForCleanup {
 		return err
 	}
 
@@ -70,7 +70,7 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 				return err
 			}
 			fmt.Printf("clipboard-data-receiver PID: %d\n", pid)
-			if err := tools.KillCdr(pid); err != nil {
+			if err := tools.KillCdr(pid); err != nil && !errors.Is(err, os.ErrProcessDone) {
 				return fmt.Errorf("stop clipboard-data-receiver using PID file %q: %w", pidFile, err)
 			}
 		case !errors.Is(err, os.ErrNotExist):
@@ -81,7 +81,8 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 	return os.RemoveAll(configDir)
 }
 
-// stopWorkspaceContainers reports whether a container or project was acted on.
+// stopWorkspaceContainers reports whether the workspace can be cleaned up
+// after a removal request, including when Docker confirms it is already absent.
 func stopWorkspaceContainers(workspaceFolder, devcontainerPath, configDir string, remove bool) (bool, error) {
 	args := []string{"--workspace-folder", workspaceFolder}
 	mergedConfigPath := filepath.Join(configDir, configstore.DevcontainerConfigFileName)
@@ -106,6 +107,10 @@ func stopWorkspaceContainers(workspaceFolder, devcontainerPath, configDir string
 	if config.DockerComposeFile == nil {
 		containerID, err := docker.GetContainerIDFromWorkspaceFolder(workspaceFolder)
 		if err != nil {
+			var notFound *docker.ContainerNotFoundError
+			if remove && errors.As(err, &notFound) {
+				return true, nil
+			}
 			return false, err
 		}
 		if remove {
@@ -126,7 +131,7 @@ func stopWorkspaceContainers(workspaceFolder, devcontainerPath, configDir string
 	}
 	if project.Name == "" {
 		fmt.Println("devcontainer already downed.")
-		return false, nil
+		return remove, nil
 	}
 	if remove {
 		fmt.Printf("Removing Compose project %s.\n", project.Name)

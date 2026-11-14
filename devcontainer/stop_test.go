@@ -277,6 +277,54 @@ func TestDownWithUnavailableCdrPidFile(t *testing.T) {
 	}
 }
 
+func TestDownRetriesCleanupAfterRemoval(t *testing.T) {
+	for _, mode := range []string{"docker", "compose"} {
+		t.Run(mode, func(t *testing.T) {
+			dir := t.TempDir()
+			workspace := filepath.Join(dir, "workspace")
+			if err := os.Mkdir(workspace, 0700); err != nil {
+				t.Fatal(err)
+			}
+			cache := filepath.Join(dir, "cache")
+			configDir, err := util.GetConfigDir(cache, workspace)
+			if err != nil {
+				t.Fatal(err)
+			}
+			pidFile := filepath.Join(configDir, "pid")
+			if err := os.MkdirAll(pidFile, 0700); err != nil {
+				t.Fatal(err)
+			}
+			fixture := stopTestFixture{Workspace: workspace, ContainerID: "container-id"}
+			if mode == "compose" {
+				fixture.Config = Configuration{
+					DevcontainerJSON: DevcontainerJSON{DockerComposeFile: "compose.yaml"},
+					ConfigFilePath:   ConfigFilePath{FsPath: filepath.Join(workspace, "devcontainer.json")},
+				}
+			}
+			cli := installStopTestCommands(t, dir, fixture)
+			args := []string{workspace}
+			var pathErr *os.PathError
+			if err := Down(args, cli, cache); !errors.As(err, &pathErr) || pathErr.Path != pidFile {
+				t.Fatalf("first down = %v, want PID file error", err)
+			}
+			if err := os.Remove(filepath.Join(dir, "finished")); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Remove(pidFile); err != nil {
+				t.Fatal(err)
+			}
+			if err := Down(args, cli, cache); err != nil {
+				t.Fatalf("retry down: %v", err)
+			}
+			for _, path := range []string{configDir, filepath.Join(dir, "finished")} {
+				if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+					t.Errorf("%s after retry: %v, want gone", path, err)
+				}
+			}
+		})
+	}
+}
+
 func TestDownCdrPidFile(t *testing.T) {
 	for _, pid := range []string{"0", "-1", "-2", "positive"} {
 		t.Run(pid, func(t *testing.T) {
@@ -479,6 +527,13 @@ func runStopTestCommand(dir string, argv []string) int {
 				fmt.Println(`{"ID":"container-id"}`)
 			}
 		} else if !fixture.Unlabeled {
+			if fixture.ContainerID != "" {
+				if _, err := os.Stat(statePath); errors.Is(err, os.ErrNotExist) {
+					return 0
+				} else if err != nil {
+					return 99
+				}
+			}
 			encoder := json.NewEncoder(os.Stdout)
 			encoder.Encode(map[string]string{"workspace": fixture.Workspace, "config": fixture.Config.ConfigFilePath.FsPath + ".other", "project": "other-project"})
 			encoder.Encode(map[string]string{"workspace": fixture.Workspace, "config": fixture.Config.ConfigFilePath.FsPath, "project": "workspace_devcontainer"})
@@ -504,6 +559,14 @@ func runStopTestCommand(dir string, argv []string) int {
 		if err := os.WriteFile(filepath.Join(dir, "compose-ps"), data, 0600); err != nil {
 			return 99
 		}
+		if fixture.ContainerID != "" {
+			if _, err := os.Stat(statePath); errors.Is(err, os.ErrNotExist) {
+				fmt.Println(`[]`)
+				return 0
+			} else if err != nil {
+				return 99
+			}
+		}
 		fmt.Println(`[{"Project":"workspace_devcontainer"}]`)
 		return 0
 	}
@@ -514,6 +577,11 @@ func runStopTestCommand(dir string, argv []string) int {
 	if fixture.Fail {
 		fmt.Fprintln(os.Stderr, "simulated Docker failure")
 		return 23
+	}
+	if fixture.ContainerID != "" && args[0] == "compose" && args[len(args)-1] == "down" {
+		if err := os.Remove(statePath); err != nil {
+			return 99
+		}
 	}
 	if fixture.ContainerID != "" && (args[0] == "stop" || args[0] == "rm") {
 		targets := args[1:]
