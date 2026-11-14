@@ -21,14 +21,15 @@ import (
 const stopTestDirEnv = "DEVCONTAINER_VIM_STOP_TEST_DIR"
 
 type stopTestFixture struct {
-	Workspace      string
-	Config         Configuration
-	Unlabeled      bool
-	Fail           bool
-	DockerPSOutput string
-	ContainerID    string
-	ForbidDocker   bool
-	ConfigExit     int
+	Workspace        string
+	Config           Configuration
+	Unlabeled        bool
+	Fail             bool
+	DockerPSOutput   string
+	ContainerID      string
+	ForbidDocker     bool
+	ConfigExit       int
+	ExpectedOverride string
 }
 
 type stopTestCall struct {
@@ -37,7 +38,7 @@ type stopTestCall struct {
 }
 
 func TestStopAndDownWaitForDocker(t *testing.T) {
-	for _, mode := range []string{"string", "array", "unlabeled array", "docker"} {
+	for _, mode := range []string{"string", "array", "merged array", "unlabeled array", "docker"} {
 		for _, action := range []string{"stop", "down"} {
 			for _, fail := range []bool{false, true} {
 				t.Run(fmt.Sprintf("%s/%s/fail=%t", mode, action, fail), func(t *testing.T) {
@@ -60,12 +61,10 @@ func TestStopAndDownWaitForDocker(t *testing.T) {
 					switch mode {
 					case "string":
 						fixture.Config.DockerComposeFile = filepath.Base(base)
-					case "array", "unlabeled array":
+					case "array", "merged array", "unlabeled array":
 						fixture.Config.DockerComposeFile = []string{filepath.Base(base), override}
 						files = append(files, override)
 					}
-
-					devcontainerPath := installStopTestCommands(t, dir, fixture)
 
 					cache := filepath.Join(dir, "cache")
 					configDir, err := util.GetConfigDir(cache, "workspace")
@@ -75,6 +74,13 @@ func TestStopAndDownWaitForDocker(t *testing.T) {
 					if err := os.MkdirAll(configDir, 0755); err != nil {
 						t.Fatal(err)
 					}
+					if mode == "merged array" {
+						fixture.ExpectedOverride = filepath.Join(configDir, "devcontainer.json")
+						if err := os.WriteFile(fixture.ExpectedOverride, []byte(`{}`), 0600); err != nil {
+							t.Fatal(err)
+						}
+					}
+					devcontainerPath := installStopTestCommands(t, dir, fixture)
 					args := []string{"--nocdr", "workspace"}
 					if action == "stop" {
 						err = Stop(args, devcontainerPath, cache)
@@ -425,6 +431,13 @@ func runStopTestCommand(dir string, argv []string) int {
 		}
 		return 0
 	case "test-devcontainer":
+		if fixture.ExpectedOverride != "" {
+			index := slices.Index(argv, "--override-config")
+			if index < 0 || index+1 >= len(argv) || argv[index+1] != fixture.ExpectedOverride {
+				fmt.Fprintln(os.Stderr, "fixture requires the cached override configuration")
+				return 99
+			}
+		}
 		if fixture.ConfigExit != 0 {
 			fmt.Fprintln(os.Stderr, "fixture configuration rejected")
 			return fixture.ConfigExit
