@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"text/template"
 	"time"
 
@@ -364,15 +365,22 @@ func KillCdr(pid int) error {
 		return fmt.Errorf("invalid clipboard-data-receiver PID %d: must be positive", pid)
 	}
 	if host.IsWsl() {
-		commandString := fmt.Sprintf("Stop-Process -Id %d -Force", pid)
+		commandString := fmt.Sprintf("Get-Process -Id %d -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction Stop", pid)
 		fmt.Printf("Stop clipboard-data-receiver: %s\n", commandString)
 		cdrRunCommand := exec.Command("powershell.exe", "-Command", commandString)
 		return cdrRunCommand.Run()
 	} else {
 		process, err := os.FindProcess(pid)
 		if err != nil {
+			// On Windows, OpenProcess reports ERROR_INVALID_PARAMETER for
+			// a positive PID that no longer exists.
+			const windowsErrorInvalidParameter syscall.Errno = 87
+			if runtime.GOOS == "windows" && errors.Is(err, windowsErrorInvalidParameter) {
+				return os.ErrProcessDone
+			}
 			return err
 		}
+		defer process.Release()
 		err = process.Kill()
 		if err != nil {
 			return err
