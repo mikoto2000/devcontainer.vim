@@ -15,6 +15,9 @@ const binDirName = "bin"
 const configDirName = "config"
 const userDirectoryMode = 0700
 
+// DevcontainerConfigFileName is the name of the generated workspace override.
+const DevcontainerConfigFileName = "devcontainer.json"
+
 type GetDirFunc func() (string, error)
 
 func CreateConfigDirectory(pathFunc GetDirFunc, dirName string) (string, error) {
@@ -142,7 +145,7 @@ func CreateConfigFileForDevcontainer(configDirForDevcontainer string, workspaceF
 	if err != nil {
 		return "", err
 	}
-	generateConfigFilePath := filepath.Join(generateConfigDir, "devcontainer.json")
+	generateConfigFilePath := filepath.Join(generateConfigDir, DevcontainerConfigFileName)
 	err = os.MkdirAll(generateConfigDir, userDirectoryMode)
 	if err != nil {
 		return "", err

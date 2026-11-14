@@ -36,7 +36,11 @@ func Stop(args []string, devcontainerPath string, configDirForDevcontainer strin
 		return errors.New("missing workspace folder")
 	}
 	workspaceFolder := args[len(args)-1]
-	_, err := stopWorkspaceContainers(workspaceFolder, devcontainerPath, false)
+	configDir, err := configstore.GetConfigDir(configDirForDevcontainer, workspaceFolder)
+	if err != nil {
+		return err
+	}
+	_, err = stopWorkspaceContainers(workspaceFolder, devcontainerPath, configDir, false)
 	return err
 }
 
@@ -45,13 +49,12 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 		return errors.New("missing workspace folder")
 	}
 	workspaceFolder := args[len(args)-1]
-	removed, err := stopWorkspaceContainers(workspaceFolder, devcontainerPath, true)
-	if err != nil || !removed {
-		return err
-	}
-
 	configDir, err := configstore.GetConfigDir(configDirForDevcontainer, workspaceFolder)
 	if err != nil {
+		return err
+	}
+	removed, err := stopWorkspaceContainers(workspaceFolder, devcontainerPath, configDir, true)
+	if err != nil || !removed {
 		return err
 	}
 
@@ -79,8 +82,15 @@ func Down(args []string, devcontainerPath string, configDirForDevcontainer strin
 }
 
 // stopWorkspaceContainers reports whether a container or project was acted on.
-func stopWorkspaceContainers(workspaceFolder, devcontainerPath string, remove bool) (bool, error) {
-	output, err := ReadConfiguration(devcontainerPath, "--workspace-folder", workspaceFolder)
+func stopWorkspaceContainers(workspaceFolder, devcontainerPath, configDir string, remove bool) (bool, error) {
+	args := []string{"--workspace-folder", workspaceFolder}
+	mergedConfigPath := filepath.Join(configDir, configstore.DevcontainerConfigFileName)
+	if _, err := os.Stat(mergedConfigPath); err == nil {
+		args = append(args, "--override-config", mergedConfigPath)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return false, fmt.Errorf("inspect cached Dev Container configuration: %w", err)
+	}
+	output, err := ReadConfiguration(devcontainerPath, args...)
 	if err != nil {
 		return false, err
 	}
