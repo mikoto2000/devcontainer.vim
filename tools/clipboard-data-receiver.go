@@ -232,11 +232,20 @@ func runCdrForNative(cdrPath, pidFile, portFile string, startupTimeout, pollInte
 }
 
 func runCdrForWsl(cdrPath, pidFile, portFile string, startupTimeout, pollInterval time.Duration) (int, int, error) {
-	windowsPidFile, err := wslCdrPath(pidFile)
+	// The workspace directory can contain readiness files from a previous
+	// receiver. Only read files that this invocation can have created.
+	startupDir, err := os.MkdirTemp(filepath.Dir(pidFile), ".cdr-startup-*")
+	if err != nil {
+		return 0, 0, fmt.Errorf("create clipboard receiver startup directory: %w", err)
+	}
+	defer os.RemoveAll(startupDir)
+	startupPID := filepath.Join(startupDir, "pid")
+	startupPort := filepath.Join(startupDir, "port")
+	windowsPidFile, err := wslCdrPath(startupPID)
 	if err != nil {
 		return 0, 0, err
 	}
-	windowsPortFile, err := wslCdrPath(portFile)
+	windowsPortFile, err := wslCdrPath(startupPort)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -255,19 +264,23 @@ func runCdrForWsl(cdrPath, pidFile, portFile string, startupTimeout, pollInterva
 		close(done)
 	}()
 
-	pid, err := waitForWslCdrFile(pidFile, done, startupTimeout, pollInterval)
+	pid, err := waitForWslCdrFile(startupPID, done, startupTimeout, pollInterval)
 	if err == nil {
 		var port int
-		port, err = waitForWslCdrFile(portFile, done, startupTimeout, pollInterval)
+		port, err = waitForWslCdrFile(startupPort, done, startupTimeout, pollInterval)
 		if err == nil {
 			select {
 			case <-done:
-				if waitErr == nil {
+				err = errors.New("clipboard-data-receiver exited during startup")
+			default:
+				// Publish the PID last: down uses it to find the receiver.
+				if err = os.Rename(startupPort, portFile); err == nil {
+					err = os.Rename(startupPID, pidFile)
+				}
+				if err == nil {
 					return pid, port, nil
 				}
-				err = fmt.Errorf("clipboard-data-receiver exited during startup")
-			default:
-				return pid, port, nil
+				err = fmt.Errorf("publish clipboard receiver startup files: %w", err)
 			}
 		}
 	}
