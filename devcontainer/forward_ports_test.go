@@ -107,7 +107,7 @@ func TestSetupPortForwardingRejectsInvalidBeforeRunningCommands(t *testing.T) {
 }
 
 func TestSetupPortForwardingReportsOccupiedPort(t *testing.T) {
-	for _, mode := range []string{"start", "restore"} {
+	for _, mode := range []string{"start", "legacy markers"} {
 		t.Run(mode, func(t *testing.T) {
 			first, occupied := listenForForwardTest(t), listenForForwardTest(t)
 			_, firstPort, _ := net.SplitHostPort(first.Addr().String())
@@ -116,8 +116,9 @@ func TestSetupPortForwardingReportsOccupiedPort(t *testing.T) {
 
 			path, dir := installForwardTestCommands(t, fmt.Sprintf("[%s,%s]", firstPort, occupiedPort))
 			t.Setenv("DEVCONTAINER_VIM_FORWARD_TEST_DEST", "127.0.0.1:1")
-			if mode == "restore" {
-				markers := fmt.Sprintf("localhost:%s_127.0.0.1:1\x00localhost:%s_127.0.0.1:1\x00", firstPort, occupiedPort)
+			if mode == "legacy markers" {
+				// A prior session's marker must not replace the current port list.
+				markers := "old-service:0_127.0.0.1:1\x00"
 				if err := os.WriteFile(filepath.Join(dir, "markers"), []byte(markers), 0600); err != nil {
 					t.Fatal(err)
 				}
@@ -138,11 +139,7 @@ func TestSetupPortForwardingReportsOccupiedPort(t *testing.T) {
 				t.Fatalf("previously opened port %s was not released: %v", firstPort, err)
 			}
 			reopened.Close()
-			if mode == "start" {
-				assertForwardChildReaped(t, dir, firstPort)
-			} else if _, err := os.Stat(filepath.Join(dir, "exec-called")); !errors.Is(err, os.ErrNotExist) {
-				t.Fatalf("restoration launched a container forwarder: %v", err)
-			}
+			assertForwardChildReaped(t, dir, firstPort)
 		})
 	}
 }
@@ -162,51 +159,6 @@ func TestSetupPortForwardingReportsChildStartupExit(t *testing.T) {
 		t.Fatalf("setup error = %v, want child startup exit code 23", err)
 	}
 	assertForwardChildReaped(t, dir, port)
-}
-
-func TestListPortForwarderMarkersWithoutLS(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("container shell fixture requires a POSIX host shell")
-	}
-	shell, err := exec.LookPath("sh")
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, dir := installForwardTestCommands(t, "[]")
-	t.Setenv("DEVCONTAINER_VIM_FORWARD_TEST_MARKER_SHELL", shell)
-
-	markers, err := listPortForwarderMarkers("container-id")
-	if err != nil || len(markers) != 0 {
-		t.Fatalf("missing marker directory = %q, %v, want no markers", markers, err)
-	}
-
-	markerDir := filepath.Join(dir, "home", ".config", "devcontainer.vim", "pf")
-	if err := os.MkdirAll(filepath.Dir(markerDir), 0700); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(markerDir, nil, 0600); err != nil {
-		t.Fatal(err)
-	}
-	var exitErr *exec.ExitError
-	if _, err := listPortForwarderMarkers("container-id"); !errors.As(err, &exitErr) {
-		t.Errorf("marker directory replaced by file = %v, want command failure", err)
-	}
-	if err := os.Remove(markerDir); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll(filepath.Join(markerDir, "ignored-directory"), 0700); err != nil {
-		t.Fatal(err)
-	}
-	want := []string{"api:8080_127.0.0.1:51001", "localhost:8081_127.0.0.1:51002", "name with a\nnewline"}
-	for _, marker := range want {
-		if err := os.WriteFile(filepath.Join(markerDir, marker), nil, 0600); err != nil {
-			t.Fatal(err)
-		}
-	}
-	markers, err = listPortForwarderMarkers("container-id")
-	if err != nil || !slices.Equal(markers, want) {
-		t.Fatalf("listPortForwarderMarkers = %q, %v, want %q", markers, err, want)
-	}
 }
 
 func TestSetupPortForwardingAcceptsNumberAndHostPort(t *testing.T) {
@@ -276,8 +228,6 @@ func TestSetupPortForwardingAcceptsNumberAndHostPort(t *testing.T) {
 		targetAddr := net.JoinHostPort(target.Host, target.Port)
 		assertForwardTestArgs(t, dir, "exec-"+target.Port, []string{"exec", "--container-id", "container-id", "--workspace-folder", "workspace",
 			"--override-config", "override.json", "/port-forwarder", "-l", "0.0.0.0:0", "-f", targetAddr})
-		assertForwardTestArgs(t, dir, "marker-"+target.Port, []string{"exec", "container-id", "sh", "-c",
-			`dir="$HOME/.config/devcontainer.vim/pf"; mkdir -p "$dir" && touch "$dir/$1"`, "port-forwarder-marker", targetAddr + "_" + destination.Addr().String()})
 	}
 	// A child exit must release its relay and be reaped while the session is still active.
 	if err := os.WriteFile(filepath.Join(dir, "exit-"+firstPort), nil, 0600); err != nil {
@@ -494,28 +444,13 @@ func runForwardTestCommand(dir string, argv []string) int {
 	if args[2] == "hostname" {
 		fmt.Println("127.0.0.1")
 	} else if len(args) == 5 {
-		if shell := os.Getenv("DEVCONTAINER_VIM_FORWARD_TEST_MARKER_SHELL"); shell != "" {
-			cmd := exec.Command(shell, "-c", args[4])
-			cmd.Env = append(os.Environ(), "HOME="+filepath.Join(dir, "home"), "PATH="+dir, "LC_ALL=C")
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			if err := cmd.Run(); err != nil {
-				return 99
-			}
-			return 0
-		}
+		// Present legacy state if the implementation tries to restore it.
 		if markers, err := os.ReadFile(filepath.Join(dir, "markers")); err == nil {
 			if strings.HasPrefix(args[4], "grep ") {
 				fmt.Println("/proc/123/comm")
 			} else {
 				os.Stdout.Write(markers)
 			}
-		}
-	} else if len(args) == 7 {
-		target, _, _ := strings.Cut(args[6], "_")
-		_, port, err := net.SplitHostPort(target)
-		if err != nil || !writeForwardTestArgs(dir, "marker-"+port, args) {
-			return 99
 		}
 	}
 	return 0
