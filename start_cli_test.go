@@ -98,9 +98,19 @@ func runStartCLIFixture(dir string, argv []string) error {
 				},
 			})
 		case len(args) == 5 && args[0] == "up" && args[1] == "--override-config" && args[3] == "--workspace-folder" && args[4] == workspace:
+			if err := os.WriteFile(filepath.Join(dir, "up-config"), []byte(args[2]), 0600); err != nil {
+				return err
+			}
 			fmt.Println(`{"outcome":"success","containerId":"fixture-container"}`)
 			return nil
-		case slices.Equal(args, []string{"exec", "--container-id", "fixture-container", "--workspace-folder", workspace, "/VimRun.sh"}):
+		case len(args) == 8 && args[0] == "exec" && args[7] == "/VimRun.sh":
+			config, err := os.ReadFile(filepath.Join(dir, "up-config"))
+			if err != nil {
+				return err
+			}
+			if !slices.Equal(args, []string{"exec", "--container-id", "fixture-container", "--workspace-folder", workspace, "--override-config", string(config), "/VimRun.sh"}) {
+				return fmt.Errorf("Vim exec did not use the up configuration: %v", args)
+			}
 			return os.WriteFile(filepath.Join(dir, "editor-launched"), nil, 0600)
 		}
 	} else {

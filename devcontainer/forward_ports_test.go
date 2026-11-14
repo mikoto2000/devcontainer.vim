@@ -402,7 +402,14 @@ func runForwardTestCommand(dir string, argv []string) int {
 			fmt.Printf(`{"configuration":{"forwardPorts":%s}}`, os.Getenv("DEVCONTAINER_VIM_FORWARD_TEST_PORTS"))
 			return 0
 		}
-		if startShell != "" && slices.Equal(args, []string{"exec", "--container-id", "container-id", "--workspace-folder", dir, "/VimRun.sh"}) {
+		if startShell != "" && args[len(args)-1] == "/VimRun.sh" {
+			var upArgs []string
+			data, err := os.ReadFile(filepath.Join(dir, "up-args"))
+			if err != nil || json.Unmarshal(data, &upArgs) != nil || len(upArgs) != 5 ||
+				!slices.Equal(args, []string{"exec", "--container-id", "container-id", "--workspace-folder", dir, "--override-config", upArgs[2], "/VimRun.sh"}) {
+				fmt.Fprintln(os.Stderr, "Vim exec did not use the up configuration:", args)
+				return 99
+			}
 			cmd := exec.Command(startShell, filepath.Join(dir, "VimRun.sh"), startWorkflowEditorArg)
 			cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 			if err := cmd.Run(); err != nil {

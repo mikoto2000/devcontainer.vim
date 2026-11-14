@@ -1,25 +1,22 @@
 package devcontainer
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
 
 func TestBuildDevcontainerStartVimExecArgsForVimRunScript(t *testing.T) {
-	args := buildDevcontainerStartVimExecArgs("test-container", "/workspace", "")
+	args := buildDevcontainerStartVimExecArgs("test-container", "/workspace", "/cache with spaces/override.json", "")
 
-	if len(args) != 6 {
-		t.Fatalf("unexpected args length: %#v", args)
-	}
-	if args[0] != "exec" || args[1] != "--container-id" || args[2] != "test-container" || args[3] != "--workspace-folder" || args[4] != "/workspace" || args[5] != "/VimRun.sh" {
+	if !slices.Equal(args, []string{"exec", "--container-id", "test-container", "--workspace-folder", "/workspace", "--override-config", "/cache with spaces/override.json", "/VimRun.sh"}) {
 		t.Fatalf("unexpected devcontainer exec args: %#v", args)
 	}
 }
 
 func TestBuildDevcontainerStartVimExecArgsForShell(t *testing.T) {
-	args := buildDevcontainerStartVimExecArgs("test-container", "/workspace", "bash")
+	args := buildDevcontainerStartVimExecArgs("test-container", "/workspace", "/cache with spaces/override.json", "bash")
 
-	if len(args) != 6 {
-		t.Fatalf("unexpected args length: %#v", args)
-	}
-	if args[0] != "exec" || args[1] != "--container-id" || args[2] != "test-container" || args[3] != "--workspace-folder" || args[4] != "/workspace" || args[5] != "bash" {
+	if !slices.Equal(args, []string{"exec", "--container-id", "test-container", "--workspace-folder", "/workspace", "--override-config", "/cache with spaces/override.json", "bash"}) {
 		t.Fatalf("unexpected devcontainer exec args: %#v", args)
 	}
 }
