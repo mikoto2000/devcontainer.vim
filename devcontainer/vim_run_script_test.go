@@ -19,7 +19,7 @@ func TestVimLaunchPreservesExistingDirectory(t *testing.T) {
 			return dockerRunVimArgs("container-id", "vim", "", "SendToTcp.vim", "amd64", true, false, true, "", dir)
 		}},
 		{"start", func(dir string) ([]string, error) {
-			return devcontainerStartVimArgs("container-id", "workspace", "vim", "", "SendToTcp.vim", "amd64", true, false, true, "", dir)
+			return devcontainerStartVimArgs("container-id", "workspace", "vim", "", "SendToTcp.vim", "amd64", true, false, true, "", filepath.Join(dir, "override.json"))
 		}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
