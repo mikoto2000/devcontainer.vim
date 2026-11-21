@@ -64,7 +64,7 @@ USAGE:
    devcontainer.vim [global options] command [command options] 
 
 VERSION:
-   4.1.0
+   4.1.1
 
 COMMANDS:
    run                 Run container use `docker run`
@@ -98,10 +98,10 @@ GLOBAL OPTIONS:
 devcontainer.vim run [DOCKER_OPTIONS] [DOCKER_ARGS]
 ```
 
-`docker run -it --rm -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim" --name golang golang:1.22.1-bookworm` コマンド相当の環境でコンテナを立ち上げる場合の例:
+`docker run -it --rm -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim" --name golang golang:1.27.4-bookworm` コマンド相当の環境でコンテナを立ち上げる場合の例:
 
 ```sh
-devcontainer.vim run -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim" --name golang golang:1.22.1-bookworm
+devcontainer.vim run -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim" --name golang golang:1.27.4-bookworm
 ```
 
 ### `devcontainer.json` が存在する場合
@@ -488,7 +488,7 @@ rm -rf ~/Library/Caches/devcontainer.vim
 
 ## WSL での統合テスト
 
-x86_64 の WSL で Windows 相互運用を有効にし、`powershell.exe` を呼び出せるようにしてください。WSL 内で Go 1.26 以上、レース検出用の C コンパイラ、`curl`、Linux コンテナを起動できる Docker と Docker Compose が必要です。テストは TCP ポート 8888 を使い、コンテナイメージやツールなどをダウンロードします。
+x86_64 の WSL で Windows 相互運用を有効にし、`powershell.exe` を呼び出せるようにしてください。WSL 内で Go 1.27.4 以上、レース検出用の C コンパイラ、`curl`、Linux コンテナを起動できる Docker と Docker Compose が必要です。テストは TCP ポート 8888 を使い、コンテナイメージやツールなどをダウンロードします。
 
 リポジトリのルートで次を実行します。
 

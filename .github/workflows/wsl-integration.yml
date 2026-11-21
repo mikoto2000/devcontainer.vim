@@ -34,9 +34,9 @@ jobs:
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             build-essential ca-certificates curl docker.io docker-compose-v2 jq
-          archive=go1.26.6.linux-amd64.tar.gz
+          archive=go1.27.4.linux-amd64.tar.gz
           curl --fail --silent --show-error --location --retry 2 "https://go.dev/dl/$archive" -o "/tmp/$archive"
-          printf '%s  %s\n' 708effb774be8237570d0add163225abbdfaf4fca28b2611df167beba4feef89 "/tmp/$archive" | sha256sum --check
+          printf '%s  %s\n' 7226736c2339719cda28fbf3a54d71aa63bcefe376e98cef00034268dab24840 "/tmp/$archive" | sha256sum --check
           tar -xzf "/tmp/$archive" -C /opt
 
       - name: Prepare fixtures and run race tests
@@ -46,6 +46,7 @@ jobs:
         run: |
           export PATH="/opt/go/bin:$PATH"
           go version
+          make vuln
           state=$(mktemp -d)
           dockerd >"$state/dockerd.log" 2>&1 &
           daemon=$!

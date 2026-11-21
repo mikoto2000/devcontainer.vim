@@ -10,7 +10,8 @@ PLATFORMS := \
 
 GO_BIN := ${GOPATH}/bin
 STATICCHECK_VERSION := v0.7.0
-VERSION := 4.1.0
+GOVULNCHECK_VERSION := v1.10.0
+VERSION := 4.1.1
 LD_FLAGS := "-s -w -X main.version=${VERSION}"
 
 DEST := ./build
@@ -45,6 +46,10 @@ install-lint-tools:
 
 lint:
 	staticcheck -checks inherit,ST1003,ST1016 ./...
+
+.PHONY: vuln
+vuln:
+	go run golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION} -scan module
 
 .PHONY: fmt
 fmt:
