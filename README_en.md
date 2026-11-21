@@ -65,7 +65,7 @@ USAGE:
    devcontainer.vim [global options] command [command options] 
 
 VERSION:
-   4.1.0
+   4.1.1
 
 COMMANDS:
    run                 Run container use `docker run`
@@ -98,10 +98,10 @@ GLOBAL OPTIONS:
 ```sh
 devcontainer.vim run [DOCKER_OPTIONS] [DOCKER_ARGS]
 ```
-Example of running a container in an environment equivalent to the `docker run -it --rm -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim" --name golang golang:1.22.1-bookworm` command:
+Example of running a container in an environment equivalent to the `docker run -it --rm -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim" --name golang golang:1.27.4-bookworm` command:
 
 ```sh
-devcontainer.vim run -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim" --name golang golang:1.22.1-bookworm
+devcontainer.vim run -v "$(pwd):/work" --workdir /work -v "$HOME/.vim:/root/.vim" --name golang golang:1.27.4-bookworm
 ```
 
 
@@ -495,7 +495,7 @@ rm -rf ~/Library/Caches/devcontainer.vim
 
 ## Integration tests on WSL
 
-Use x86_64 WSL with Windows interop enabled so WSL can launch `powershell.exe`. In WSL, install Go 1.26 or later, a C compiler for the race detector, `curl`, and Docker with Docker Compose and a Linux container daemon. The tests use TCP port 8888 and download container images and tools.
+Use x86_64 WSL with Windows interop enabled so WSL can launch `powershell.exe`. In WSL, install Go 1.27.4 or later, a C compiler for the race detector, `curl`, and Docker with Docker Compose and a Linux container daemon. The tests use TCP port 8888 and download container images and tools.
 
 Run these commands from the repository root.
 

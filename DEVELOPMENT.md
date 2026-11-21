@@ -22,6 +22,10 @@ make build-all
 
 Install the pinned Staticcheck release with `make install-lint-tools` and ensure your Go binary directory is on `PATH`. Run `make lint` to use the installed tool.
 
+## Vulnerability checks
+
+Run `make vuln` to check the Go standard library and all dependency modules against the Go vulnerability database, including dependencies for other platforms. The check uses a pinned Govulncheck version and fails when a known vulnerability is present, even if the affected function is not called. CI runs the same check before integration tests and release builds.
+
 ## Package responsibilities
 
 The repository builds one application and uses one Go module. The CLI selects the requested features and delegates container lifecycle operations to `devcontainer`. That package coordinates the `docker`, `dockercompose`, and `tools` adapters. Workspace configuration and cleanup belong to `devcontainer`; CLI handlers use its result instead of deleting workspace caches themselves.
@@ -38,7 +42,7 @@ These packages do not depend on the CLI, container orchestration, or each other.
 ## Start dev container without devcontainer.vim
 
 ```sh
-docker run -it --rm -v "$(pwd):/work" --workdir /work --name devcontainer.vim golang:1.26.0-bookworm
+docker run -it --rm -v "$(pwd):/work" --workdir /work --name devcontainer.vim golang:1.27.4-bookworm
 ```
 
 ## Create project
